@@ -1,0 +1,265 @@
+/* src/renderer/style.css */
+
+/* Tema claro (por defecto) */
+:root {
+  --noxis-accent: #2f61bf;
+  --noxis-accent-dark: #2f61bf;
+  --bubble-bg: rgba(255, 255, 255, 0.96);
+  --bubble-text: #172133;
+  --card-bg: rgba(255, 255, 255, 0.94);
+  --card-text: #1A1D21;
+  --card-border: rgba(0, 0, 0, 0.10);
+  --input-bg: rgba(0, 0, 0, 0.05);
+  --hover-bg: rgba(0, 0, 0, 0.06);
+  --btn-text: #0c131f;
+  --placeholder: #8A8A8A;
+}
+
+/* Tema oscuro: letras blancas + acento azul (en vez de verde) */
+body.dark {
+  --noxis-accent: #4C9AFF;
+  --noxis-accent-dark: #3C84E8;
+  --bubble-bg: rgba(24, 26, 31, 0.96);
+  --bubble-text: #FFFFFF;
+  --card-bg: rgba(28, 30, 35, 0.94);
+  --card-text: #FFFFFF;
+  --card-border: rgba(255, 255, 255, 0.12);
+  --input-bg: rgba(255, 255, 255, 0.08);
+  --hover-bg: rgba(255, 255, 255, 0.10);
+  --btn-text: #FFFFFF;
+  --placeholder: #9AA0A6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  user-select: none;
+}
+
+#stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes noxisFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes noxisPoke {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+
+/* Pila vertical (transcripción arriba + Noxis abajo), centrada al fondo */
+#voiceStack {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+#noxisImage {
+  /* Tamaño fijo: cuadrado de 210x210 px */
+  width: 210px;
+  height: 210px;
+  object-fit: contain;
+  cursor: pointer;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.25));
+  animation: noxisFloat 3.2s ease-in-out infinite;
+}
+
+#noxisImage.poke {
+  animation: noxisPoke 0.28s ease;
+}
+
+/* ---------- Burbuja de mensajes ambientales ---------- */
+
+.bubble {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  max-width: 300px;
+  white-space: normal;
+  background: var(--bubble-bg);
+  color: var(--bubble-text);
+  padding: 10px 14px;
+  border-radius: 16px 16px 16px 4px;
+  font-size: 13px;
+  line-height: 1.45;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  -webkit-app-region: no-drag;
+  z-index: 20;
+
+  opacity: 0;
+  transform: translateY(6px) scale(0.96);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.bubble.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* ---------- Chat card ---------- */
+
+.chat-card {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  width: 260px;
+  background: var(--card-bg);
+  color: var(--card-text);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  -webkit-app-region: no-drag;
+  overflow: hidden;
+
+  opacity: 0;
+  transform: translateX(-50%) translateY(10px) scale(0.97);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.chat-card.open {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--noxis-accent);
+  border-bottom: 1px solid var(--card-border);
+}
+
+.chat-inputRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+}
+
+#userInput {
+  flex: 1;
+  height: 30px;
+  border: none;
+  outline: none;
+  background: var(--input-bg);
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 13px;
+  color: var(--card-text);
+}
+
+#userInput::placeholder {
+  color: var(--placeholder);
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--card-text);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.icon-btn:hover {
+  background: var(--hover-bg);
+}
+
+.icon-btn:active {
+  transform: scale(0.92);
+}
+
+.send-btn {
+  background: var(--noxis-accent);
+  color: var(--btn-text);
+}
+
+.send-btn:hover {
+  background: var(--noxis-accent-dark);
+  color: #fff;
+}
+
+/* ---------- Estado de voz ---------- */
+
+.voice-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--card-bg);
+  color: var(--noxis-accent);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid var(--card-border);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  -webkit-app-region: no-drag;
+  white-space: nowrap;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  opacity: 0;
+  transform: translateY(6px) scale(0.95);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.voice-status.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.voice-status.hidden {
+  opacity: 0;
+  transform: translateY(6px) scale(0.95);
+  pointer-events: none;
+}
+
+.voice-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #E05B5B;
+  flex-shrink: 0;
+  animation: dotBlink 0.8s ease-in-out infinite;
+}
+
+@keyframes dotBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}

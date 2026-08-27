@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data:; connect-src 'self' https: wss: ws:; media-src 'self' https:; font-src 'self' data:;" />
+  <title>Configuración - Noxis</title>
+  <link rel="stylesheet" href="config.css" />
+</head>
+<body>
+  <header>
+    <h1><span id="gearIcon" class="inline-icon"></span> Configuración de Noxis</h1>
+    <nav id="tabs">
+      <button class="tabBtn active" data-tab="general">General</button>
+      <button class="tabBtn" data-tab="apps">Aplicaciones</button>
+      <button class="tabBtn" data-tab="packs">Grupos</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- TAB GENERAL -->
+    <section id="tab-general" class="tab active">
+      <label class="field">
+        <span>Nombre / palabra clave</span>
+        <input id="nameInput" type="text" placeholder="Noxis" />
+      </label>
+
+      <div class="switchRow">
+        <div class="switchLabel">
+          <span class="switchTitle">Iniciar con Windows</span>
+        </div>
+        <label class="switch">
+          <input id="autoStartCheck" type="checkbox" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="switchRow">
+        <div class="switchLabel">
+          <span class="switchTitle">Permitir micrófono (comandos de voz)</span>
+        </div>
+        <label class="switch">
+          <input id="micCheck" type="checkbox" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <p class="hint">
+        Reconocimiento de voz offline (Vosk). Di el nombre de Noxis seguido de un comando para interactuar por voz.
+      </p>
+
+      <div class="sectionHeader">
+        <h3>Modelo de voz</h3>
+      </div>
+      <p class="sectionHint">
+        Elige cuánto espacio quieres usar. Toca uno para activarlo; si no está descargado, se descargará automáticamente.
+      </p>
+      <div id="modelCards" class="modelCards"></div>
+      <p id="modelProgress" class="modelProgress hidden"></p>
+
+      <div id="micDeviceRow" class="micDeviceRow hidden">
+        <label class="field">
+          <span>Selecciona tu micrófono</span>
+          <div class="micSelectRow">
+            <select id="micSelect"></select>
+            <button id="refreshMicBtn" class="iconBtn" title="Detectar micrófonos"></button>
+          </div>
+        </label>
+      </div>
+
+      <div class="switchRow">
+        <div class="switchLabel">
+          <span class="switchTitle">Tema oscuro</span>
+          <span class="switchSub">Letras blancas y acento azul sobre fondo oscuro</span>
+        </div>
+        <label class="switch">
+          <input id="themeCheck" type="checkbox" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="skinRow">
+        <img id="skinPreview" src="../../assets/noxis.png" alt="preview" />
+        <div class="skinInfo">
+          <button id="changeSkinBtn" class="secondaryBtn">
+            <span class="btnIcon" data-icon="folder"></span> Cambiar skin…
+          </button>
+          <span id="skinPathLabel" class="skinPathText">Sin skin personalizada</span>
+        </div>
+      </div>
+
+      <div class="links">
+        <a href="https://github.com/Norvyz" target="_blank">
+          <span class="btnIcon" data-icon="link"></span> GitHub
+        </a>
+        <a href="https://discord.gg/Qa5X9HQZ5x" target="_blank">
+          <span class="btnIcon" data-icon="chat"></span> Discord
+        </a>
+      </div>
+    </section>
+
+    <!-- TAB APPS -->
+    <section id="tab-apps" class="tab">
+      <div class="sectionHeader">
+        <h3>Aplicaciones individuales</h3>
+        <button id="addAppBtn" class="primaryBtn">
+          <span class="btnIcon" data-icon="plus"></span> Agregar app
+        </button>
+      </div>
+      <p class="sectionHint">
+        Noxis abre estas apps cuando le dices su nombre seguido de la palabra clave (ej: "Noxis abre discord").
+      </p>
+      <ul id="appsList" class="itemList cardList"></ul>
+    </section>
+
+    <!-- TAB PACKS -->
+    <section id="tab-packs" class="tab">
+      <div class="packsLayout">
+        <div class="packsColumn">
+          <div class="sectionHeader">
+            <h3>Tus grupos</h3>
+            <button id="addPackBtn" class="primaryBtn">
+              <span class="btnIcon" data-icon="plus"></span> Nuevo grupo
+            </button>
+          </div>
+          <p class="sectionHint">
+            Un grupo abre varias apps a la vez con una sola orden (ej: "Noxis abre trabajo").
+          </p>
+          <ul id="packsList" class="groupCards"></ul>
+        </div>
+
+        <div class="packAppsColumn">
+          <div class="sectionHeader">
+            <h3 id="selectedPackTitle">Selecciona un grupo</h3>
+            <button id="addPackAppBtn" class="primaryBtn" disabled>
+              <span class="btnIcon" data-icon="plus"></span> Agregar app
+            </button>
+          </div>
+          <ul id="packAppsList" class="itemList cardList"></ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <button id="resetBtn" class="secondaryBtn dangerBtn">
+      <span class="btnIcon" data-icon="power"></span> Restablecer
+    </button>
+    <span id="saveStatus" class="saveStatus"></span>
+    <button id="cancelBtn" class="secondaryBtn">Cancelar</button>
+    <button id="saveBtn" class="primaryBtn">Guardar</button>
+  </footer>
+
+  <!-- MODAL: Agregar app suelta -->
+  <div id="addAppModal" class="modalOverlay">
+    <div class="modal">
+      <h3>Agregar aplicación</h3>
+      <label class="field">
+        <span>Palabra clave (para pedirle a Noxis que la abra)</span>
+        <input id="addAppKeywordInput" type="text" placeholder="ej: discord, chrome, vscode" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span>Ruta del ejecutable</span>
+        <div class="pathRow">
+          <input id="addAppPathInput" type="text" readonly class="placeholder" />
+          <button id="addAppBrowseBtn" class="secondaryBtn"><span class="btnIcon" data-icon="folder"></span> Examinar</button>
+        </div>
+      </label>
+      <div class="modalActions">
+        <button id="addAppCancelBtn" class="secondaryBtn">Cancelar</button>
+        <button id="addAppConfirmBtn" class="primaryBtn">Agregar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Editar app suelta -->
+  <div id="editAppModal" class="modalOverlay">
+    <div class="modal">
+      <h3>Editar aplicación</h3>
+      <label class="field">
+        <span>Palabra clave</span>
+        <input id="editAppKeywordInput" type="text" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span>Ruta del ejecutable</span>
+        <div class="pathRow">
+          <input id="editAppPathInput" type="text" readonly />
+          <button id="editAppBrowseBtn" class="secondaryBtn"><span class="btnIcon" data-icon="folder"></span> Examinar</button>
+        </div>
+      </label>
+      <div class="modalActions">
+        <button id="editAppCancelBtn" class="secondaryBtn">Cancelar</button>
+        <button id="editAppConfirmBtn" class="primaryBtn">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Crear grupo -->
+  <div id="addPackModal" class="modalOverlay">
+    <div class="modal">
+      <h3>Crear grupo</h3>
+      <label class="field">
+        <span>Nombre del grupo</span>
+        <input id="addPackNameInput" type="text" placeholder="ej: Trabajo, Gaming, Estudio" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span>Palabra clave (para activar el grupo por voz)</span>
+        <input id="addPackKeywordInput" type="text" placeholder="ej: trabajo, gaming" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span>Segundos de pausa entre cada app</span>
+        <input id="addPackDelayInput" type="number" min="1" max="30" value="3" />
+      </label>
+      <div class="modalActions">
+        <button id="addPackCancelBtn" class="secondaryBtn">Cancelar</button>
+        <button id="addPackConfirmBtn" class="primaryBtn">Crear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Editar grupo -->
+  <div id="editPackModal" class="modalOverlay">
+    <div class="modal">
+      <h3>Editar grupo</h3>
+      <label class="field">
+        <span>Nombre del grupo</span>
+        <input id="editPackNameInput" type="text" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span>Segundos de pausa entre cada app</span>
+        <input id="editPackDelayInput" type="number" min="1" max="30" />
+      </label>
+      <div class="modalActions">
+        <button id="editPackCancelBtn" class="secondaryBtn">Cancelar</button>
+        <button id="editPackConfirmBtn" class="primaryBtn">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Agregar app al grupo -->
+  <div id="addPackAppModal" class="modalOverlay">
+    <div class="modal">
+      <h3>Agregar app al grupo</h3>
+      <label class="field">
+        <span>Palabra clave</span>
+        <input id="addPackAppKeywordInput" type="text" placeholder="ej: chrome, discord" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span>Ruta del ejecutable</span>
+        <div class="pathRow">
+          <input id="addPackAppPathInput" type="text" readonly class="placeholder" />
+          <button id="addPackAppBrowseBtn" class="secondaryBtn"><span class="btnIcon" data-icon="folder"></span> Examinar</button>
+        </div>
+      </label>
+      <div class="modalActions">
+        <button id="addPackAppCancelBtn" class="secondaryBtn">Cancelar</button>
+        <button id="addPackAppConfirmBtn" class="primaryBtn">Agregar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Editar app del grupo -->
+  <div id="editPackAppModal" class="modalOverlay">
+    <div class="modal">
+      <h3>Editar app del grupo</h3>
+      <label class="field">
+        <span>Palabra clave</span>
+        <input id="editPackAppKeywordInput" type="text" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span>Ruta del ejecutable</span>
+        <div class="pathRow">
+          <input id="editPackAppPathInput" type="text" readonly />
+          <button id="editPackAppBrowseBtn" class="secondaryBtn"><span class="btnIcon" data-icon="folder"></span> Examinar</button>
+        </div>
+      </label>
+      <div class="modalActions">
+        <button id="editPackAppCancelBtn" class="secondaryBtn">Cancelar</button>
+        <button id="editPackAppConfirmBtn" class="primaryBtn">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="icons.js"></script>
+  <script src="config.js"></script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Noxis</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="stage">
+    <div id="speechBubble" class="bubble">
+      <span id="noxisText"></span>
+    </div>
+
+    <!-- Pila vertical: estado de voz (transcripción) arriba, Noxis abajo -->
+    <div id="voiceStack">
+      <div id="voiceStatus" class="voice-status hidden">
+        <span class="voice-dot"></span>
+        <span id="voiceStatusText">Escuchando...</span>
+      </div>
+      <img id="noxisImage" src="../../assets/noxis.png" alt="Noxis" draggable="false" />
+    </div>
+
+    <!-- Chat de texto - doble click en Noxis para abrir -->
+    <div id="chatCard" class="chat-card">
+      <div class="chat-header">
+        <span id="chatName">Noxis</span>
+        <button id="closeChatBtn" class="icon-btn" aria-label="Cerrar" title="Cerrar"></button>
+      </div>
+      <div class="chat-inputRow">
+        <input id="userInput" type="text" placeholder="Escríbeme algo..." autocomplete="off" />
+        <button id="sendBtn" class="icon-btn send-btn" aria-label="Enviar" title="Enviar"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../node_modules/vosk-browser/dist/vosk.js"></script>
+  <script src="icons.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>
