@@ -18,7 +18,7 @@
 
 <br/>
 
-[**Features**](#features) · [**Screenshots**](#screenshots) · [**Support**](#support-the-project)
+[**Features**](#features) · [**Voice Commands**](#voice-commands) · [**Screenshots**](#screenshots) · [**Support**](#support-the-project)
 
 </div>
 
@@ -34,17 +34,19 @@
 
 #### Conversación
 - Háblale de forma natural, responde al instante
-- Reconocimiento de voz **offline** con Vosk
+- Reconocimiento de voz **100 % offline** con Vosk (sin nube, con privacidad total)
+- Reconocimiento tolerante a errores del micrófono (fuzzy match + variantes del nombre)
 - Despiértala con su nombre y desactívala cuando no la necesites
-- Selecciona el micrófono que quieras
+- Conversación también por texto en un chat integrado
 
 </td>
     <td width="50%" valign="top">
 
 #### Control de tu PC
 - Abre tus apps con solo decirlo: *"Noxis abre Discord"*
-- Crea grupos ("packs") para lanzar varias apps a la vez
+- Crea grupos ("packs") para lanzar varias apps a la vez con pausa configurable
 - Acepta comandos hablados o escritos
+- Lanza ejecutables de forma nativa
 
 </td>
   </tr>
@@ -53,22 +55,55 @@
 
 #### Personalización
 - Cambia la apariencia de tu mascota (skins)
-- Nombre personalizable
+- Nombre personalizable (wake word a tu gusto)
 - Tema claro y oscuro
-- Modelo de voz Estándar o Preciso
+- Doble modelo de voz: Estándar (40 MB) o Preciso (1.5 GB), con descarga integrada
 
 </td>
     <td width="50%" valign="top">
 
 #### Siempre a tu lado
-- Arrástrala donde quieras de tu pantalla
+- Mascota flotante arrastrable, sin bordes y transparente
 - Inicia con tu sistema operativo
 - Vive en la bandeja del sistema sin estorbar
-- Totalmente multiplataforma (Windows, macOS y Linux)
+- Multiplataforma (Windows, macOS y Linux)
+- Interacciones naturales: clic, doble clic, clic derecho
 
 </td>
   </tr>
 </table>
+
+</div>
+
+---
+
+<div align="center">
+
+<h1><a id="voice-commands"></a>Voice Commands</h1>
+
+<h3>Habla de forma natural. Algunos ejemplos de lo que puedes decir:</h3>
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+
+- **"Noxis"** — la despiertas
+- **"Noxis abre Discord"** — abre una app
+- **"Noxis abre trabajo"** — lanza un grupo de apps
+- **"Noxis desactívate"** — la duermes 💤
+
+</td>
+    <td width="50%" valign="top">
+
+- **"Hola"**, **"¿Cómo estás?"** — conversación
+- **"Gracias"**, **"Adiós"** — responde
+- **"¿Quién eres?"**, **"Ayuda"** — para saber qué hace
+
+</td>
+  </tr>
+</table>
+
+<h4>La privacidad primero: cuando duerme, no muestra en pantalla lo que capta el micrófono; solo reacciona al escuchar su nombre para despertar.</h4>
 
 </div>
 
