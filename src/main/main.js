@@ -243,7 +243,7 @@ ipcMain.handle("config:save", (event, newConfig) => {
 ipcMain.handle("config:choose-skin", async () => {
   const win = windows.getConfigWindow();
   const result = await dialog.showOpenDialog(win, {
-    filters: [{ name: "Imágenes", extensions: ["png", "jpg", "jpeg"] }],
+    filters: [{ name: "Imágenes", extensions: ["png", "jpg", "jpeg", "gif"] }],
     properties: ["openFile"]
   });
   if (result.canceled || result.filePaths.length === 0) return null;
