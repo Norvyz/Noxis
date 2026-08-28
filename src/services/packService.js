@@ -16,6 +16,7 @@
 // Equivalente a TryRunPackAsync / TryOpenApplication de MainWindow.xaml.cs
 
 const launcherService = require("./launcherService");
+const soundService = require("./soundService");
 const { fuzzyClose, tokensOf } = require("./conversationService");
 
 const OPEN_VERBS = ["abre", "abrir", "abri", "abreme", "abrieme", "abrirme"];
@@ -55,6 +56,8 @@ async function handleCommand(input, config, onMessage) {
       return `El grupo ${pack.name} no tiene aplicaciones aún 🦎`;
     }
 
+    soundService.playCommandSound();
+
     onMessage(`Ejecutando grupo ${pack.name} 🚀`);
 
     for (const app of pack.apps) {
@@ -71,6 +74,8 @@ async function handleCommand(input, config, onMessage) {
     (a) => text.includes(a.keyword) || phraseMatches(text, a.keyword)
   );
   if (app) {
+    soundService.playCommandSound();
+
     const ok = launcherService.openApp(app.executablePath);
     return ok
       ? `${config.name} abrió ${app.keyword} 🚀`

@@ -168,6 +168,18 @@ userInput.addEventListener("keydown", async (e) => {
 // ---------------------------------------------------------------
 window.noxisAPI.onShowMessage((msg) => showMessage(msg));
 
+// Reproduce el sonido del comando ejecutado (mp3/wav/ogg desde la carpeta de assets)
+window.noxisAPI.onPlaySound((filePath) => {
+  if (!filePath) return;
+  try {
+    const audio = new Audio(`file://${filePath}`);
+    audio.volume = 1;
+    audio.play().catch((err) => console.error("[Noxis] No se pudo reproducir el sonido:", err));
+  } catch (err) {
+    console.error("[Noxis] Error al crear el audio:", err);
+  }
+});
+
 window.noxisAPI.onConfigUpdated((config) => {
   chatName.textContent = config.name || "Noxis";
   applyTheme(config.isDarkMode);
