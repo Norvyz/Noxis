@@ -124,6 +124,9 @@ function renderModelCards(info) {
         <span class="modelVer">${model.version}</span>
       </div>
       <div class="modelDesc">${model.description}</div>
+      ${model.id === "precise" ? `
+      <div class="modelWarn">⚠️ Requiere mucha memoria y puede no cargar en todos los equipos.
+      Se recomienda el modelo <b>Estándar</b> para uso diario.</div>` : ""}
       <div class="modelCardFooter">
         <span class="modelStatus ${statusCls}">${statusText}</span>
         <button class="secondaryBtn modelDownloadBtn" data-action="download" ${installed ? "disabled" : ""} >
@@ -202,8 +205,12 @@ window.configAPI.onModelStatus((info) => {
     active: info.type === cachedModelInfo.active ? info.type : cachedModelInfo.active
   };
   if (info.status === "ready") {
-    // el activo puede acabarse de instalar → seguir marcándolo activo
-    fresh.active = cachedModelInfo.active;
+    // Descarga terminada: limpiar el estado transitorio y recargar la info
+    // real desde el main para que la tarjeta pase de "Procesando…" a
+    // "Instalado" (o "En uso") sin tener que reabrir la configuración.
+    delete modelStatuses[info.type];
+    loadModelSection();
+    return;
   }
   renderModelCards(fresh);
   renderModelProgress();
@@ -242,6 +249,21 @@ document.querySelectorAll(".tabBtn").forEach((btn) => {
     document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
   });
 });
+
+// ---------------------------------------------------------------
+// Enlaces externos (GitHub / Discord): abren en el navegador real
+// del sistema, no dentro de la ventana de Electron.
+// ---------------------------------------------------------------
+const externalLinks = document.getElementById("externalLinks");
+if (externalLinks) {
+  externalLinks.addEventListener("click", (e) => {
+    const link = e.target.closest("a");
+    if (!link) return;
+    e.preventDefault();
+    const url = link.getAttribute("href");
+    if (url) window.configAPI.openExternal(url);
+  });
+}
 
 // ---------------------------------------------------------------
 // Carga inicial

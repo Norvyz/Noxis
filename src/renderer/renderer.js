@@ -340,12 +340,35 @@ async function initVosk() {
   console.log("[Noxis] Cargando modelo Vosk desde:", modelUrl);
   showVoiceStatus("Cargando modelo de voz...");
 
+  // El modelo "Preciso" (~2.5GB ya extraído) puede tardar mucho o, en
+  // equipos/entornos con poca memoria disponible, hacer que el Web Worker
+  // de vosk-browser se quede colgado sin nunca resolver ni rechazar la
+  // promesa (falla "silenciosa" típica de WASM sin memoria suficiente).
+  // Sin un límite de tiempo, eso deja al usuario viendo "Cargando modelo
+  // de voz..." para siempre. Con el timeout, al menos se lo avisamos.
+  const LOAD_TIMEOUT_MS = 120000; // 2 min — de sobra para 2.5GB en disco/SSD
+
   try {
-    voskModel = await window.Vosk.createModel(modelUrl, 0);
+    voskModel = await Promise.race([
+      window.Vosk.createModel(modelUrl, 0),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), LOAD_TIMEOUT_MS)
+      ),
+    ]);
     voskReady = true;
     console.log("[Noxis] Vosk modelo listo");
     return true;
   } catch (err) {
+    if (err && err.message === "timeout") {
+      console.error("[Noxis] Timeout cargando el modelo Vosk (posible falta de memoria)");
+      showMessage(
+        "El modelo de voz no cargó a tiempo. Si elegiste \"Preciso\", puede que tu PC " +
+        "no tenga memoria suficiente para cargarlo en el navegador interno — probá con " +
+        "el modelo \"Estándar\" desde Configuración."
+      );
+      hideVoiceStatus();
+      return false;
+    }
     console.error("[Noxis] Error cargando modelo Vosk:", err);
     if (/fetch|network|load/i.test(String(err && err.message))) {
       showVoiceStatus("Descarga aún en curso, reintentando…");

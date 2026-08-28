@@ -177,6 +177,12 @@
 <a href="https://github.com/Norvyz">
   <img src="https://github.com/Norvyz.png?size=100" alt="Norvyz" width="100" />
 </a>
+<a href="https://github.com/Bryanmgomez">
+  <img src="https://github.com/Bryanmgomez.png?size=100" alt="Bryanmgomez" width="100" />
+</a>
+<a href="https://github.com/Rizuz">
+  <img src="https://github.com/Rizuz.png?size=100" alt="Rizuz" width="100" />
+</a>
 
 </div>
 

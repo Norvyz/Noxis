@@ -15,7 +15,7 @@
 // src/main/main.js
 // Punto de entrada. Equivalente a App.xaml.cs + MainWindow.xaml.cs (parte "orquestadora")
 
-const { app, ipcMain, dialog, session } = require("electron");
+const { app, ipcMain, dialog, session, shell } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const windows = require("./windows");
@@ -273,4 +273,13 @@ ipcMain.handle("config:reset", () => {
 
 ipcMain.handle("config:get-path", () => {
   return configService.getConfigPath();
+});
+
+// Abre un enlace externo en el navegador del sistema (no dentro de la app)
+ipcMain.handle("open-external", (event, url) => {
+  if (typeof url !== "string") return false;
+  // Solo permitimos http/https (evita abrir rutas locales o protocolos raros)
+  if (!/^https?:\/\//i.test(url)) return false;
+  shell.openExternal(url);
+  return true;
 });

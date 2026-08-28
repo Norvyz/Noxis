@@ -768,6 +768,17 @@ footer {
   color: var(--text-secondary);
 }
 
+.modelWarn {
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #e2a336;
+  background: rgba(226, 163, 54, 0.12);
+  border: 1px solid rgba(226, 163, 54, 0.35);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
 .modelCardFooter {
   display: flex;
   align-items: center;

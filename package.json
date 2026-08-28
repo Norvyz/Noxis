@@ -3,11 +3,14 @@
   "version": "0.1.0",
   "description": "Noxis - mascota de escritorio inteligente y open-source (version Electron)",
   "main": "src/main/main.js",
-  "author": "Norvyz",
+  "author": {
+    "name": "Norvyz",
+    "email": "norvydevs@gmail.com"
+  },
   "license": "GPL-3.0",
   "scripts": {
     "start": "electron .",
-    "dist:win": "electron-builder --win portable"
+    "dist:win": "electron-builder --win nsis"
   },
   "devDependencies": {
     "electron": "^31.0.0",
@@ -16,9 +19,39 @@
   "build": {
     "appId": "com.norvyz.noxis",
     "productName": "Noxis",
+    "copyright": "Copyright (C) 2026 Norvyz",
+    "buildVersion": "0.1.0",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
     "win": {
-      "target": "portable",
-      "icon": "assets/logo/LogoCircular.ico"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/logo/LogoCircular.ico",
+      "executableName": "Noxis",
+      "requestedExecutionLevel": "asInvoker",
+      "legalTrademarks": "Noxis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Noxis",
+      "installerIcon": "assets/logo/LogoCircular.ico",
+      "uninstallerIcon": "assets/logo/LogoCircular.ico",
+      "installerHeaderIcon": "assets/logo/LogoCircular.ico",
+      "uninstallDisplayName": "Noxis",
+      "deleteAppDataOnUninstall": false,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "artifactName": "Noxis-Setup-${version}.${ext}",
+      "license": "build/installer_license.txt"
     },
     "files": [
       "src/**/*",

@@ -27,5 +27,6 @@ contextBridge.exposeInMainWorld("configAPI", {
   downloadModel: (type) => ipcRenderer.invoke("model:download", type),
   onModelStatus: (callback) => {
     ipcRenderer.on("vosk-status", (event, info) => callback(info));
-  }
+  },
+  openExternal: (url) => ipcRenderer.invoke("open-external", url)
 });
