@@ -279,6 +279,10 @@ window.noxisAPI.onVoskStatus((info) => {
   } else if (status === "preparing") {
     showVoiceStatus(detail || "Preparando modelo...");
   } else if (status === "ready") {
+    // El modelo activo está listo. Si veníamos de un modelo distinto (o de un
+    // arranque fallido), recargamos limpio con el URL correcto en vez de
+    // quedarnos colgados en "Cargando modelo de voz".
+    if (voskModel && !voskReady) resetVoskModel();
     voskReady = true;
     showVoiceStatus("Modelo listo!");
     setTimeout(hideVoiceStatus, 2000);
@@ -325,8 +329,11 @@ async function initVosk() {
 
   const modelUrl = await getModelUrlWithRetry();
   if (!modelUrl) {
-    console.error("[Noxis] Vosk model URL no disponible aún");
-    showVoiceStatus("Sin modelo de voz…");
+    // El modelo activo aún no está instalado/listo (ej: acabamos de activar
+    // el "Preciso" y se está descargando). No fallamos en silencio: avisamos
+    // y el widget arrancará cuando llegue el evento "ready" de ese modelo.
+    console.log("[Noxis] Modelo", modelType, "aún no listo, esperando descarga...");
+    showVoiceStatus("Preparando modelo de voz…");
     return false;
   }
 
@@ -340,7 +347,11 @@ async function initVosk() {
     return true;
   } catch (err) {
     console.error("[Noxis] Error cargando modelo Vosk:", err);
-    showMessage("Error cargando modelo de voz.");
+    if (/fetch|network|load/i.test(String(err && err.message))) {
+      showVoiceStatus("Descarga aún en curso, reintentando…");
+    } else {
+      showMessage("Error cargando modelo de voz.");
+    }
     return false;
   }
 }
