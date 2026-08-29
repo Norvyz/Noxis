@@ -271,6 +271,48 @@
             <input id="bubbleDurationInput" type="number" min="2" max="60" value="8.5" step="0.5" />
           </label>
         </div>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Marco al ejecutar acciones</h3>
+            <p class="cardSub">Noxis se rodea con un cuadro cada vez que abre o cierra una aplicación.</p>
+          </div>
+          <div class="switchRow">
+            <div class="switchLabel">
+              <span class="switchTitle">Resaltar acciones</span>
+              <span class="switchSub">Muestra el marco alrededor de Noxis al ejecutar un comando</span>
+            </div>
+            <label class="switch">
+              <input id="actionHighlightCheck" type="checkbox" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div id="actionHighlightControls">
+            <label class="field">
+              <span>Color del marco</span>
+              <div class="colorRow">
+                <input id="actionHighlightColorInput" type="color" value="#22c55e" />
+                <span id="actionHighlightColorText" class="colorText">#22c55e</span>
+              </div>
+            </label>
+
+            <label class="field">
+              <span>Grosor del borde: <b id="actionHighlightWidthValue">5</b> px</span>
+              <input id="actionHighlightWidthRange" type="range" min="1" max="20" step="1" value="5" />
+            </label>
+
+            <label class="field noBottom">
+              <span>Redondez del cuadro: <b id="actionHighlightRadiusValue">30</b> px</span>
+              <input id="actionHighlightRadiusRange" type="range" min="0" max="120" step="1" value="30" />
+            </label>
+
+            <div class="highlightPreviewWrap">
+              <div id="highlightPreview" class="highlightPreview"></div>
+              <span class="rangeHint">Vista previa del marco. 0 px = cuadrado perfecto; un valor alto lo hace más redondo.</span>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- TAB VOZ -->
@@ -312,6 +354,7 @@
           </div>
           <ul class="commandList">
             <li><span class="commandKey">"{"nombre}" abre discord"</span><span class="commandVal">Abre una aplicación o grupo configurado</span></li>
+            <li><span class="commandKey">"{"nombre}" cierra discord"</span><span class="commandVal">Cierra una aplicación configurada</span></li>
             <li><span class="commandKey">"{"nombre"} desactívate"</span><span class="commandVal">Noxis deja de escuchar (dormida)</span></li>
             <li><span class="commandKey">"{"nombre} vuelve / despierta"</span><span class="commandVal">Reanuda la escucha</span></li>
             <li><span class="commandKey">"hola", "¿cómo estás?", "adiós"</span><span class="commandVal">Conversación básica</span></li>
@@ -457,6 +500,7 @@
           <button id="addAppBrowseBtn" class="secondaryBtn"><span class="btnIcon" data-icon="folder"></span> Examinar</button>
         </div>
       </label>
+      <p class="hint">Con esta misma palabra clave podrás abrirla ("Noxis abre discord") o cerrarla ("Noxis cierra discord").</p>
       <div class="modalActions">
         <button id="addAppCancelBtn" class="secondaryBtn">Cancelar</button>
         <button id="addAppConfirmBtn" class="primaryBtn">Agregar</button>
@@ -543,6 +587,7 @@
           <button id="addPackAppBrowseBtn" class="secondaryBtn"><span class="btnIcon" data-icon="folder"></span> Examinar</button>
         </div>
       </label>
+      <p class="hint">Las apps del grupo se cierran una a una con su palabra clave y el comando "cierra".</p>
       <div class="modalActions">
         <button id="addPackAppCancelBtn" class="secondaryBtn">Cancelar</button>
         <button id="addPackAppConfirmBtn" class="primaryBtn">Agregar</button>

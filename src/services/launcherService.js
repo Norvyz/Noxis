@@ -70,4 +70,60 @@ function delay(seconds) {
   return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 }
 
-module.exports = { openApp, delay };
+// ---------------------------------------------------------------
+// Cerrar aplicaciones
+// ---------------------------------------------------------------
+
+// Deduce el nombre del proceso a partir de la ruta del ejecutable.
+// Solo sirve para .exe/.com; los accesos directos (.lnk) o scripts no
+// tienen un nombre de proceso obvio. Se conserva processName como
+// respaldo para configs antiguas que ya lo tuvieran guardado.
+function guessProcessName(executablePath) {
+  const target = String(executablePath || "").trim().replace(/^"|"$/g, "");
+  if (!target) return null;
+  const base = path.basename(target);
+  const ext = path.extname(base).toLowerCase();
+  if (ext === ".exe" || ext === ".com") return base;
+  return null;
+}
+
+// Envía el cierre real del proceso por nombre de imagen.
+// Windows: taskkill /IM <proceso> /F /T  |  Linux/macOS: pkill -f
+// taskkill devuelve 0 si al menos un proceso fue terminado.
+function killByName(processName) {
+  return new Promise((resolve) => {
+    let cmd = "taskkill";
+    let args = ["/IM", processName, "/F", "/T"];
+    if (process.platform !== "win32") {
+      cmd = "pkill";
+      args = ["-f", processName];
+    }
+    try {
+      const child = spawn(cmd, args, { windowsHide: true, stdio: "ignore" });
+      child.on("error", () => resolve({ ok: false }));
+      child.on("close", (code) => resolve({ ok: code === 0 }));
+    } catch (err) {
+      console.error("[launcherService] fallo cerrando proceso:", err);
+      resolve({ ok: false });
+    }
+  });
+}
+
+/**
+ * Cierra la aplicación asociada a un AppCommand.
+ * Usa processName si fue configurado; si no, lo deduce de executablePath.
+ * Resuelve { ok, processName, reason } donde reason puede ser
+ * "no-process" (no hay nombre de proceso conocido) o undefined.
+ */
+async function closeApp(app) {
+  const processName = String(
+    (app && (app.processName || guessProcessName(app.executablePath))) || ""
+  ).trim();
+  if (!processName) {
+    return { ok: false, reason: "no-process" };
+  }
+  const result = await killByName(processName);
+  return { ok: result.ok, processName };
+}
+
+module.exports = { openApp, delay, closeApp, guessProcessName };

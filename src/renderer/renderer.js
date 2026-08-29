@@ -27,6 +27,7 @@ const sendBtn = document.getElementById("sendBtn");
 const userInput = document.getElementById("userInput");
 const voiceStatus = document.getElementById("voiceStatus");
 const voiceStatusText = document.getElementById("voiceStatusText");
+const actionHighlight = document.getElementById("actionHighlight");
 
 let hideBubbleTimeout = null;
 let hideChatTypingTimeout = null;
@@ -35,6 +36,13 @@ let isListening = false; // captura de audio activa (mic encendido → siempre e
 let isDormant = false;   // dormida: solo reacciona a su nombre
 let isStarting = false;
 let micEnabled = false;
+
+// Configuración del marco que rodea a Noxis al ejecutar una acción
+let actionHighlightEnabled = true;
+let actionHighlightColor = "#22c55e";
+let actionHighlightWidth = 5;   // px de grosor del borde
+let actionHighlightRadius = 30; // px de redondez (0 = cuadrado)
+let hideHighlightTimeout = null;
 
 // Iconos SVG
 closeChatBtn.innerHTML = window.NoxisIcons.close(16);
@@ -51,6 +59,50 @@ function showMessage(message) {
   hideBubbleTimeout = setTimeout(() => {
     speechBubble.classList.remove("visible");
   }, bubbleDuration);
+}
+
+// ---------------------------------------------------------------
+// Marco de resaltado al ejecutar una acción
+// ---------------------------------------------------------------
+function hexToRgba(hex, alpha) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || "");
+  if (!m) return `rgba(34, 197, 94, ${alpha})`;
+  return `rgba(${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}, ${alpha})`;
+}
+
+function updateActionHighlightConfig(cfg) {
+  if (!cfg) return;
+  actionHighlightEnabled = cfg.actionHighlightEnabled !== false;
+  if (typeof cfg.actionHighlightColor === "string" && /^#[0-9a-fA-F]{6}$/.test(cfg.actionHighlightColor)) {
+    actionHighlightColor = cfg.actionHighlightColor;
+  }
+  if (typeof cfg.actionHighlightWidth === "number" && cfg.actionHighlightWidth >= 1) {
+    actionHighlightWidth = cfg.actionHighlightWidth;
+  }
+  if (typeof cfg.actionHighlightRadius === "number" && cfg.actionHighlightRadius >= 0) {
+    actionHighlightRadius = cfg.actionHighlightRadius;
+  }
+  applyActionHighlightStyles();
+}
+
+function applyActionHighlightStyles() {
+  if (!actionHighlight) return;
+  actionHighlight.style.borderColor = actionHighlightColor;
+  actionHighlight.style.borderWidth = `${actionHighlightWidth}px`;
+  actionHighlight.style.borderRadius = `${actionHighlightRadius}px`;
+  actionHighlight.style.boxShadow = `0 0 20px ${hexToRgba(actionHighlightColor, 0.4)}`;
+  actionHighlight.classList.toggle("disabled", !actionHighlightEnabled);
+}
+
+function showActionHighlight() {
+  if (!actionHighlight || !actionHighlightEnabled) return;
+  clearTimeout(hideHighlightTimeout);
+  actionHighlight.classList.remove("visible");
+  void actionHighlight.offsetWidth; // reinicia la animación
+  actionHighlight.classList.add("visible");
+  hideHighlightTimeout = setTimeout(() => {
+    actionHighlight.classList.remove("visible");
+  }, 2600);
 }
 
 // ---------------------------------------------------------------
@@ -228,6 +280,9 @@ userInput.addEventListener("keydown", async (e) => {
 // ---------------------------------------------------------------
 window.noxisAPI.onShowMessage((msg) => showMessage(msg));
 
+// Cuando Noxis ejecuta una acción (abrir/cerrar app) → marco de resaltado
+window.noxisAPI.onActionHighlight(() => showActionHighlight());
+
 // Reproduce el sonido del comando ejecutado (mp3/wav/ogg desde la carpeta de assets)
 window.noxisAPI.onPlaySound((filePath) => {
   if (!filePath) return;
@@ -246,6 +301,7 @@ window.noxisAPI.onConfigUpdated((config) => {
   if (typeof config.bubbleDuration === "number" && config.bubbleDuration > 0) {
     bubbleDuration = config.bubbleDuration;
   }
+  updateActionHighlightConfig(config);
   if (config.skinPath) {
     noxisImage.src = `file://${config.skinPath}`;
     chatAvatar.src = `file://${config.skinPath}`;
@@ -309,6 +365,7 @@ window.noxisAPI.getConfig().then((cfg) => {
   if (typeof cfg.bubbleDuration === "number" && cfg.bubbleDuration > 0) {
     bubbleDuration = cfg.bubbleDuration;
   }
+  updateActionHighlightConfig(cfg);
   if (cfg.voiceModel) modelType = cfg.voiceModel;
 }).catch(() => {});
 window.noxisAPI.getMicEnabled().then((enabled) => {

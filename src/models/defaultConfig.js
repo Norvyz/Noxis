@@ -35,12 +35,16 @@ function createDefaultConfig() {
     startCorner: "bottom-right",
     alwaysOnTop: false,
     showInTaskbar: true,
-    voiceSimilarityThreshold: 0.72
+    voiceSimilarityThreshold: 0.72,
+    actionHighlightEnabled: true,
+    actionHighlightColor: "#22c55e",
+    actionHighlightWidth: 5,
+    actionHighlightRadius: 30
   };
 }
 
-function createAppCommand(keyword, executablePath) {
-  return { keyword, executablePath };
+function createAppCommand(keyword, executablePath, processName = null) {
+  return { keyword, executablePath, processName };
 }
 
 function createAppPack(name, keyword, delaySeconds = 3) {

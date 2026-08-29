@@ -48,12 +48,19 @@ function load() {
     // Normaliza campos numéricos a rangos válidos (evita configs corruptas)
     const nums = [
       ["bubbleDuration", 2000, 20000],
-      ["voiceSimilarityThreshold", 0.4, 1]
+      ["voiceSimilarityThreshold", 0.4, 1],
+      ["actionHighlightWidth", 1, 30],
+      ["actionHighlightRadius", 0, 200]
     ];
     for (const [key, min, max] of nums) {
       const v = parsed[key];
       if (typeof v !== "number" || !isFinite(v)) parsed[key] = createDefaultConfig()[key];
       else parsed[key] = Math.min(max, Math.max(min, v));
+    }
+    // Valida el color del resaltado (formato #rrggbb); si no, usa el default
+    if (typeof parsed.actionHighlightColor !== "string" ||
+        !/^#[0-9a-fA-F]{6}$/.test(parsed.actionHighlightColor)) {
+      parsed.actionHighlightColor = createDefaultConfig().actionHighlightColor;
     }
     // merge con default por si se agregan campos nuevos en el futuro
     return { ...createDefaultConfig(), ...parsed };

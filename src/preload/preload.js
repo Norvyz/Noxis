@@ -42,5 +42,8 @@ contextBridge.exposeInMainWorld("noxisAPI", {
   },
   onPlaySound: (callback) => {
     ipcRenderer.on("play-sound", (event, filePath) => callback(filePath));
+  },
+  onActionHighlight: (callback) => {
+    ipcRenderer.on("action-highlight", () => callback());
   }
 });

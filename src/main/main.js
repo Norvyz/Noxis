@@ -155,9 +155,17 @@ ipcMain.handle("get-response", async (event, rawText) => {
 
   // 4) Comandos de apps/grupos SOLO si se mencionó el nombre
   if (hasWake) {
-    const packResponse = await packService.handleCommand(text, config, (msg) => {
-      win?.webContents.send("show-message", msg);
-    });
+    const packResponse = await packService.handleCommand(
+      text,
+      config,
+      (msg) => {
+        win?.webContents.send("show-message", msg);
+      },
+      () => {
+        // Acción ejecutada con éxito → el widget muestra el marco de resaltado
+        win?.webContents.send("action-highlight");
+      }
+    );
     if (packResponse !== null) {
       console.log("[MAIN] Respuesta de pack:", packResponse);
       return packResponse;

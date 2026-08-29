@@ -93,6 +93,16 @@ const inlineConfirm = document.getElementById("inlineConfirm");
 const confirmYes = document.getElementById("confirmYes");
 const confirmNo = document.getElementById("confirmNo");
 
+const actionHighlightCheck = document.getElementById("actionHighlightCheck");
+const actionHighlightControls = document.getElementById("actionHighlightControls");
+const actionHighlightColorInput = document.getElementById("actionHighlightColorInput");
+const actionHighlightColorText = document.getElementById("actionHighlightColorText");
+const actionHighlightWidthRange = document.getElementById("actionHighlightWidthRange");
+const actionHighlightWidthValue = document.getElementById("actionHighlightWidthValue");
+const actionHighlightRadiusRange = document.getElementById("actionHighlightRadiusRange");
+const actionHighlightRadiusValue = document.getElementById("actionHighlightRadiusValue");
+const highlightPreview = document.getElementById("highlightPreview");
+
 let inlineConfirmCallback = null;
 
 let pendingExePath = null;
@@ -351,6 +361,15 @@ async function loadConfig() {
   similarityRange.value = sim;
   similarityValue.textContent = Number(sim).toFixed(2);
 
+  actionHighlightCheck.checked = config.actionHighlightEnabled !== false;
+  actionHighlightColorInput.value = /^#[0-9a-fA-F]{6}$/.test(config.actionHighlightColor)
+    ? config.actionHighlightColor : "#22c55e";
+  actionHighlightWidthRange.value = (typeof config.actionHighlightWidth === "number" && config.actionHighlightWidth >= 1)
+    ? config.actionHighlightWidth : 5;
+  actionHighlightRadiusRange.value = (typeof config.actionHighlightRadius === "number" && config.actionHighlightRadius >= 0)
+    ? config.actionHighlightRadius : 30;
+  updateHighlightControls();
+
   const applySkin = (p) => {
     const src = p ? `file://${p}` : "../../assets/noxis.png";
     skinPreview.src = src;
@@ -503,6 +522,33 @@ confirmNo.addEventListener("click", () => {
 similarityRange.addEventListener("input", () => {
   similarityValue.textContent = Number(similarityRange.value).toFixed(2);
 });
+
+// Marco de resaltado (tab Comportamiento)
+function updateHighlightControls() {
+  actionHighlightControls.classList.toggle("hidden", !actionHighlightCheck.checked);
+  actionHighlightWidthValue.textContent = actionHighlightWidthRange.value;
+  actionHighlightRadiusValue.textContent = actionHighlightRadiusRange.value;
+  const color = actionHighlightColorInput.value;
+  actionHighlightColorText.textContent = color;
+  if (highlightPreview) {
+    highlightPreview.style.borderColor = color;
+    highlightPreview.style.borderWidth = `${actionHighlightWidthRange.value}px`;
+    highlightPreview.style.borderRadius = `${actionHighlightRadiusRange.value}px`;
+    highlightPreview.style.boxShadow = `0 0 18px ${hexToRgba(color, 0.4)}`;
+  }
+}
+
+// Convierte #rrggbb a rgba() para el brillo del marco
+function hexToRgba(hex, alpha) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || "");
+  if (!m) return `rgba(34, 197, 94, ${alpha})`;
+  return `rgba(${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}, ${alpha})`;
+}
+
+actionHighlightCheck.addEventListener("change", updateHighlightControls);
+actionHighlightColorInput.addEventListener("input", updateHighlightControls);
+actionHighlightWidthRange.addEventListener("input", updateHighlightControls);
+actionHighlightRadiusRange.addEventListener("input", updateHighlightControls);
 
 let lastFocused = null; // elemento con foco antes de abrir el modal (para devolverlo)
 
@@ -1000,6 +1046,11 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
   config.bubbleDuration = (!isNaN(dur) && dur > 0) ? dur : 8.5;
   config.commandSoundEnabled = commandSoundCheck.checked;
   config.voiceSimilarityThreshold = parseFloat(similarityRange.value);
+
+  config.actionHighlightEnabled = actionHighlightCheck.checked;
+  config.actionHighlightColor = actionHighlightColorInput.value;
+  config.actionHighlightWidth = parseInt(actionHighlightWidthRange.value, 10) || 5;
+  config.actionHighlightRadius = parseInt(actionHighlightRadiusRange.value, 10) || 0;
 
   const ok = await window.configAPI.saveConfig(config);
   if (ok) {

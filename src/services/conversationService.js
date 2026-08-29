@@ -201,6 +201,9 @@ const GRAMMAR_BASE = [
   // abrir
   "abre", "abrir", "abri", "abreme", "abrieme", "abrirme", "aplicaciones",
   "apps", "un", "una", "el", "la", "y",
+  // cerrar
+  "cierra", "cerrar", "cierrame", "cerrame", "cerra", "cierre",
+  "mata", "matar", "termina", "terminar", "finaliza", "finalizar",
   // desactivar / dormir
   "desactivar", "desactiva", "desactivame", "desactivate", "apagar", "apaga",
   "apagate", "dormir", "duerme", "duermete", "detente", "descansa", "deja",
