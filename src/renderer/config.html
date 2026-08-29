@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data:; connect-src 'self' https: wss: ws:; media-src 'self' https:; font-src 'self' data:;" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data:; connect-src 'self' https: wss: ws:; media-src 'self' file: https:; font-src 'self' data:;" />
   <title>Configuración - Noxis</title>
   <link rel="stylesheet" href="config.css" />
 </head>
@@ -345,6 +345,21 @@
             <input id="similarityRange" type="range" min="0.5" max="0.95" step="0.01" value="0.72" />
             <span class="rangeHint">Mientras más alto, más exacto debe ser para reconocerte; más bajo tolera más errores del micrófono.</span>
           </label>
+
+                    <div class="soundFileRow">
+            <div class="soundFileInfo">
+              <span class="switchTitle">Sonido personalizado</span>
+              <span id="commandSoundLabel" class="skinPathText">Predeterminado (sonido de Noxis)</span>
+            </div>
+            <div class="soundFileActions">
+              <button id="commandSoundBrowseBtn" class="secondaryBtn"><span class="btnIcon" data-icon="file"></span> Elegir</button>
+              <button id="commandSoundPreviewBtn" class="iconBtn" title="Reproducir sonido"><span class="btnIcon" data-icon="volume"></span></button>
+              <button id="commandSoundResetBtn" class="iconBtn danger" title="Restablecer sonido predeterminado"><span class="btnIcon" data-icon="refresh"></span></button>
+            </div>
+          </div>
+          <p class="hint">
+            Formatos compatibles: <b>MP3, WAV, OGG, M4A, AAC, FLAC, Opus y WebM</b>. Pulsa "Restablecer" para volver al sonido por defecto.
+          </p>
         </div>
 
         <div class="card">
@@ -438,6 +453,7 @@
           </div>
           <ul class="creditsList">
             <li><span class="creditIcon" data-icon-credit="code"></span><span><b>Noxis</b> — desarrollado por <b>Norvyz</b></span></li>
+            <li><span class="creditIcon" data-icon-credit="users"></span><span><b>Bryan</b> y <b>Rizuz</b> — gracias por su participación en el desarrollo</span></li>
             <li><span class="creditIcon" data-icon-credit="mic"></span><span><b>Vosk</b> — reconocimiento de voz offline</span></li>
             <li><span class="creditIcon" data-icon-credit="shield"></span><span><b>Electron</b> — aplicación de escritorio</span></li>
           </ul>

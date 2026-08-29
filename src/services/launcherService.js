@@ -1,35 +1,10 @@
-// Noxis
-// Copyright (C) 2026 Norvyz
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-// You should have received a copy of the GNU General Public License
-// along with this program. If not, see <https://www.gnu.org/licenses/>.
-
-// src/services/launcherService.js
-// Equivalente a los Process.Start(...) de MainWindow.xaml.cs
-
 const fs = require("fs");
 const path = require("path");
-const { spawn } = require("child_process");
+const { spawn, execFile } = require("child_process");
 const { shell } = require("electron");
 
-// Extensiones que se resuelven como un único archivo ejecutable.
 const EXE_EXTS = [".exe", ".bat", ".cmd", ".ps1", ".lnk", ".com"];
 
-/**
- * Abre un ejecutable o ruta con su aplicación asociada.
- * - Si el argumento existe y es ejecutable (.exe/.bat/...): spawn directo.
- * - Si es un .lnk (acceso directo): se abre con la app asociada.
- * - Si apunta a una carpeta o archivo: shell.openPath (definida por el sistema).
- * Devuelve true si se pudo lanzar, false si la ruta no existe.
- */
 function openApp(executablePath) {
   const target = String(executablePath || "").trim();
   if (!target) return false;
@@ -43,10 +18,8 @@ function openApp(executablePath) {
       return false;
     }
 
-    // Limpiamos comillas dobles que a veces traen los paths desde el diálogo
     const clean = target.replace(/^"|"$/g, "");
 
-    // Acceso directo o carpeta/archivo no-ejecutable → lo maneja el SO
     if (ext === ".lnk" || !EXE_EXTS.includes(ext)) {
       shell.openPath(clean);
       return true;
@@ -70,14 +43,6 @@ function delay(seconds) {
   return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 }
 
-// ---------------------------------------------------------------
-// Cerrar aplicaciones
-// ---------------------------------------------------------------
-
-// Deduce el nombre del proceso a partir de la ruta del ejecutable.
-// Solo sirve para .exe/.com; los accesos directos (.lnk) o scripts no
-// tienen un nombre de proceso obvio. Se conserva processName como
-// respaldo para configs antiguas que ya lo tuvieran guardado.
 function guessProcessName(executablePath) {
   const target = String(executablePath || "").trim().replace(/^"|"$/g, "");
   if (!target) return null;
@@ -87,9 +52,71 @@ function guessProcessName(executablePath) {
   return null;
 }
 
-// Envía el cierre real del proceso por nombre de imagen.
-// Windows: taskkill /IM <proceso> /F /T  |  Linux/macOS: pkill -f
-// taskkill devuelve 0 si al menos un proceso fue terminado.
+function resolveLnkTarget(lnkPath) {
+  return new Promise((resolve) => {
+    if (process.platform !== "win32") {
+      resolve(null);
+      return;
+    }
+    const esc = String(lnkPath).replace(/'/g, "''");
+    const script =
+      `$s=(New-Object -ComObject WScript.Shell).CreateShortcut('${esc}');` +
+      `Write-Output ($s.TargetPath + '|' + $s.Arguments)`;
+
+    const psPath = systemExe(path.join("WindowsPowerShell", "v1.0", "powershell.exe"));
+    execFile(psPath, ["-NoProfile", "-NonInteractive", "-Command", script], {
+      timeout: 10000,
+      windowsHide: true
+    }, (err, stdout) => {
+      if (err) {
+        console.error("[launcherService] No se pudo resolver el acceso directo:", err.message);
+        resolve(null);
+        return;
+      }
+      const line = String(stdout || "")
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .find(Boolean);
+      if (!line) {
+        resolve(null);
+        return;
+      }
+      const sep = line.indexOf("|");
+      resolve({
+        target: sep === -1 ? line : line.slice(0, sep),
+        args: sep === -1 ? "" : line.slice(sep + 1)
+      });
+    });
+  });
+}
+
+async function processNameFromPath(executablePath) {
+  const target = String(executablePath || "").trim().replace(/^"|"$/g, "");
+  if (!target) return null;
+  const ext = path.extname(target).toLowerCase();
+  if (ext === ".exe" || ext === ".com") return path.basename(target);
+
+  if (ext === ".lnk") {
+    const info = await resolveLnkTarget(target);
+    if (!info) return null;
+
+    const procStart = /--processStart[= ]\s*"?([\w.-]+\.exe)"?/i.exec(info.args || "");
+    if (procStart) return procStart[1];
+    const tgtExt = path.extname(info.target || "").toLowerCase();
+    if (tgtExt === ".exe" || tgtExt === ".com") return path.basename(info.target);
+  }
+  return null;
+}
+
+function systemExe(name) {
+  const root = process.env.SystemRoot || process.env.windir || "C:\\Windows";
+  const candidates = [
+    path.join(root, "System32", name),
+    path.join(root, "Sysnative", name)
+  ];
+  return candidates.find((p) => fs.existsSync(p)) || name;
+}
+
 function killByName(processName) {
   return new Promise((resolve) => {
     let cmd = "taskkill";
@@ -97,10 +124,15 @@ function killByName(processName) {
     if (process.platform !== "win32") {
       cmd = "pkill";
       args = ["-f", processName];
+    } else {
+      cmd = systemExe("taskkill.exe");
     }
     try {
       const child = spawn(cmd, args, { windowsHide: true, stdio: "ignore" });
-      child.on("error", () => resolve({ ok: false }));
+      child.on("error", (err) => {
+        console.error("[launcherService] fallo ejecutando cierre:", err.message);
+        resolve({ ok: false });
+      });
       child.on("close", (code) => resolve({ ok: code === 0 }));
     } catch (err) {
       console.error("[launcherService] fallo cerrando proceso:", err);
@@ -109,17 +141,14 @@ function killByName(processName) {
   });
 }
 
-/**
- * Cierra la aplicación asociada a un AppCommand.
- * Usa processName si fue configurado; si no, lo deduce de executablePath.
- * Resuelve { ok, processName, reason } donde reason puede ser
- * "no-process" (no hay nombre de proceso conocido) o undefined.
- */
+function isShellProcess(processName) {
+  return /^explorer\.exe$/i.test(processName || "");
+}
+
 async function closeApp(app) {
-  const processName = String(
-    (app && (app.processName || guessProcessName(app.executablePath))) || ""
-  ).trim();
-  if (!processName) {
+  const saved = String((app && app.processName) || "").trim();
+  const processName = saved || (await processNameFromPath(app && app.executablePath)) || "";
+  if (!processName || isShellProcess(processName)) {
     return { ok: false, reason: "no-process" };
   }
   const result = await killByName(processName);

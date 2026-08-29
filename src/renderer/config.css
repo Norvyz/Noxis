@@ -673,6 +673,32 @@ html, body {
   white-space: nowrap;
 }
 
+/* ---------- Sonido de comando ---------- */
+
+.soundFileRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.soundFileInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.soundFileActions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 /* ---------- Selector de temas ---------- */
 
 .themeGrid {

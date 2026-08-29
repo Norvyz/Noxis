@@ -1,22 +1,3 @@
-// Noxis
-// Copyright (C) 2026 Norvyz
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-// You should have received a copy of the GNU General Public License
-// along with this program. If not, see <https://www.gnu.org/licenses/>.
-
-// src/services/conversationService.js
-// Equivalente a ConversationService.cs + wake word de MainWindow.xaml.cs
-// Noxis escucha siempre; responde normal sin necesitar el nombre,
-// pero SOLO ejecuta apps si mencionan su nombre (o variantes de pronunciación).
-
 function normalize(text) {
   return (text || "")
     .toLowerCase()
@@ -30,12 +11,9 @@ function getWakeWord(config) {
   return normalize(config.name || "noxis");
 }
 
-// Interjecciones iniciales que suelen preceder al nombre en voz
+
 const LEADING_FILLERS = ["hey", "ey", "oye", "eh", "ej"];
 
-// ---------------------------------------------------------------
-// Fuzzy matching (distancia de Levenshtein tolerante a errores del modelo)
-// ---------------------------------------------------------------
 function editDistance(a, b) {
   const m = a.length;
   const n = b.length;
@@ -55,11 +33,6 @@ function editDistance(a, b) {
   return prev[n];
 }
 
-// ¿"token" es aproximadamente igual a "target"?
-// El umbral crece con la longitud normalizando la distancia de Levenshtein.
-// Si se pasa un `threshold` explícito (0-1, similitud mínima requerida,
-// p. ej. 0.72 = se permite hasta ~28% de diferencia de caracteres), se usa
-// ese en vez del valor derivado de la longitud.
 function fuzzyClose(token, target, threshold) {
   const maxLen = Math.max(token.length, target.length);
   if (maxLen <= 3) return token === target;
@@ -75,11 +48,6 @@ function tokensOf(text) {
   return (text || "").toLowerCase().split(/\s+/).filter(Boolean);
 }
 
-// ---------------------------------------------------------------
-// Variantes de pronunciación del nombre
-// El modelo transcribe "Noxis" como "nosis", "noquis", "nokis", etc.
-// Generamos todas las posibles interpretaciones de las letras difíciles.
-// ---------------------------------------------------------------
 function wakeWordVariants(config) {
   const base = getWakeWord(config);
   if (!base) return [];
@@ -106,8 +74,6 @@ function wakeWordVariants(config) {
   return [...set].sort((a, b) => b.length - a.length);
 }
 
-// Busca el nombre (o una variante fuzzy) en CUALQUIER posición del texto.
-// Devuelve el índice del token que lo contiene o null.
 function findWakeMatch(input, config) {
   if (!input) return null;
   const tokens = tokensOf(normalize(input));
@@ -133,9 +99,6 @@ function stripWakeWord(input, config) {
   return tokens.slice(m.index + 1).join(" ");
 }
 
-// ---------------------------------------------------------------
-// "Noxis desactívate" → deja de escuchar (modo dormida)
-// ---------------------------------------------------------------
 const DEACTIVATE_VERBS = [
   "desactivar", "desactiva", "desactivarme", "desactivame", "desactivate",
   "apagar", "apaga", "apagame", "dormir", "duerme", "duermete",
@@ -154,8 +117,6 @@ function isDeactivateCommand(input, config) {
   return words.some((w) => DEACTIVATE_VERBS.some((v) => w === v || fuzzyClose(w, v, threshold)));
 }
 
-// ¿El texto (tras quitar el nombre) pide "despertar"/"vuelve"? Se usa para
-// confirmar la salida del modo dormida con un mensaje coherente.
 const WAKE_VERBS = [
   "vuelve", "despierta", "despertate", "despertar", "despiertate",
   "hablar", "habla", "escucha", "escucharme", "escuchas", "activa",
@@ -182,12 +143,6 @@ function getWakeResponse(config) {
   return pick(WAKE_RESPONSES(config.name || "Noxis"));
 }
 
-// ---------------------------------------------------------------
-// Vocabulario (gramática) para el recognizer de Vosk
-// Restringe la salida del modelo a palabras útiles: sube muchísimo la
-// precisión de comandos como "abre trabajo" o "desactívame".
-// Las palabras que el modelo no conoce simplemente se ignoran (no rompen).
-// ---------------------------------------------------------------
 const GRAMMAR_BASE = [
   // saludos / despedidas
   "hola", "buenas", "buenos", "dias", "tardes", "noches", "chao", "adios",
@@ -215,12 +170,11 @@ const GRAMMAR_BASE = [
 function buildGrammar(config) {
   const words = new Set(GRAMMAR_BASE);
 
-  // Variantes del nombre (el modelo no las conoce → las ignora, sin daño)
+
   for (const v of wakeWordVariants(config)) {
     for (const w of v.split(/\s+/)) words.add(w);
   }
 
-  // Keywords de apps y grupos: se dividen en palabras individuales
   const addKeywords = (list) => {
     for (const item of list || []) {
       for (const kw of [item.keyword, item.name]) {
@@ -283,7 +237,6 @@ function pick(list) {
   return list[Math.floor(Math.random() * list.length)];
 }
 
-// Devuelve null si no hay ningún patrón → el caller decide (silencio o fallback)
 function getConversationalResponse(rawText, config) {
   const text = normalize(rawText);
   const name = config.name || "Noxis";

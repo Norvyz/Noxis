@@ -1,20 +1,3 @@
-// Noxis
-// Copyright (C) 2026 Norvyz
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-// You should have received a copy of the GNU General Public License
-// along with this program. If not, see <https://www.gnu.org/licenses/>.
-
-// src/main/main.js
-// Punto de entrada. Equivalente a App.xaml.cs + MainWindow.xaml.cs (parte "orquestadora")
-
 const { app, ipcMain, dialog, session, shell } = require("electron");
 const path = require("path");
 const fs = require("fs");
@@ -25,6 +8,7 @@ const configService = require("../services/configService");
 const packService = require("../services/packService");
 const conversationService = require("../services/conversationService");
 const voskService = require("../services/voskService");
+const soundService = require("../services/soundService");
 
 app.commandLine.appendSwitch("enable-features", "SpeechRecognition");
 app.commandLine.appendSwitch("no-sandbox");
@@ -43,8 +27,8 @@ if (fs.existsSync(legacyDir) && !fs.existsSync(dataDir)) {
 app.setPath("userData", dataDir);
 
 let config = null;
-let voskServiceStart = null;   // promise que resuelve cuando el servidor/modelo está listo
-let voiceState = "active"; // "active" | "dormant"
+let voskServiceStart = null;
+let voiceState = "active"; 
 
 function reloadConfig() {
   config = configService.load();
@@ -54,8 +38,7 @@ function reloadConfig() {
 app.whenReady().then(() => {
   reloadConfig();
 
-  // Permite getUserMedia (necesario para listar/usar el micrófono en la
-  // ventana de configuración). Sin esto Electron puede bloquear el acceso.
+
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
     callback(permission === "media");
   });
@@ -71,9 +54,6 @@ app.whenReady().then(() => {
     app.setLoginItemSettings({ openAtLogin: true });
   }
 
-  // Iniciar servidor de modelo Vosk en background (sin auto-descarga:
-  // el usuario elige el modelo en Configuración). El promise se guarda
-  // para que el renderer pueda esperar la URL sin condiciones de carrera.
   voskServiceStart = voskService.start(config.voiceModel)
     .then((url) => {
       console.log("[MAIN] Vosk model URL:", url);
@@ -87,7 +67,7 @@ app.whenReady().then(() => {
   setTimeout(async () => {
     const win = windows.getMainWindow();
     if (!win) return;
-    await voskServiceStart; // espera a que el servidor/modelo esté listo (o falle)
+    await voskServiceStart;
     if (config.allowMicrophone && !voskService.getModelUrl()) {
       win.webContents.send(
         "show-message",
@@ -107,15 +87,12 @@ app.whenReady().then(() => {
 });
 
 app.on("window-all-closed", () => {
-  // Noxis vive en la bandeja; no cerramos la app al cerrar la ventana.
+
   if (process.platform !== "darwin") {
-    // en Windows/Linux dejamos correr por el tray, no llamamos app.quit()
+
   }
 });
 
-// ---------------------------------------------------------------
-// IPC: ventana principal (widget)
-// ---------------------------------------------------------------
 
 ipcMain.handle("get-response", async (event, rawText) => {
   const win = windows.getMainWindow();
@@ -123,7 +100,7 @@ ipcMain.handle("get-response", async (event, rawText) => {
 
   const hasWake = conversationService.isWakeWordDetected(rawText, config);
 
-  // 1) "Noxis desactívate" (o similar) → modo dormida
+
   if (hasWake && conversationService.isDeactivateCommand(rawText, config)) {
     voiceState = "dormant";
     win?.webContents.send("voice-state", "dormant");
@@ -131,7 +108,7 @@ ipcMain.handle("get-response", async (event, rawText) => {
     return "Ok, dejo de escuchar 💤 Llámame por mi nombre para activarme.";
   }
 
-  // 2) Dormida: solo reacciona al nombre, todo lo demás es silencio
+
   if (voiceState === "dormant") {
     if (!hasWake) {
       console.log("[MAIN] dormida + sin nombre → silencio");
@@ -140,20 +117,19 @@ ipcMain.handle("get-response", async (event, rawText) => {
     voiceState = "active";
     win?.webContents.send("voice-state", "active");
     console.log("[MAIN] → despertó con nombre");
-    // Si además pide "volver/despertar/escuchar", confirma con un mensaje claro
+
     if (conversationService.isWakeCommand(rawText, config)) {
       return conversationService.getWakeResponse(config);
     }
   }
 
-  // 3) Saber si se mencionó el nombre (para permitir abrir apps)
+
   let text = rawText.trim();
   if (hasWake) {
     text = conversationService.stripWakeWord(rawText, config);
     console.log("[MAIN] Texto tras stripWakeWord:", text);
   }
 
-  // 4) Comandos de apps/grupos SOLO si se mencionó el nombre
   if (hasWake) {
     const packResponse = await packService.handleCommand(
       text,
@@ -162,7 +138,7 @@ ipcMain.handle("get-response", async (event, rawText) => {
         win?.webContents.send("show-message", msg);
       },
       () => {
-        // Acción ejecutada con éxito → el widget muestra el marco de resaltado
+
         win?.webContents.send("action-highlight");
       }
     );
@@ -172,14 +148,12 @@ ipcMain.handle("get-response", async (event, rawText) => {
     }
   }
 
-  // 5) Conversación normal (con o sin nombre)
   const response = conversationService.getConversationalResponse(text, config);
   if (response) {
     console.log("[MAIN] Respuesta conversacional:", response);
     return response;
   }
 
-  // 6) Sin patrón: si la llamaron por nombre hay feedback; si no, silencio
   if (hasWake) {
     return conversationService.getNamedFallback();
   }
@@ -191,9 +165,6 @@ ipcMain.handle("open-config-window", () => {
   windows.createConfigWindow();
 });
 
-// Arrastre del widget: mueve la ventana a la posición del cursor.
-// X/Y son coordenadas de pantalla; offsetX/offsetY = dónde se agarró la
-// imagen respecto a la esquina superior de la ventana.
 ipcMain.handle("drag-window", (event, screenX, screenY, offsetX, offsetY) => {
   const win = windows.getMainWindow();
   if (!win) return;
@@ -211,7 +182,6 @@ ipcMain.handle("model:get-info", () => ({
   active: voskService.getActiveType()
 }));
 
-// Activa un modelo de voz (descargado o no) y avisa al widget
 ipcMain.handle("model:set-active", (event, type) => {
   if (type !== "small" && type !== "precise") return false;
   config.voiceModel = type;
@@ -221,7 +191,6 @@ ipcMain.handle("model:set-active", (event, type) => {
   return true;
 });
 
-// Descarga un modelo en background; el progreso llega por "vosk-status"
 ipcMain.handle("model:download", (event, type) => {
   if (type !== "small" && type !== "precise") return false;
   Promise.resolve(voskService.download(type)).catch((err) => {
@@ -230,17 +199,12 @@ ipcMain.handle("model:download", (event, type) => {
   return true;
 });
 
-// ---------------------------------------------------------------
-// IPC: ventana de configuración
-// ---------------------------------------------------------------
 
-// Vocabulario/gramática para el recognizer de Vosk (mejora la precisión)
 ipcMain.handle("grammar:get", () => conversationService.buildGrammar(config));
 
 ipcMain.handle("config:get", () => reloadConfig());
 
-// Re-aplica las preferencias de ventana del widget (siempre encima,
-// mostrar en taskbar) cada vez que cambia la configuración.
+
 function applyWindowSettings(cfg) {
   const win = windows.getMainWindow();
   if (!win) return;
@@ -285,6 +249,23 @@ ipcMain.handle("config:choose-executable", async () => {
   return result.filePaths[0];
 });
 
+ipcMain.handle("config:choose-sound", async () => {
+  const win = windows.getConfigWindow();
+  const result = await dialog.showOpenDialog(win, {
+    filters: [
+      { name: "Audio", extensions: ["mp3", "wav", "ogg", "oga", "opus", "m4a", "aac", "flac", "webm"] },
+      { name: "Todos los archivos", extensions: ["*"] }
+    ],
+    properties: ["openFile"]
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return result.filePaths[0];
+});
+
+ipcMain.handle("sound:preview", (event, filePath) => {
+  return soundService.previewSound(filePath);
+});
+
 ipcMain.handle("config:reset", () => {
   const fresh = require("../models/defaultConfig").createDefaultConfig();
   config = fresh;
@@ -298,10 +279,8 @@ ipcMain.handle("config:get-path", () => {
   return configService.getConfigPath();
 });
 
-// Abre un enlace externo en el navegador del sistema (no dentro de la app)
 ipcMain.handle("open-external", (event, url) => {
   if (typeof url !== "string") return false;
-  // Solo permitimos http/https (evita abrir rutas locales o protocolos raros)
   if (!/^https?:\/\//i.test(url)) return false;
   shell.openExternal(url);
   return true;

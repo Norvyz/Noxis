@@ -85,6 +85,10 @@ const showInTaskbarCheck = document.getElementById("showInTaskbarCheck");
 const startCornerSelect = document.getElementById("startCornerSelect");
 const bubbleDurationInput = document.getElementById("bubbleDurationInput");
 const commandSoundCheck = document.getElementById("commandSoundCheck");
+const commandSoundLabel = document.getElementById("commandSoundLabel");
+const commandSoundBrowseBtn = document.getElementById("commandSoundBrowseBtn");
+const commandSoundPreviewBtn = document.getElementById("commandSoundPreviewBtn");
+const commandSoundResetBtn = document.getElementById("commandSoundResetBtn");
 const similarityRange = document.getElementById("similarityRange");
 const similarityValue = document.getElementById("similarityValue");
 const sidebarAvatarImg = document.getElementById("sidebarAvatarImg");
@@ -357,6 +361,7 @@ async function loadConfig() {
   bubbleDurationInput.value = (typeof config.bubbleDuration === "number" && config.bubbleDuration > 0)
     ? config.bubbleDuration : 8.5;
   commandSoundCheck.checked = config.commandSoundEnabled !== false;
+  updateCommandSoundLabel();
   const sim = (typeof config.voiceSimilarityThreshold === "number") ? config.voiceSimilarityThreshold : 0.72;
   similarityRange.value = sim;
   similarityValue.textContent = Number(sim).toFixed(2);
@@ -453,6 +458,42 @@ async function loadMicDevices() {
 micSelect.addEventListener("change", () => {
   config.selectedMicrophoneId = micSelect.value;
   config.selectedMicrophoneName = micSelect.selectedOptions[0]?.textContent || null;
+});
+
+// ---------------------------------------------------------------
+// Sonido de comando personalizado
+// ---------------------------------------------------------------
+function updateCommandSoundLabel() {
+  commandSoundLabel.textContent = config.commandSoundPath
+    ? config.commandSoundPath
+    : "Predeterminado (sonido de Noxis)";
+}
+
+commandSoundBrowseBtn.addEventListener("click", async () => {
+  const filePath = await window.configAPI.chooseSound();
+  if (!filePath) return;
+  config.commandSoundPath = filePath;
+  updateCommandSoundLabel();
+});
+
+commandSoundPreviewBtn.addEventListener("click", () => {
+  window.configAPI.previewSound(config.commandSoundPath);
+});
+
+commandSoundResetBtn.addEventListener("click", () => {
+  config.commandSoundPath = null;
+  updateCommandSoundLabel();
+});
+
+window.configAPI.onPlaySound((filePath) => {
+  if (!filePath) return;
+  try {
+    const audio = new Audio(`file://${filePath}`);
+    audio.volume = 1;
+    audio.play().catch((err) => console.error("[Noxis] No se pudo reproducir el sonido:", err));
+  } catch (err) {
+    console.error("[Noxis] Error al crear el audio:", err);
+  }
 });
 
 // ---------------------------------------------------------------

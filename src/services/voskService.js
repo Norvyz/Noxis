@@ -1,21 +1,3 @@
-// Noxis
-// Copyright (C) 2026 Norvyz
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-// You should have received a copy of the GNU General Public License
-// along with this program. If not, see <https://www.gnu.org/licenses/>.
-
-// src/services/voskService.js
-// Descarga modelo Vosk (.zip), extrae, reempaqueta como .tar.gz, sirve por HTTP.
-// Soporta dos modelos: "small" (ligero, 40MB) y "precise" (preciso, ~1.5GB).
-
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
@@ -24,8 +6,6 @@ const { app, BrowserWindow } = require("electron");
 
 const MODEL_DIR_NAME = "vosk-model-es";
 
-// Puerto fijo para que el navegador (vosk-browser) cachee el modelo extraído
-// en OPFS y no lo re-extraiga en cada arranque. Si está ocupado, cae a aleatorio.
 const FIXED_PORT = 47821;
 
 const MODELS = {
@@ -53,9 +33,6 @@ let localServer = null;
 let localPort = 0;
 let activeType = "small";
 
-// ---------------------------------------------------------------
-// Directorio del modelo
-// ---------------------------------------------------------------
 function getModelRoot() {
   return path.join(app.getPath("userData"), MODEL_DIR_NAME);
 }
@@ -69,8 +46,6 @@ function isInstalled(type) {
   return fs.existsSync(path.join(getModelDir(type), ".ready"));
 }
 
-// Migración: el modelo "small" solía vivir en la raíz vosk-model-es/.
-// Lo movemos a su subcarpeta para soportar varios modelos.
 function migrateLegacySmall() {
   const root = getModelRoot();
   const legacyTar = path.join(root, "model.tar.gz");
@@ -91,9 +66,6 @@ function migrateLegacySmall() {
   console.log("[vosk] Modelo small migrado a subcarpeta");
 }
 
-// ---------------------------------------------------------------
-// Notificaciones (broadcast a todas las ventanas)
-// ---------------------------------------------------------------
 function sendStatus(info) {
   const wins = BrowserWindow.getAllWindows();
   wins.forEach((w) => {
@@ -101,9 +73,6 @@ function sendStatus(info) {
   });
 }
 
-// ---------------------------------------------------------------
-// Servidor HTTP local — sirve el .tar.gz de cada modelo
-// ---------------------------------------------------------------
 function startLocalServer() {
   return new Promise((resolve, reject) => {
     if (localServer && localPort) {
@@ -152,9 +121,6 @@ function startLocalServer() {
   });
 }
 
-// ---------------------------------------------------------------
-// Descargar .zip
-// ---------------------------------------------------------------
 function downloadFile(url, destPath, onProgress) {
   return new Promise((resolve, reject) => {
     const protocol = url.startsWith("https") ? https : http;
@@ -190,9 +156,6 @@ function downloadFile(url, destPath, onProgress) {
   });
 }
 
-// ---------------------------------------------------------------
-// Convertir .zip → .tar.gz
-// ---------------------------------------------------------------
 async function convertZipToTarGz(zipPath, tarPath, modelDir) {
   const extract = require("extract-zip");
   const tar = require("tar");
@@ -232,9 +195,6 @@ async function convertZipToTarGz(zipPath, tarPath, modelDir) {
   console.log("[vosk] Conversión completada");
 }
 
-// ---------------------------------------------------------------
-// Asegurar un modelo (descargar + convertir + marcar listo)
-// ---------------------------------------------------------------
 async function ensureModel(type) {
   const cfg = MODELS[type] || MODELS.small;
   const modelDir = getModelDir(type);
@@ -289,9 +249,6 @@ async function ensureModel(type) {
   return { downloaded: true, already: false };
 }
 
-// ---------------------------------------------------------------
-// API pública
-// ---------------------------------------------------------------
 function getModelUrl() {
   if (!localPort) return null;
   if (!isInstalled(activeType)) return null;

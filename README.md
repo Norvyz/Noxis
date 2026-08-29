@@ -180,8 +180,8 @@
 <a href="https://github.com/Bryanmgomez">
   <img src="https://github.com/Bryanmgomez.png?size=100" alt="Bryanmgomez" width="100" />
 </a>
-<a href="https://github.com/Rizuz">
-  <img src="https://github.com/iRizuz_.png?size=100" alt="1Rizuz" width="100" />
+<a href="https://github.com/1Rizuz">
+  <img src="https://github.com/1Rizuz.png?size=100" alt="1Rizuz" width="100" />
 </a>
 
 </div>
