@@ -31,8 +31,12 @@ let lastPlay = 0;
 /**
  * Reproduce el sonido de comando. Le avisa al widget (renderer) que
  * suene el archivo vía HTML5 Audio. Si no existe el archivo no hace nada.
+ * @param {object} [config] configuración opcional; si commandSoundEnabled
+ *   es false (o falta), no se reproduce.
  */
-function playCommandSound() {
+function playCommandSound(config) {
+  if (!config || config.commandSoundEnabled === false) return;
+
   // Evita reproducir decenas de veces si llegan varios comandos seguidos
   const now = Date.now();
   if (now - lastPlay < 400) return;

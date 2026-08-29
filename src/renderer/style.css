@@ -3,31 +3,163 @@
 /* Tema claro (por defecto) */
 :root {
   --noxis-accent: #2f61bf;
-  --noxis-accent-dark: #2f61bf;
-  --bubble-bg: rgba(255, 255, 255, 0.96);
+  --noxis-accent-dark: #24539f;
+  --noxis-accent-soft: rgba(47, 97, 191, 0.14);
+  --bubble-bg: rgba(255, 255, 255, 0.97);
   --bubble-text: #172133;
-  --card-bg: rgba(255, 255, 255, 0.94);
+  --card-bg: rgba(255, 255, 255, 0.96);
   --card-text: #1A1D21;
   --card-border: rgba(0, 0, 0, 0.10);
   --input-bg: rgba(0, 0, 0, 0.05);
   --hover-bg: rgba(0, 0, 0, 0.06);
-  --btn-text: #0c131f;
+  --btn-text: #ffffff;
   --placeholder: #8A8A8A;
+  --online: #22c55e;
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.28);
 }
 
-/* Tema oscuro: letras blancas + acento azul (en vez de verde) */
-body.dark {
+/* Tema claro */
+body.theme-light {
+  --noxis-accent: #2f61bf;
+  --noxis-accent-dark: #24539f;
+  --noxis-accent-soft: rgba(47, 97, 191, 0.14);
+  --bubble-bg: rgba(255, 255, 255, 0.97);
+  --bubble-text: #172133;
+  --card-bg: rgba(255, 255, 255, 0.96);
+  --card-text: #1A1D21;
+  --card-border: rgba(0, 0, 0, 0.10);
+  --input-bg: rgba(0, 0, 0, 0.05);
+  --hover-bg: rgba(0, 0, 0, 0.06);
+  --btn-text: #ffffff;
+  --placeholder: #8A8A8A;
+  --online: #22c55e;
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.28);
+}
+
+/* Tema oscuro */
+body.theme-dark {
   --noxis-accent: #4C9AFF;
-  --noxis-accent-dark: #3C84E8;
-  --bubble-bg: rgba(24, 26, 31, 0.96);
+  --noxis-accent-dark: #6FAEFF;
+  --noxis-accent-soft: rgba(76, 154, 255, 0.18);
+  --bubble-bg: rgba(24, 26, 31, 0.97);
   --bubble-text: #FFFFFF;
-  --card-bg: rgba(28, 30, 35, 0.94);
+  --card-bg: rgba(28, 30, 35, 0.97);
   --card-text: #FFFFFF;
-  --card-border: rgba(255, 255, 255, 0.12);
+  --card-border: rgba(255, 255, 255, 0.14);
   --input-bg: rgba(255, 255, 255, 0.08);
-  --hover-bg: rgba(255, 255, 255, 0.10);
-  --btn-text: #FFFFFF;
+  --hover-bg: rgba(255, 255, 255, 0.12);
+  --btn-text: #0c131f;
   --placeholder: #9AA0A6;
+  --online: #4ade80;
+  --shadow-soft: 0 12px 34px rgba(0, 0, 0, 0.55);
+}
+
+/* Tema obsidiana */
+body.theme-obsidian {
+  --noxis-accent: #A78BFA;
+  --noxis-accent-dark: #C4B5FD;
+  --noxis-accent-soft: rgba(167, 139, 250, 0.18);
+  --bubble-bg: rgba(23, 23, 31, 0.97);
+  --bubble-text: #EFEEF6;
+  --card-bg: rgba(28, 28, 40, 0.97);
+  --card-text: #EFEEF6;
+  --card-border: rgba(167, 139, 250, 0.22);
+  --input-bg: rgba(255, 255, 255, 0.08);
+  --hover-bg: rgba(255, 255, 255, 0.12);
+  --btn-text: #0c131f;
+  --placeholder: #9C9BAE;
+  --online: #34D399;
+  --shadow-soft: 0 12px 34px rgba(0, 0, 0, 0.6);
+}
+
+/* Tema medianoche */
+body.theme-midnight {
+  --noxis-accent: #22D3EE;
+  --noxis-accent-dark: #67E8F9;
+  --noxis-accent-soft: rgba(34, 211, 238, 0.18);
+  --bubble-bg: rgba(16, 30, 46, 0.97);
+  --bubble-text: #E4F0FA;
+  --card-bg: rgba(20, 38, 58, 0.97);
+  --card-text: #E4F0FA;
+  --card-border: rgba(34, 211, 238, 0.24);
+  --input-bg: rgba(255, 255, 255, 0.08);
+  --hover-bg: rgba(255, 255, 255, 0.12);
+  --btn-text: #04121b;
+  --placeholder: #8AA3B8;
+  --online: #34D399;
+  --shadow-soft: 0 12px 34px rgba(0, 0, 0, 0.6);
+}
+
+/* Tema bosque */
+body.theme-forest {
+  --noxis-accent: #34D399;
+  --noxis-accent-dark: #6EE7B7;
+  --noxis-accent-soft: rgba(52, 211, 153, 0.18);
+  --bubble-bg: rgba(21, 37, 26, 0.97);
+  --bubble-text: #EAF3EC;
+  --card-bg: rgba(25, 47, 33, 0.97);
+  --card-text: #EAF3EC;
+  --card-border: rgba(52, 211, 153, 0.24);
+  --input-bg: rgba(255, 255, 255, 0.08);
+  --hover-bg: rgba(255, 255, 255, 0.12);
+  --btn-text: #04130b;
+  --placeholder: #93A99A;
+  --online: #4ADE80;
+  --shadow-soft: 0 12px 34px rgba(0, 0, 0, 0.6);
+}
+
+/* Tema atardecer */
+body.theme-sunset {
+  --noxis-accent: #FB8B60;
+  --noxis-accent-dark: #FCA16F;
+  --noxis-accent-soft: rgba(251, 139, 96, 0.18);
+  --bubble-bg: rgba(41, 25, 21, 0.97);
+  --bubble-text: #F7EEE9;
+  --card-bg: rgba(48, 30, 24, 0.97);
+  --card-text: #F7EEE9;
+  --card-border: rgba(251, 139, 96, 0.24);
+  --input-bg: rgba(255, 255, 255, 0.08);
+  --hover-bg: rgba(255, 255, 255, 0.12);
+  --btn-text: #1c0d08;
+  --placeholder: #B29B8E;
+  --online: #4ADE80;
+  --shadow-soft: 0 12px 34px rgba(0, 0, 0, 0.6);
+}
+
+/* Tema rosa */
+body.theme-rose {
+  --noxis-accent: #D94693;
+  --noxis-accent-dark: #C0267D;
+  --noxis-accent-soft: rgba(217, 70, 147, 0.16);
+  --bubble-bg: rgba(255, 255, 255, 0.97);
+  --bubble-text: #3A2232;
+  --card-bg: rgba(255, 255, 255, 0.97);
+  --card-text: #3A2232;
+  --card-border: rgba(217, 70, 147, 0.20);
+  --input-bg: rgba(217, 70, 147, 0.06);
+  --hover-bg: rgba(217, 70, 147, 0.08);
+  --btn-text: #ffffff;
+  --placeholder: #8E6B83;
+  --online: #22c55e;
+  --shadow-soft: 0 10px 30px rgba(58, 34, 50, 0.28);
+}
+
+/* Tema océano */
+body.theme-ocean {
+  --noxis-accent: #1F75C4;
+  --noxis-accent-dark: #1A63A9;
+  --noxis-accent-soft: rgba(31, 117, 196, 0.16);
+  --bubble-bg: rgba(255, 255, 255, 0.97);
+  --bubble-text: #14263B;
+  --card-bg: rgba(255, 255, 255, 0.97);
+  --card-text: #14263B;
+  --card-border: rgba(31, 117, 196, 0.20);
+  --input-bg: rgba(31, 117, 196, 0.06);
+  --hover-bg: rgba(31, 117, 196, 0.08);
+  --btn-text: #ffffff;
+  --placeholder: #64788C;
+  --online: #22c55e;
+  --shadow-soft: 0 10px 30px rgba(20, 38, 59, 0.28);
 }
 
 * {
@@ -41,7 +173,7 @@ html, body {
   height: 100%;
   background: transparent;
   overflow: hidden;
-  font-family: "Segoe UI", system-ui, sans-serif;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
   user-select: none;
 }
 
@@ -52,8 +184,13 @@ html, body {
 }
 
 @keyframes noxisFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+  0%, 100% { transform: translateY(0) rotate(-1.5deg) scale(1); }
+  50% { transform: translateY(-8px) rotate(1.5deg) scale(1.008); }
+}
+
+@keyframes noxisHalo {
+  0%, 100% { opacity: 0.55; transform: translateX(-50%) scale(1); }
+  50% { opacity: 0.9; transform: translateX(-50%) scale(1.12); }
 }
 
 @keyframes noxisPoke {
@@ -62,82 +199,119 @@ html, body {
   100% { transform: scale(1); }
 }
 
+/* Halo de presencia pulsante detrás de Noxis */
+#noxisHalo {
+  position: absolute;
+  bottom: 26px;
+  left: 50%;
+  width: 210px;
+  height: 210px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--noxis-accent-soft) 0%, transparent 65%);
+  filter: blur(6px);
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 0;
+  animation: noxisHalo 3.4s ease-in-out infinite;
+}
+
 /* Pila vertical (transcripción arriba + Noxis abajo), centrada al fondo */
 #voiceStack {
   position: absolute;
-  bottom: 4px;
+  bottom: 6px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  z-index: 1;
 }
 
 #noxisImage {
-  /* Tamaño fijo: cuadrado de 210x210 px */
   width: 210px;
   height: 210px;
   object-fit: contain;
   cursor: pointer;
-  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.25));
-  animation: noxisFloat 3.2s ease-in-out infinite;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.32));
+  animation: noxisFloat 3.8s ease-in-out infinite; /* flotación tipo respiración */
+  transition: transform 0.25s ease, filter 0.25s ease;
+}
+
+#noxisImage:hover {
+  transform: scale(1.04) translateY(-2px);
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.4));
 }
 
 #noxisImage.poke {
-  animation: noxisPoke 0.28s ease;
+  animation: noxisPoke 0.3s ease;
 }
 
-/* ---------- Burbuja de mensajes ambientales ---------- */
+/* ---------- Tarjeta de mensaje (burbuja) ---------- */
 
 .bubble {
   position: absolute;
-  top: 6px;
-  left: 6px;
-  right: 6px;
-  max-width: 300px;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px) scale(0.94);
+  max-width: 280px;
   white-space: normal;
   background: var(--bubble-bg);
   color: var(--bubble-text);
-  padding: 10px 14px;
-  border-radius: 16px 16px 16px 4px;
+  padding: 13px 18px;
+  border-radius: 6px 20px 20px 20px; /* burbuja cómica asimétrica */
   font-size: 13px;
-  line-height: 1.45;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  line-height: 1.5;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--card-border);
   -webkit-app-region: no-drag;
   z-index: 20;
+  text-align: center;
 
   opacity: 0;
-  transform: translateY(6px) scale(0.96);
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.24s ease, transform 0.32s cubic-bezier(0.34, 1.56, 0.4, 1); /* spring */
+}
+
+.bubble::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: -9px;
+  width: 12px;
+  height: 12px;
+  background: var(--bubble-bg);
+  border-left: 1px solid var(--card-border);
+  border-bottom: 1px solid var(--card-border);
+  border-radius: 2px 0 0 0;
+  transform: rotate(45deg);
 }
 
 .bubble.visible {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: translateX(-50%) translateY(0) scale(1);
 }
 
 /* ---------- Chat card ---------- */
 
 .chat-card {
   position: absolute;
-  bottom: 12px;
+  bottom: 14px;
   left: 50%;
-  width: 260px;
+  width: 288px;
   background: var(--card-bg);
   color: var(--card-text);
   border: 1px solid var(--card-border);
-  border-radius: 14px;
-  backdrop-filter: blur(6px);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  border-radius: 24px;
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-soft);
   -webkit-app-region: no-drag;
   overflow: hidden;
 
   opacity: 0;
-  transform: translateX(-50%) translateY(10px) scale(0.97);
+  transform: translateX(-50%) translateY(14px) scale(0.95);
   pointer-events: none;
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition: opacity 0.22s ease, transform 0.26s cubic-bezier(0.34, 1.35, 0.44, 1);
 }
 
 .chat-card.open {
@@ -147,33 +321,188 @@ html, body {
 }
 
 .chat-header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--noxis-accent);
-  border-bottom: 1px solid var(--card-border);
+  padding: 10px 12px 10px 13px;
+  color: #fff;
+  background-image: linear-gradient(135deg, var(--noxis-accent), var(--noxis-accent-dark));
+  overflow: hidden;
+}
+
+/* Ruido sutil de fondo en el header (premium) */
+.chat-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.16;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+}
+
+.chat-header > * {
+  position: relative;
+  z-index: 1;
+}
+
+.chat-user {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.chat-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  flex-shrink: 0;
+}
+
+.chat-userMeta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+#chatName {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.chat-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+}
+
+.chat-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--online);
+  box-shadow: 0 0 6px var(--online);
+  animation: onlinePulse 2s ease-in-out infinite;
+}
+
+@keyframes onlinePulse {
+  0%, 100% { box-shadow: 0 0 3px var(--online); }
+  50% { box-shadow: 0 0 9px var(--online); }
+}
+
+.chat-header .icon-btn {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.chat-header .icon-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.chat-body {
+  padding: 10px 12px;
+  max-height: 180px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scrollbar-width: thin;
+}
+
+/* Burbujas de mensaje */
+.chat-msg {
+  display: flex;
+}
+
+.chat-msg--user {
+  justify-content: flex-end;
+}
+
+.chat-msg--noxis {
+  justify-content: flex-start;
+}
+
+.chat-msg-bubble {
+  max-width: 82%;
+  padding: 8px 11px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  border-radius: 16px;
+  word-break: break-word;
+  animation: msgIn 0.22s cubic-bezier(0.34, 1.4, 0.44, 1);
+}
+
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(5px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.chat-msg--noxis .chat-msg-bubble {
+  background: var(--input-bg);
+  color: var(--card-text);
+  border-bottom-left-radius: 5px;
+}
+
+.chat-msg--user .chat-msg-bubble {
+  background: linear-gradient(135deg, var(--noxis-accent), var(--noxis-accent-dark));
+  color: #fff;
+  border-bottom-right-radius: 5px;
+}
+
+/* Indicador de escritura (typing) */
+.dotTyping {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+}
+
+.dotTyping i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--noxis-accent);
+  animation: typingDot 1.2s ease-in-out infinite;
+}
+
+.dotTyping i:nth-child(2) { animation-delay: 0.15s; }
+.dotTyping i:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes typingDot {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
 }
 
 .chat-inputRow {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px;
+  padding: 4px 10px 12px;
 }
 
 #userInput {
   flex: 1;
-  height: 30px;
-  border: none;
+  height: 34px;
+  border: 1px solid transparent;
   outline: none;
   background: var(--input-bg);
-  border-radius: 8px;
-  padding: 0 10px;
+  border-radius: 14px;
+  padding: 0 12px;
   font-size: 13px;
   color: var(--card-text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#userInput:focus {
+  border-color: var(--noxis-accent);
+  box-shadow: 0 0 0 3px var(--noxis-accent-soft); /* glow */
 }
 
 #userInput::placeholder {
@@ -184,14 +513,14 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   border: none;
-  border-radius: 8px;
+  border-radius: 9px;
   background: transparent;
   color: var(--card-text);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.1s ease;
 }
 
 .icon-btn:hover {
@@ -199,17 +528,23 @@ html, body {
 }
 
 .icon-btn:active {
-  transform: scale(0.92);
+  transform: scale(0.9);
 }
 
 .send-btn {
-  background: var(--noxis-accent);
-  color: var(--btn-text);
+  background: linear-gradient(135deg, var(--noxis-accent), var(--noxis-accent-dark));
+  color: #fff;
+  box-shadow: 0 3px 10px var(--noxis-accent-soft);
 }
 
 .send-btn:hover {
-  background: var(--noxis-accent-dark);
+  background: linear-gradient(135deg, var(--noxis-accent-dark), var(--noxis-accent-dark));
   color: #fff;
+  transform: translateY(-1px);
+}
+
+.send-btn:active {
+  transform: scale(0.92);
 }
 
 /* ---------- Estado de voz ---------- */
@@ -217,16 +552,16 @@ html, body {
 .voice-status {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   background: var(--card-bg);
   color: var(--noxis-accent);
-  padding: 6px 14px;
-  border-radius: 20px;
+  padding: 7px 16px;
+  border-radius: 22px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   border: 1px solid var(--card-border);
-  backdrop-filter: blur(6px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-soft);
   -webkit-app-region: no-drag;
   white-space: nowrap;
   max-width: 280px;
@@ -234,9 +569,9 @@ html, body {
   text-overflow: ellipsis;
 
   opacity: 0;
-  transform: translateY(6px) scale(0.95);
+  transform: translateY(8px) scale(0.93);
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.34, 1.35, 0.44, 1);
 }
 
 .voice-status.visible {
@@ -246,20 +581,44 @@ html, body {
 
 .voice-status.hidden {
   opacity: 0;
-  transform: translateY(6px) scale(0.95);
+  transform: translateY(8px) scale(0.93);
   pointer-events: none;
 }
 
 .voice-dot {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: #E05B5B;
   flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(224, 91, 91, 0.8);
   animation: dotBlink 0.8s ease-in-out infinite;
 }
 
 @keyframes dotBlink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.2; }
+}
+
+/* Accesibilidad: reducir/deactivar animaciones si el usuario lo prefiere */
+@media (prefers-reduced-motion: reduce) {
+  #noxisHalo,
+  #noxisImage,
+  .chat-msg-bubble,
+  .dotTyping i,
+  .chat-status-dot,
+  .voice-dot {
+    animation: none !important;
+  }
+  .bubble,
+  .chat-card,
+  .voice-status {
+    transition: opacity 0.1s ease;
+  }
+}
+
+/* Foco visible (nunca outline:none sin alternativa) */
+.icon-btn:focus-visible {
+  outline: 2px solid var(--noxis-accent);
+  outline-offset: 2px;
 }

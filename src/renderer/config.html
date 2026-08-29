@@ -7,151 +7,443 @@
   <link rel="stylesheet" href="config.css" />
 </head>
 <body>
-  <header>
-    <h1><span id="gearIcon" class="inline-icon"></span> Configuración de Noxis</h1>
-    <nav id="tabs">
-      <button class="tabBtn active" data-tab="general">General</button>
-      <button class="tabBtn" data-tab="apps">Aplicaciones</button>
-      <button class="tabBtn" data-tab="packs">Grupos</button>
-    </nav>
-  </header>
+  <div class="appShell">
 
-  <main>
-    <!-- TAB GENERAL -->
-    <section id="tab-general" class="tab active">
-      <label class="field">
-        <span>Nombre / palabra clave</span>
-        <input id="nameInput" type="text" placeholder="Noxis" />
-      </label>
-
-      <div class="switchRow">
-        <div class="switchLabel">
-          <span class="switchTitle">Iniciar con Windows</span>
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="sidebar">
+      <div class="sidebarBrand">
+        <div class="sidebarAvatar">
+          <img id="sidebarAvatarImg" src="../../assets/noxis.png" alt="Noxis" draggable="false" />
         </div>
-        <label class="switch">
-          <input id="autoStartCheck" type="checkbox" />
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <div class="switchRow">
-        <div class="switchLabel">
-          <span class="switchTitle">Permitir micrófono (comandos de voz)</span>
-        </div>
-        <label class="switch">
-          <input id="micCheck" type="checkbox" />
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <p class="hint">
-        Reconocimiento de voz offline (Vosk). Di el nombre de Noxis seguido de un comando para interactuar por voz.
-      </p>
-
-      <div class="sectionHeader">
-        <h3>Modelo de voz</h3>
-      </div>
-      <p class="sectionHint">
-        Elige cuánto espacio quieres usar. Toca uno para activarlo; si no está descargado, se descargará automáticamente.
-      </p>
-      <div id="modelCards" class="modelCards"></div>
-      <p id="modelProgress" class="modelProgress hidden"></p>
-
-      <div id="micDeviceRow" class="micDeviceRow hidden">
-        <label class="field">
-          <span>Selecciona tu micrófono</span>
-          <div class="micSelectRow">
-            <select id="micSelect"></select>
-            <button id="refreshMicBtn" class="iconBtn" title="Detectar micrófonos"></button>
-          </div>
-        </label>
-      </div>
-
-      <div class="switchRow">
-        <div class="switchLabel">
-          <span class="switchTitle">Tema oscuro</span>
-          <span class="switchSub">Letras blancas y acento azul sobre fondo oscuro</span>
-        </div>
-        <label class="switch">
-          <input id="themeCheck" type="checkbox" />
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <div class="skinRow">
-        <img id="skinPreview" src="../../assets/noxis.png" alt="preview" />
-        <div class="skinInfo">
-          <button id="changeSkinBtn" class="secondaryBtn">
-            <span class="btnIcon" data-icon="folder"></span> Cambiar skin…
-          </button>
-          <span id="skinPathLabel" class="skinPathText">Sin skin personalizada</span>
+        <div class="brandText">
+          <span class="brandTitle">Noxis</span>
+          <span class="brandSub">Configuración</span>
         </div>
       </div>
 
-      <div class="links" id="externalLinks">
-        <a href="https://github.com/Norvyz/Noxis">
-          <span class="btnIcon" data-icon="link"></span> GitHub
-        </a>
-        <a href="https://discord.gg/Qa5X9HQZ5x">
-          <span class="btnIcon" data-icon="chat"></span> Discord
-        </a>
-      </div>
-    </section>
-
-    <!-- TAB APPS -->
-    <section id="tab-apps" class="tab">
-      <div class="sectionHeader">
-        <h3>Aplicaciones individuales</h3>
-        <button id="addAppBtn" class="primaryBtn">
-          <span class="btnIcon" data-icon="plus"></span> Agregar app
+      <nav id="tabs" class="sideNav">
+        <button class="tabBtn active" data-tab="general">
+          <span class="navIcon" data-icon-nav="general"></span>
+          <span class="navLabel">General</span>
         </button>
-      </div>
-      <p class="sectionHint">
-        Noxis abre estas apps cuando le dices su nombre seguido de la palabra clave (ej: "Noxis abre discord").
-      </p>
-      <ul id="appsList" class="itemList cardList"></ul>
-    </section>
+        <button class="tabBtn" data-tab="behavior">
+          <span class="navIcon" data-icon-nav="adjust"></span>
+          <span class="navLabel">Comportamiento</span>
+        </button>
+        <button class="tabBtn" data-tab="voice">
+          <span class="navIcon" data-icon-nav="mic"></span>
+          <span class="navLabel">Voz</span>
+        </button>
+        <button class="tabBtn" data-tab="apps">
+          <span class="navIcon" data-icon-nav="apps"></span>
+          <span class="navLabel">Aplicaciones</span>
+        </button>
+        <button class="tabBtn" data-tab="packs">
+          <span class="navIcon" data-icon-nav="packs"></span>
+          <span class="navLabel">Grupos</span>
+        </button>
+        <button class="tabBtn" data-tab="about">
+          <span class="navIcon" data-icon-nav="info"></span>
+          <span class="navLabel">Sobre Noxis</span>
+        </button>
+      </nav>
 
-    <!-- TAB PACKS -->
-    <section id="tab-packs" class="tab">
-      <div class="packsLayout">
-        <div class="packsColumn">
-          <div class="sectionHeader">
-            <h3>Tus grupos</h3>
-            <button id="addPackBtn" class="primaryBtn">
-              <span class="btnIcon" data-icon="plus"></span> Nuevo grupo
+      <div class="sidebarFooter">
+        <div class="sidebarVersion">v0.1.0</div>
+        <div class="links" id="externalLinks">
+          <a href="https://github.com/Norvyz/Noxis" title="GitHub">
+            <span class="btnIcon" data-icon="link"></span>
+          </a>
+          <a href="https://discord.gg/Qa5X9HQZ5x" title="Discord">
+            <span class="btnIcon" data-icon="chat"></span>
+          </a>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ============ CONTENIDO ============ -->
+    <main class="content">
+
+      <!-- TAB GENERAL -->
+      <section id="tab-general" class="tab active">
+        <header class="pageHeader">
+          <div class="pageHeaderText">
+            <h2>General</h2>
+            <p class="pageSub">Personaliza cómo llamas a Noxis y cómo se comporta.</p>
+          </div>
+        </header>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Identidad</h3>
+            <p class="cardSub">Cómo se llama y cómo te habla Noxis.</p>
+          </div>
+          <label class="field">
+            <span>Nombre / palabra clave</span>
+            <input id="nameInput" type="text" placeholder="Noxis" />
+          </label>
+        </div>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Arranque y micrófono</h3>
+            <p class="cardSub">Controla cómo y cuándo Noxis se activa.</p>
+          </div>
+          <div class="switchRow">
+            <div class="switchLabel">
+              <span class="switchTitle">Iniciar con Windows</span>
+              <span class="switchSub">Noxis se abrirá automáticamente al iniciar sesión</span>
+            </div>
+            <label class="switch">
+              <input id="autoStartCheck" type="checkbox" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="switchRow">
+            <div class="switchLabel">
+              <span class="switchTitle">Permitir micrófono (comandos de voz)</span>
+              <span class="switchSub">Usa tu voz para interactuar con Noxis</span>
+            </div>
+            <label class="switch">
+              <input id="micCheck" type="checkbox" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <p class="hint">
+            Reconocimiento de voz offline (Vosk). Di el nombre de Noxis seguido de un comando para interactuar por voz.
+          </p>
+
+          <div id="micDeviceRow" class="micDeviceRow hidden">
+            <label class="field noBottom">
+              <span>Selecciona tu micrófono</span>
+              <div class="micSelectRow">
+                <select id="micSelect"></select>
+                <button id="refreshMicBtn" class="iconBtn" title="Detectar micrófonos"></button>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Apariencia</h3>
+            <p class="cardSub">Elige el tema que más te guste. Se aplica a toda la interfaz y a Noxis.</p>
+          </div>
+          <div class="themeGrid">
+            <button type="button" class="themeCard" data-theme="light" aria-pressed="false">
+              <span class="themePreview">
+                <span class="themePreviewThumb thumb-light"></span>
+                <svg class="themeCheck" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+              </span>
+              <span class="themeName">Claro</span>
+            </button>
+            <button type="button" class="themeCard" data-theme="dark" aria-pressed="false">
+              <span class="themePreview">
+                <span class="themePreviewThumb thumb-dark"></span>
+                <svg class="themeCheck" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+              </span>
+              <span class="themeName">Oscuro</span>
+            </button>
+            <button type="button" class="themeCard" data-theme="obsidian" aria-pressed="false">
+              <span class="themePreview">
+                <span class="themePreviewThumb thumb-obsidian"></span>
+                <svg class="themeCheck" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+              </span>
+              <span class="themeName">Obsidiana</span>
+            </button>
+            <button type="button" class="themeCard" data-theme="midnight" aria-pressed="false">
+              <span class="themePreview">
+                <span class="themePreviewThumb thumb-midnight"></span>
+                <svg class="themeCheck" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+              </span>
+              <span class="themeName">Medianoche</span>
+            </button>
+            <button type="button" class="themeCard" data-theme="forest" aria-pressed="false">
+              <span class="themePreview">
+                <span class="themePreviewThumb thumb-forest"></span>
+                <svg class="themeCheck" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+              </span>
+              <span class="themeName">Bosque</span>
+            </button>
+            <button type="button" class="themeCard" data-theme="sunset" aria-pressed="false">
+              <span class="themePreview">
+                <span class="themePreviewThumb thumb-sunset"></span>
+                <svg class="themeCheck" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+              </span>
+              <span class="themeName">Atardecer</span>
+            </button>
+            <button type="button" class="themeCard" data-theme="rose" aria-pressed="false">
+              <span class="themePreview">
+                <span class="themePreviewThumb thumb-rose"></span>
+                <svg class="themeCheck" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+              </span>
+              <span class="themeName">Rosa</span>
+            </button>
+            <button type="button" class="themeCard" data-theme="ocean" aria-pressed="false">
+              <span class="themePreview">
+                <span class="themePreviewThumb thumb-ocean"></span>
+                <svg class="themeCheck" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+              </span>
+              <span class="themeName">Océano</span>
             </button>
           </div>
-          <p class="sectionHint">
-            Un grupo abre varias apps a la vez con una sola orden (ej: "Noxis abre trabajo").
-          </p>
-          <ul id="packsList" class="groupCards"></ul>
         </div>
 
-        <div class="packAppsColumn">
-          <div class="sectionHeader">
-            <h3 id="selectedPackTitle">Selecciona un grupo</h3>
-            <button id="addPackAppBtn" class="primaryBtn" disabled>
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Apariencia de Noxis</h3>
+            <p class="cardSub">Cambia la cara que se muestra en el escritorio.</p>
+          </div>
+          <div class="skinRow">
+            <img id="skinPreview" src="../../assets/noxis.png" alt="preview" />
+            <div class="skinInfo">
+              <button id="changeSkinBtn" class="secondaryBtn">
+                <span class="btnIcon" data-icon="folder"></span> Cambiar skin…
+              </button>
+              <span id="skinPathLabel" class="skinPathText">Sin skin personalizada</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Modelo de voz</h3>
+            <p class="cardSub">Elige cuánto espacio quieres usar. Toca uno para activarlo; si no está descargado, se descargará automáticamente.</p>
+          </div>
+          <div id="modelCards" class="modelCards"></div>
+          <div id="modelProgressWrap" class="modelProgressWrap hidden">
+            <span class="modelProgressLabel" id="modelProgressLabel"></span>
+            <progress id="modelProgress" class="modelProgressBar" max="100" value="0"></progress>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB COMPORTAMIENTO -->
+      <section id="tab-behavior" class="tab">
+        <header class="pageHeader">
+          <div class="pageHeaderText">
+            <h2>Comportamiento</h2>
+            <p class="pageSub">Ajusta cómo se muestra y se comporta Noxis en tu escritorio.</p>
+          </div>
+        </header>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Widget</h3>
+            <p class="cardSub">Personaliza la aparición y posición de Noxis.</p>
+          </div>
+          <div class="switchRow">
+            <div class="switchLabel">
+              <span class="switchTitle">Siempre encima</span>
+              <span class="switchSub">Noxis se mantiene por delante de otras ventanas</span>
+            </div>
+            <label class="switch">
+              <input id="alwaysOnTopCheck" type="checkbox" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="switchRow">
+            <div class="switchLabel">
+              <span class="switchTitle">Mostrar en la barra de tareas</span>
+              <span class="switchSub">Aparece como ventana en la barra de tareas de Windows</span>
+            </div>
+            <label class="switch">
+              <input id="showInTaskbarCheck" type="checkbox" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <label class="field">
+            <span>Posición inicial</span>
+            <select id="startCornerSelect">
+              <option value="bottom-right">Esquina inferior derecha</option>
+              <option value="bottom-left">Esquina inferior izquierda</option>
+              <option value="top-right">Esquina superior derecha</option>
+              <option value="top-left">Esquina superior izquierda</option>
+            </select>
+          </label>
+
+          <label class="field noBottom">
+            <span>Duración del mensaje (segundos)</span>
+            <input id="bubbleDurationInput" type="number" min="2" max="60" value="8.5" step="0.5" />
+          </label>
+        </div>
+      </section>
+
+      <!-- TAB VOZ -->
+      <section id="tab-voice" class="tab">
+        <header class="pageHeader">
+          <div class="pageHeaderText">
+            <h2>Comandos de voz</h2>
+            <p class="pageSub">Cómo responde Noxis a tu voz y qué sonidos reproduce.</p>
+          </div>
+        </header>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Respuesta por voz</h3>
+            <p class="cardSub">Ajusta la sensibilidad con la que Noxis reconoce tu nombre y tus órdenes.</p>
+          </div>
+          <div class="switchRow">
+            <div class="switchLabel">
+              <span class="switchTitle">Sonido de comando</span>
+              <span class="switchSub">Reproduce un sonido al ejecutar una app o un grupo</span>
+            </div>
+            <label class="switch">
+              <input id="commandSoundCheck" type="checkbox" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <label class="field noBottom">
+            <span>Umbral de similitud: <b id="similarityValue">0.72</b></span>
+            <input id="similarityRange" type="range" min="0.5" max="0.95" step="0.01" value="0.72" />
+            <span class="rangeHint">Mientras más alto, más exacto debe ser para reconocerte; más bajo tolera más errores del micrófono.</span>
+          </label>
+        </div>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Comandos integrados</h3>
+            <p class="cardSub">Frases que Noxis ya entiende de fábrica.</p>
+          </div>
+          <ul class="commandList">
+            <li><span class="commandKey">"{"nombre}" abre discord"</span><span class="commandVal">Abre una aplicación o grupo configurado</span></li>
+            <li><span class="commandKey">"{"nombre"} desactívate"</span><span class="commandVal">Noxis deja de escuchar (dormida)</span></li>
+            <li><span class="commandKey">"{"nombre} vuelve / despierta"</span><span class="commandVal">Reanuda la escucha</span></li>
+            <li><span class="commandKey">"hola", "¿cómo estás?", "adiós"</span><span class="commandVal">Conversación básica</span></li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- TAB APPS -->
+      <section id="tab-apps" class="tab">
+        <header class="pageHeader">
+          <div class="pageHeaderText">
+            <h2>Aplicaciones</h2>
+            <p class="pageSub">Noxis abre estas apps cuando le dices su nombre seguido de la palabra clave (ej: "Noxis abre discord").</p>
+          </div>
+          <div class="pageHeaderActions">
+            <button id="addAppBtn" class="primaryBtn">
               <span class="btnIcon" data-icon="plus"></span> Agregar app
             </button>
           </div>
-          <ul id="packAppsList" class="itemList cardList"></ul>
-        </div>
-      </div>
-    </section>
-  </main>
+        </header>
+        <ul id="appsList" class="itemList cardList"></ul>
+      </section>
 
-  <footer>
-    <button id="resetBtn" class="secondaryBtn dangerBtn">
-      <span class="btnIcon" data-icon="power"></span> Restablecer
-    </button>
+      <!-- TAB PACKS -->
+      <section id="tab-packs" class="tab">
+        <header class="pageHeader">
+          <div class="pageHeaderText">
+            <h2>Grupos</h2>
+            <p class="pageSub">Agrupa varias aplicaciones para abrirlas todas a la vez con una sola orden.</p>
+          </div>
+        </header>
+        <div class="packsLayout">
+          <div class="packsColumn panel">
+            <div class="sectionHeader">
+              <h3>Tus grupos</h3>
+              <button id="addPackBtn" class="primaryBtn">
+                <span class="btnIcon" data-icon="plus"></span> Nuevo grupo
+              </button>
+            </div>
+            <p class="sectionHint">
+              Un grupo abre varias apps a la vez con una sola orden (ej: "Noxis abre trabajo").
+            </p>
+            <ul id="packsList" class="groupCards"></ul>
+          </div>
+
+          <div class="packAppsColumn panel">
+            <div class="sectionHeader">
+              <h3 id="selectedPackTitle">Selecciona un grupo</h3>
+              <button id="addPackAppBtn" class="primaryBtn" disabled>
+                <span class="btnIcon" data-icon="plus"></span> Agregar app
+              </button>
+            </div>
+            <ul id="packAppsList" class="itemList cardList"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB SOBRE NOXIS -->
+      <section id="tab-about" class="tab">
+        <header class="pageHeader">
+          <div class="pageHeaderText">
+            <h2>Sobre Noxis</h2>
+            <p class="pageSub">Una mascota de escritorio que reconoce tu voz, sin internet.</p>
+          </div>
+        </header>
+
+        <div class="card aboutCard">
+          <div class="aboutHero">
+            <img src="../../assets/noxis.png" alt="Noxis" class="aboutLogo" draggable="false" />
+            <div class="aboutText">
+              <h3>Noxis <span class="aboutVersion">v0.1.0</span></h3>
+              <p>Reconocimiento de voz <b>100% offline</b> con Vosk. Tus comandos y apps nunca salen de tu PC.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Créditos</h3>
+            <p class="cardSub">Hecho con cariño y software libre.</p>
+          </div>
+          <ul class="creditsList">
+            <li><span class="creditIcon" data-icon-credit="code"></span><span><b>Noxis</b> — desarrollado por <b>Norvyz</b></span></li>
+            <li><span class="creditIcon" data-icon-credit="mic"></span><span><b>Vosk</b> — reconocimiento de voz offline</span></li>
+            <li><span class="creditIcon" data-icon-credit="shield"></span><span><b>Electron</b> — aplicación de escritorio</span></li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Licencia</h3>
+            <p class="cardSub">Software libre.</p>
+          </div>
+          <p class="licenseText">
+            Noxis se distribuye bajo la <b>GNU General Public License v3</b>. Puedes usarlo, modificarlo y
+            compartirlo libremente. Licencia: GPL-3.0.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>¿Necesitas ayuda?</h3>
+            <p class="cardSub">Únete a la comunidad o revisa el código.</p>
+          </div>
+          <div class="aboutLinks">
+            <a href="https://github.com/Norvyz/Noxis" class="linkRow">
+              <span class="btnIcon" data-icon="link"></span> GitHub
+            </a>
+            <a href="https://discord.gg/Qa5X9HQZ5x" class="linkRow">
+              <span class="btnIcon" data-icon="chat"></span> Discord
+            </a>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ============ FOOTER DE ACCIONES ============ -->
+  <footer class="actionBar">
     <span id="saveStatus" class="saveStatus"></span>
-    <button id="cancelBtn" class="secondaryBtn">Cancelar</button>
-    <button id="saveBtn" class="primaryBtn">Guardar</button>
+    <div class="actionBarBtns">
+      <button id="resetBtn" class="secondaryBtn dangerBtn">
+        <span class="btnIcon" data-icon="power"></span> Restablecer
+      </button>
+      <button id="cancelBtn" class="secondaryBtn">Cancelar</button>
+      <button id="saveBtn" class="primaryBtn">Guardar</button>
+    </div>
   </footer>
 
   <!-- MODAL: Agregar app suelta -->
-  <div id="addAppModal" class="modalOverlay">
+  <div id="addAppModal" class="modalOverlay" role="dialog" aria-modal="true" aria-label="Agregar aplicación">
     <div class="modal">
       <h3>Agregar aplicación</h3>
       <label class="field">
@@ -173,7 +465,7 @@
   </div>
 
   <!-- MODAL: Editar app suelta -->
-  <div id="editAppModal" class="modalOverlay">
+  <div id="editAppModal" class="modalOverlay" role="dialog" aria-modal="true" aria-label="Editar aplicación">
     <div class="modal">
       <h3>Editar aplicación</h3>
       <label class="field">
@@ -195,7 +487,7 @@
   </div>
 
   <!-- MODAL: Crear grupo -->
-  <div id="addPackModal" class="modalOverlay">
+  <div id="addPackModal" class="modalOverlay" role="dialog" aria-modal="true" aria-label="Crear grupo">
     <div class="modal">
       <h3>Crear grupo</h3>
       <label class="field">
@@ -218,7 +510,7 @@
   </div>
 
   <!-- MODAL: Editar grupo -->
-  <div id="editPackModal" class="modalOverlay">
+  <div id="editPackModal" class="modalOverlay" role="dialog" aria-modal="true" aria-label="Editar grupo">
     <div class="modal">
       <h3>Editar grupo</h3>
       <label class="field">
@@ -237,7 +529,7 @@
   </div>
 
   <!-- MODAL: Agregar app al grupo -->
-  <div id="addPackAppModal" class="modalOverlay">
+  <div id="addPackAppModal" class="modalOverlay" role="dialog" aria-modal="true" aria-label="Agregar app al grupo">
     <div class="modal">
       <h3>Agregar app al grupo</h3>
       <label class="field">
@@ -259,7 +551,7 @@
   </div>
 
   <!-- MODAL: Editar app del grupo -->
-  <div id="editPackAppModal" class="modalOverlay">
+  <div id="editPackAppModal" class="modalOverlay" role="dialog" aria-modal="true" aria-label="Editar app del grupo">
     <div class="modal">
       <h3>Editar app del grupo</h3>
       <label class="field">
@@ -277,6 +569,19 @@
         <button id="editPackAppCancelBtn" class="secondaryBtn">Cancelar</button>
         <button id="editPackAppConfirmBtn" class="primaryBtn">Guardar</button>
       </div>
+    </div>
+  </div>
+
+  <!-- TOASTS -->
+  <div id="toastStack" class="toastStack" aria-live="polite"></div>
+
+  <!-- CONFIRMACIÓN INLINE -->
+  <div id="inlineConfirm" class="inlineConfirm hidden" role="alertdialog" aria-live="assertive">
+    <span class="inlineConfirmText">¿Eliminar este elemento?</span>
+    <span class="inlineConfirmDesc"></span>
+    <div class="inlineConfirmBtns">
+      <button id="confirmYes" class="secondaryBtn dangerBtn">Eliminar</button>
+      <button id="confirmNo" class="secondaryBtn">Cancelar</button>
     </div>
   </div>
 

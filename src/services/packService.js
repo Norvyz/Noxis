@@ -56,7 +56,7 @@ async function handleCommand(input, config, onMessage) {
       return `El grupo ${pack.name} no tiene aplicaciones aún 🦎`;
     }
 
-    soundService.playCommandSound();
+    soundService.playCommandSound(config);
 
     onMessage(`Ejecutando grupo ${pack.name} 🚀`);
 
@@ -74,7 +74,7 @@ async function handleCommand(input, config, onMessage) {
     (a) => text.includes(a.keyword) || phraseMatches(text, a.keyword)
   );
   if (app) {
-    soundService.playCommandSound();
+    soundService.playCommandSound(config);
 
     const ok = launcherService.openApp(app.executablePath);
     return ok

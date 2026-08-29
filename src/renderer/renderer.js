@@ -20,6 +20,8 @@ const speechBubble = document.getElementById("speechBubble");
 const noxisText = document.getElementById("noxisText");
 const chatCard = document.getElementById("chatCard");
 const chatName = document.getElementById("chatName");
+const chatAvatar = document.getElementById("chatAvatar");
+const chatMessages = document.getElementById("chatMessages");
 const closeChatBtn = document.getElementById("closeChatBtn");
 const sendBtn = document.getElementById("sendBtn");
 const userInput = document.getElementById("userInput");
@@ -27,6 +29,8 @@ const voiceStatus = document.getElementById("voiceStatus");
 const voiceStatusText = document.getElementById("voiceStatusText");
 
 let hideBubbleTimeout = null;
+let hideChatTypingTimeout = null;
+let bubbleDuration = 8500; // ms que permanece la burbuja: configurable (config.bubbleDuration)
 let isListening = false; // captura de audio activa (mic encendido → siempre escucha)
 let isDormant = false;   // dormida: solo reacciona a su nombre
 let isStarting = false;
@@ -46,7 +50,7 @@ function showMessage(message) {
   clearTimeout(hideBubbleTimeout);
   hideBubbleTimeout = setTimeout(() => {
     speechBubble.classList.remove("visible");
-  }, 8500);
+  }, bubbleDuration);
 }
 
 // ---------------------------------------------------------------
@@ -74,6 +78,41 @@ function openChat() {
 function closeChat() {
   chatCard.classList.remove("open");
   userInput.blur();
+}
+
+// ---------------------------------------------------------------
+// Burbujas de mensaje dentro del chat
+// ---------------------------------------------------------------
+function addChatMessage(text, who) {
+  const row = document.createElement("div");
+  row.className = "chat-msg " + (who === "user" ? "chat-msg--user" : "chat-msg--noxis");
+  const bubble = document.createElement("span");
+  bubble.className = "chat-msg-bubble";
+  bubble.textContent = text;
+  row.appendChild(bubble);
+  chatMessages.appendChild(row);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return row;
+}
+
+function showChatTyping() {
+  clearTimeout(hideChatTypingTimeout);
+  if (document.querySelector(".chat-typing")) return;
+  const row = document.createElement("div");
+  row.className = "chat-msg chat-msg--noxis chat-typing";
+  const bubble = document.createElement("span");
+  bubble.className = "chat-msg-bubble";
+  bubble.innerHTML =
+    '<span class="dotTyping"><i></i><i></i><i></i></span>';
+  row.appendChild(bubble);
+  chatMessages.appendChild(row);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function hideChatTyping() {
+  clearTimeout(hideChatTypingTimeout);
+  const typing = document.querySelector(".chat-typing");
+  if (typing) typing.remove();
 }
 
 function pokeNoxis() {
@@ -141,15 +180,36 @@ window.addEventListener("mouseup", () => {
 
 closeChatBtn.addEventListener("click", closeChat);
 
+// Cerrar el chat al hacer clic fuera de él (accesible y predecible)
+document.addEventListener("pointerdown", (e) => {
+  if (!chatCard.classList.contains("open")) return;
+  if (chatCard.contains(e.target)) return;
+  closeChat();
+});
+
 // ---------------------------------------------------------------
 // Enviar mensaje (texto)
 // ---------------------------------------------------------------
+let isSendingText = false; // evita enviar duplicados mientras hay una petición en curso
+
 async function sendCurrentInput() {
   const text = userInput.value.trim();
-  if (!text) return;
+  if (!text || isSendingText) return;
   userInput.value = "";
-  const response = await window.noxisAPI.sendMessage(text);
-  showMessage(response);
+  isSendingText = true;
+  addChatMessage(text, "user");
+  showChatTyping();
+  try {
+    const response = await window.noxisAPI.sendMessage(text);
+    hideChatTyping();
+    if (response) {
+      addChatMessage(response, "noxis");
+      showMessage(response);
+    }
+  } finally {
+    isSendingText = false;
+    userInput.focus();
+  }
 }
 
 sendBtn.addEventListener("click", sendCurrentInput);
@@ -182,9 +242,13 @@ window.noxisAPI.onPlaySound((filePath) => {
 
 window.noxisAPI.onConfigUpdated((config) => {
   chatName.textContent = config.name || "Noxis";
-  applyTheme(config.isDarkMode);
+  applyTheme(config.theme || "light");
+  if (typeof config.bubbleDuration === "number" && config.bubbleDuration > 0) {
+    bubbleDuration = config.bubbleDuration;
+  }
   if (config.skinPath) {
     noxisImage.src = `file://${config.skinPath}`;
+    chatAvatar.src = `file://${config.skinPath}`;
   }
   micEnabled = !!config.allowMicrophone;
 
@@ -208,8 +272,12 @@ window.noxisAPI.onConfigUpdated((config) => {
   }
 });
 
-function applyTheme(isDark) {
-  document.body.classList.toggle("dark", !!isDark);
+const THEME_IDS = ["light", "dark", "obsidian", "midnight", "forest", "sunset", "rose", "ocean"];
+
+function applyTheme(themeId) {
+  const theme = THEME_IDS.includes(themeId) ? themeId : "light";
+  document.body.classList.remove(...THEME_IDS.map((t) => `theme-${t}`));
+  document.body.classList.add(`theme-${theme}`);
 }
 
 // Estado dormida/activa (decidido por el main)
@@ -227,14 +295,20 @@ window.noxisAPI.onVoiceState((state) => {
 // Carga inicial
 // ---------------------------------------------------------------
 window.noxisAPI.getSkinPath().then((skinPath) => {
-  if (skinPath) noxisImage.src = `file://${skinPath}`;
+  if (skinPath) {
+    noxisImage.src = `file://${skinPath}`;
+    chatAvatar.src = `file://${skinPath}`;
+  }
 });
 window.noxisAPI.getNoxisName().then((name) => {
   chatName.textContent = name || "Noxis";
 });
 window.noxisAPI.getConfig().then((cfg) => {
   if (!cfg) return;
-  applyTheme(cfg.isDarkMode);
+  applyTheme(cfg.theme || "light");
+  if (typeof cfg.bubbleDuration === "number" && cfg.bubbleDuration > 0) {
+    bubbleDuration = cfg.bubbleDuration;
+  }
   if (cfg.voiceModel) modelType = cfg.voiceModel;
 }).catch(() => {});
 window.noxisAPI.getMicEnabled().then((enabled) => {

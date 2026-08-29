@@ -57,21 +57,37 @@ function setWindowIcon() {
   if (configWindow) configWindow.setIcon(img);
 }
 
-function createMainWindow() {
+function createMainWindow(config) {
+  config = config || {};
   const { width: screenW, height: screenH } = screen.getPrimaryDisplay().workAreaSize;
   const winW = 320;
   const winH = 340;
+  const margin = 40;
+
+  let x = screenW - winW - margin;
+  let y = screenH - winH - margin;
+  const corner = config.startCorner || "bottom-right";
+  if (corner === "bottom-left") {
+    x = margin;
+    y = screenH - winH - margin;
+  } else if (corner === "top-right") {
+    x = screenW - winW - margin;
+    y = margin;
+  } else if (corner === "top-left") {
+    x = margin;
+    y = margin;
+  }
 
   mainWindow = new BrowserWindow({
     width: winW,
     height: winH,
-    x: screenW - winW - 40,
-    y: screenH - winH - 40,
+    x,
+    y,
     frame: false,
     transparent: true,
     resizable: false,
-    skipTaskbar: false,
-    alwaysOnTop: false,
+    skipTaskbar: !config.showInTaskbar,
+    alwaysOnTop: !!config.alwaysOnTop,
     hasShadow: false,
     icon: getIconPath(), // Ícono de la ventana principal
     webPreferences: {

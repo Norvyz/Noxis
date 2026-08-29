@@ -20,6 +20,8 @@ const path = require("path");
 const { app } = require("electron");
 const { createDefaultConfig } = require("../models/defaultConfig");
 
+const THEMES = ["light", "dark", "obsidian", "midnight", "forest", "sunset", "rose", "ocean"];
+
 function getConfigPath() {
   return path.join(app.getPath("userData"), "config.json");
 }
@@ -36,6 +38,23 @@ function load() {
   try {
     const raw = fs.readFileSync(configPath, "utf-8");
     const parsed = JSON.parse(raw);
+    // Migración: versiones antiguas usaban isDarkMode (booleano) → theme (id)
+    if (parsed.theme == null && parsed.isDarkMode != null) {
+      parsed.theme = parsed.isDarkMode ? "dark" : "light";
+    }
+    delete parsed.isDarkMode;
+    // Valida que el tema exista; si no, usa el default (light)
+    if (!THEMES.includes(parsed.theme)) parsed.theme = "light";
+    // Normaliza campos numéricos a rangos válidos (evita configs corruptas)
+    const nums = [
+      ["bubbleDuration", 2000, 20000],
+      ["voiceSimilarityThreshold", 0.4, 1]
+    ];
+    for (const [key, min, max] of nums) {
+      const v = parsed[key];
+      if (typeof v !== "number" || !isFinite(v)) parsed[key] = createDefaultConfig()[key];
+      else parsed[key] = Math.min(max, Math.max(min, v));
+    }
     // merge con default por si se agregan campos nuevos en el futuro
     return { ...createDefaultConfig(), ...parsed };
   } catch (err) {
