@@ -58,6 +58,33 @@
     },
     power(size = 15) {
       return svg(size, `<path d="M12 2v8"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/>`);
+    },
+    general(size = 18) {
+      return svg(size, `<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>`);
+    },
+    apps(size = 18) {
+      return svg(size, `<rect x="3" y="4" width="6" height="5" rx="1"/><rect x="12" y="4" width="9" height="5" rx="1"/><rect x="3" y="12" width="6" height="8" rx="1"/><rect x="12" y="12" width="9" height="8" rx="1"/>`);
+    },
+    packs(size = 18) {
+      return svg(size, `<path d="M4 7h16"/><path d="M6 7 7.5 4h9L18 7"/><path d="M6 7v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7"/><path d="M10 12h4"/>`);
+    },
+    adjust(size = 18) {
+      return svg(size, `<path d="M4 6h9"/><path d="M17 6h3"/><path d="M4 12h3"/><path d="M11 12h9"/><path d="M4 18h9"/><path d="M17 18h3"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="15" cy="18" r="2"/>`);
+    },
+    info(size = 18) {
+      return svg(size, `<circle cx="12" cy="12" r="9"/><path d="M12 8h.01"/><path d="M11 12h1v4h1"/>`);
+    },
+    code(size = 18) {
+      return svg(size, `<path d="m8 6-6 6 6 6"/><path d="m16 6 6 6-6 6"/>`);
+    },
+    shield(size = 18) {
+      return svg(size, `<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>`);
+    },
+    check(size = 18) {
+      return svg(size, `<path d="M20 6 9 17l-5-5"/>`);
+    },
+    file(size = 40) {
+      return svg(size, `<path d="M14 3v5h5"/><path d="M13 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>`);
     }
   };
 

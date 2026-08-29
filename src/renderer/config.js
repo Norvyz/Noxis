@@ -24,7 +24,6 @@ const micCheck = document.getElementById("micCheck");
 const micDeviceRow = document.getElementById("micDeviceRow");
 const micSelect = document.getElementById("micSelect");
 const refreshMicBtn = document.getElementById("refreshMicBtn");
-const themeCheck = document.getElementById("themeCheck");
 const skinPreview = document.getElementById("skinPreview");
 const skinPathLabel = document.getElementById("skinPathLabel");
 
@@ -77,7 +76,24 @@ const editPackAppCancelBtn = document.getElementById("editPackAppCancelBtn");
 
 const saveStatus = document.getElementById("saveStatus");
 const modelCards = document.getElementById("modelCards");
-const modelProgress = document.getElementById("modelProgress");
+const modelProgressWrap = document.getElementById("modelProgressWrap");
+const modelProgressLabel = document.getElementById("modelProgressLabel");
+const modelProgressBar = document.getElementById("modelProgress");
+
+const alwaysOnTopCheck = document.getElementById("alwaysOnTopCheck");
+const showInTaskbarCheck = document.getElementById("showInTaskbarCheck");
+const startCornerSelect = document.getElementById("startCornerSelect");
+const bubbleDurationInput = document.getElementById("bubbleDurationInput");
+const commandSoundCheck = document.getElementById("commandSoundCheck");
+const similarityRange = document.getElementById("similarityRange");
+const similarityValue = document.getElementById("similarityValue");
+const sidebarAvatarImg = document.getElementById("sidebarAvatarImg");
+const toastStack = document.getElementById("toastStack");
+const inlineConfirm = document.getElementById("inlineConfirm");
+const confirmYes = document.getElementById("confirmYes");
+const confirmNo = document.getElementById("confirmNo");
+
+let inlineConfirmCallback = null;
 
 let pendingExePath = null;
 let editingAppIndex = -1;
@@ -117,6 +133,8 @@ function renderModelCards(info) {
       statusCls = "warn";
     }
 
+    const pct = (downloading && st.pct != null) ? st.pct : (installed ? 100 : 0);
+
     card.innerHTML = `
       <div class="modelCardTop">
         <input type="radio" name="voiceModel" value="${model.id}" ${model.id === info.active ? "checked" : ""} />
@@ -124,13 +142,15 @@ function renderModelCards(info) {
         <span class="modelVer">${model.version}</span>
       </div>
       <div class="modelDesc">${model.description}</div>
+      <div class="modelSize">${fmtMB(model.sizeMB)} para instalar</div>
       ${model.id === "precise" ? `
       <div class="modelWarn">⚠️ Requiere mucha memoria y puede no cargar en todos los equipos.
       Se recomienda el modelo <b>Estándar</b> para uso diario.</div>` : ""}
+      <progress class="modelCardBar" max="100" value="${pct}" ${downloading ? "" : "disabled"}></progress>
       <div class="modelCardFooter">
         <span class="modelStatus ${statusCls}">${statusText}</span>
         <button class="secondaryBtn modelDownloadBtn" data-action="download" ${installed ? "disabled" : ""} >
-          ${installed ? "✓ Instalado" : "Descargar"}
+          ${installed ? "✓ Instalado" : downloading ? "En progreso" : "Descargar"}
         </button>
       </div>
     `;
@@ -145,6 +165,7 @@ function renderModelCards(info) {
       await window.configAPI.setActiveModel(model.id);
       // Si no está descargado, arranca la descarga
       if (!model.installed) {
+        showToast(`Descargando modelo ${model.label}…`, "info");
         window.configAPI.downloadModel(model.id);
       }
       renderModelCards({ models: info.models, active: model.id });
@@ -154,6 +175,7 @@ function renderModelCards(info) {
     card.querySelector(".modelDownloadBtn").addEventListener("click", (e) => {
       e.stopPropagation();
       if (model.installed) return;
+      showToast(`Descargando modelo ${model.label}…`, "info");
       window.configAPI.downloadModel(model.id);
     });
 
@@ -166,19 +188,21 @@ function renderModelProgress() {
     ([, st]) => st.status === "downloading" || st.status === "preparing"
   );
   if (!active) {
-    modelProgress.classList.add("hidden");
-    modelProgress.textContent = "";
+    modelProgressWrap.classList.add("hidden");
     return;
   }
   const [id, st] = active;
   const info = modelInfoFor(id);
   const label = info ? info.label : id;
   if (st.status === "downloading" && st.pct != null) {
-    modelProgress.textContent = `⏳ Descargando modelo ${label}: ${st.pct}%`;
-  } else {
-    modelProgress.textContent = `⏳ Preparando modelo ${label}…`;
+    modelProgressLabel.textContent = `⏳ Descargando modelo ${label}: ${st.pct}%`;
+    modelProgressBar.value = st.pct;
+  } else if (st.status === "preparing") {
+    modelProgressLabel.textContent = `⚙️ Preparando modelo ${label}…`;
+    modelProgressBar.value = 0;
+    modelProgressBar.removeAttribute("value");
   }
-  modelProgress.classList.remove("hidden");
+  modelProgressWrap.classList.remove("hidden");
 }
 
 let cachedModelInfo = null;
@@ -193,8 +217,10 @@ window.configAPI.onModelStatus((info) => {
     pct: info.pct != null ? info.pct : null
   };
   if (info.status === "error") {
-    modelProgress.textContent = `⚠️ ${info.detail || "Error con el modelo"}`;
-    modelProgress.classList.remove("hidden");
+    modelProgressLabel.textContent = `⚠️ ${info.detail || "Error con el modelo"}`;
+    modelProgressBar.removeAttribute("value");
+    modelProgressWrap.classList.remove("hidden");
+    showToast(info.detail || "Error con el modelo de voz", "error");
     return;
   }
   if (!cachedModelInfo) return;
@@ -231,11 +257,18 @@ async function loadModelSection() {
 // ---------------------------------------------------------------
 // Iconos SVG
 // ---------------------------------------------------------------
-document.getElementById("gearIcon").innerHTML = window.NoxisIcons.gear(18);
-refreshMicBtn.innerHTML = window.NoxisIcons.refresh(14);
+refreshMicBtn.innerHTML = window.NoxisIcons.refresh(15);
 document.querySelectorAll(".btnIcon").forEach((el) => {
   const name = el.dataset.icon;
   if (window.NoxisIcons[name]) el.innerHTML = window.NoxisIcons[name](14);
+});
+document.querySelectorAll(".navIcon").forEach((el) => {
+  const name = el.dataset.iconNav;
+  if (window.NoxisIcons[name]) el.innerHTML = window.NoxisIcons[name](18);
+});
+document.querySelectorAll(".creditIcon").forEach((el) => {
+  const name = el.dataset.iconCredit;
+  if (window.NoxisIcons[name]) el.innerHTML = window.NoxisIcons[name](16);
 });
 
 // ---------------------------------------------------------------
@@ -244,11 +277,32 @@ document.querySelectorAll(".btnIcon").forEach((el) => {
 document.querySelectorAll(".tabBtn").forEach((btn) => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".tabBtn").forEach((b) => b.classList.remove("active"));
-    document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
     btn.classList.add("active");
-    document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
+    switchTab(btn.dataset.tab);
   });
 });
+
+let tabTimer = null;
+function switchTab(tabId) {
+  const target = document.getElementById(`tab-${tabId}`);
+  if (!target) return;
+  const current = document.querySelector(".tab.active");
+  if (current === target) return;
+
+  clearTimeout(tabTimer);
+  if (current) {
+    current.classList.remove("active");
+    current.classList.add("tab-exit");
+  }
+  // Retraso mínimo para dejar que la animación de salida arranque
+  tabTimer = setTimeout(() => {
+    document.querySelectorAll(".tab.tab-exit").forEach((t) => t.classList.remove("tab-exit"));
+    target.classList.remove("tab-enter");
+    target.classList.add("active", "tab-enter");
+    setTimeout(() => target.classList.remove("tab-enter"), 250);
+    window.__activeTab = tabId;
+  }, 120);
+}
 
 // ---------------------------------------------------------------
 // Enlaces externos (GitHub / Discord): abren en el navegador real
@@ -257,6 +311,17 @@ document.querySelectorAll(".tabBtn").forEach((btn) => {
 const externalLinks = document.getElementById("externalLinks");
 if (externalLinks) {
   externalLinks.addEventListener("click", (e) => {
+    const link = e.target.closest("a");
+    if (!link) return;
+    e.preventDefault();
+    const url = link.getAttribute("href");
+    if (url) window.configAPI.openExternal(url);
+  });
+}
+// Enlaces del tab "Sobre Noxis"
+const aboutLinks = document.querySelector(".aboutLinks");
+if (aboutLinks) {
+  aboutLinks.addEventListener("click", (e) => {
     const link = e.target.closest("a");
     if (!link) return;
     e.preventDefault();
@@ -274,15 +339,29 @@ async function loadConfig() {
   nameInput.value = config.name;
   autoStartCheck.checked = !!config.autoStart;
   micCheck.checked = !!config.allowMicrophone;
-  themeCheck.checked = !!config.isDarkMode;
-  applyTheme(config.isDarkMode);
+  applyTheme(config.theme || "light");
 
-  if (config.skinPath) {
-    skinPreview.src = `file://${config.skinPath}`;
-    skinPathLabel.textContent = config.skinPath;
-  } else {
-    skinPathLabel.textContent = "Sin skin personalizada";
-  }
+  alwaysOnTopCheck.checked = !!config.alwaysOnTop;
+  showInTaskbarCheck.checked = config.showInTaskbar !== false;
+  startCornerSelect.value = config.startCorner || "bottom-right";
+  bubbleDurationInput.value = (typeof config.bubbleDuration === "number" && config.bubbleDuration > 0)
+    ? config.bubbleDuration : 8.5;
+  commandSoundCheck.checked = config.commandSoundEnabled !== false;
+  const sim = (typeof config.voiceSimilarityThreshold === "number") ? config.voiceSimilarityThreshold : 0.72;
+  similarityRange.value = sim;
+  similarityValue.textContent = Number(sim).toFixed(2);
+
+  const applySkin = (p) => {
+    const src = p ? `file://${p}` : "../../assets/noxis.png";
+    skinPreview.src = src;
+    sidebarAvatarImg.src = src;
+    if (p) {
+      skinPathLabel.textContent = p;
+    } else {
+      skinPathLabel.textContent = "Sin skin personalizada";
+    }
+  };
+  applySkin(config.skinPath);
 
   micDeviceRow.classList.toggle("hidden", !config.allowMicrophone);
   if (config.allowMicrophone) loadMicDevices();
@@ -292,10 +371,29 @@ async function loadConfig() {
   renderPacks();
 }
 
-function applyTheme(isDark) {
-  document.body.classList.toggle("dark", !!isDark);
+// ---------------------------------------------------------------
+// Temas
+// ---------------------------------------------------------------
+const THEME_IDS = ["light", "dark", "obsidian", "midnight", "forest", "sunset", "rose", "ocean"];
+
+function applyTheme(themeId) {
+  const theme = THEME_IDS.includes(themeId) ? themeId : "light";
+  document.body.classList.remove(...THEME_IDS.map((t) => `theme-${t}`));
+  document.body.classList.add(`theme-${theme}`);
+  document.querySelectorAll(".themeCard").forEach((card) => {
+    const active = card.dataset.theme === theme;
+    card.classList.toggle("active", active);
+    card.setAttribute("aria-pressed", String(active));
+  });
 }
-themeCheck.addEventListener("change", () => applyTheme(themeCheck.checked));
+
+document.querySelectorAll(".themeCard").forEach((card) => {
+  card.addEventListener("click", () => applyTheme(card.dataset.theme));
+});
+
+function getActiveTheme() {
+  return THEME_IDS.find((t) => document.body.classList.contains(`theme-${t}`)) || "light";
+}
 
 // ---------------------------------------------------------------
 // Micrófono
@@ -346,6 +444,7 @@ document.getElementById("changeSkinBtn").addEventListener("click", async () => {
   if (!filePath) return;
   config.skinPath = filePath;
   skinPreview.src = `file://${filePath}`;
+  sidebarAvatarImg.src = `file://${filePath}`;
   skinPathLabel.textContent = filePath;
 });
 
@@ -358,13 +457,68 @@ function showSaveStatus(msg) {
   setTimeout(() => saveStatus.classList.remove("visible"), 2000);
 }
 
+// ---------------------------------------------------------------
+// Toasts (feedback no intrusivo)
+// ---------------------------------------------------------------
+function showToast(msg, type) {
+  const el = document.createElement("div");
+  el.className = "toast" + (type ? " toast--" + type : "");
+  el.textContent = msg;
+  toastStack.appendChild(el);
+  setTimeout(() => el.classList.add("toast--show"), 10);
+  setTimeout(() => {
+    el.classList.remove("toast--show");
+    setTimeout(() => el.remove(), 300);
+  }, 3000);
+}
+
+// ---------------------------------------------------------------
+// Confirmación inline (reemplaza window.confirm en borrados)
+// ---------------------------------------------------------------
+function askInlineConfirm(message, description, onConfirm) {
+  if (typeof description === "function") {
+    onConfirm = description;
+    description = "";
+  }
+  inlineConfirm.querySelector(".inlineConfirmText").textContent = message;
+  inlineConfirm.querySelector(".inlineConfirmDesc").textContent = description || "";
+  inlineConfirmCallback = onConfirm;
+  inlineConfirm.classList.remove("hidden");
+  confirmYes.focus();
+}
+
+confirmYes.addEventListener("click", () => {
+  const cb = inlineConfirmCallback;
+  inlineConfirm.classList.add("hidden");
+  inlineConfirmCallback = null;
+  if (cb) cb();
+});
+
+confirmNo.addEventListener("click", () => {
+  inlineConfirm.classList.add("hidden");
+  inlineConfirmCallback = null;
+});
+
+// Umbral de similitud (tab Voz)
+similarityRange.addEventListener("input", () => {
+  similarityValue.textContent = Number(similarityRange.value).toFixed(2);
+});
+
+let lastFocused = null; // elemento con foco antes de abrir el modal (para devolverlo)
+
 function openModal(modal) {
+  lastFocused = document.activeElement;
   modal.classList.add("open");
+  // Enfoca el primer campo del modal (mejor accesibilidad por teclado)
+  const first = modal.querySelector("input, button, select, textarea");
+  if (first) first.focus();
 }
 
 function closeModal(modal) {
   modal.classList.remove("open");
   pendingExePath = null;
+  if (lastFocused && lastFocused.focus) lastFocused.focus();
+  lastFocused = null;
 }
 
 [addAppModal, addPackModal, addPackAppModal, editAppModal, editPackModal, editPackAppModal].forEach((modal) => {
@@ -379,14 +533,38 @@ function closeModal(modal) {
 function renderApps() {
   appsList.innerHTML = "";
   if (config.apps.length === 0) {
-    appsList.innerHTML = '<li class="emptyMsg">No hay aplicaciones agregadas</li>';
+    appsList.innerHTML = emptyStateMarkup(
+      "Aún no tienes aplicaciones",
+      "Agrega programas para abrirlos con la voz. Ej: \u201cNoxis abre discord\u201d.",
+      "plus"
+    );
     return;
   }
   config.apps.forEach((app, index) => {
     appsList.appendChild(buildAppRow(app, {
       onEdit: () => startEditApp(index),
-      onRemove: () => removeApp(index)
+      onRemove: () => confirmRemoveApp(index)
     }));
+  });
+}
+
+function emptyStateMarkup(title, sub, iconName) {
+  const icons = window.NoxisIcons || {};
+  const inner = (icons[iconName] && icons.file ? icons.file(40) : "") || "";
+  return `
+    <li class="emptyState">
+      <span class="emptyStateIcon">${icons[iconName] ? icons[iconName](34) : ""}</span>
+      <span class="emptyStateTitle">${title}</span>
+      <span class="emptyStateSub">${sub}</span>
+    </li>
+  `;
+}
+
+function confirmRemoveApp(index) {
+  const app = config.apps[index];
+  askInlineConfirm(`¿Eliminar la app \u201c${app.keyword}\u201d?`, () => {
+    removeApp(index);
+    showToast(`App \u201c${app.keyword}\u201d eliminada`, "success");
   });
 }
 
@@ -399,8 +577,8 @@ function buildAppRow(app, { onEdit, onRemove }) {
       <span class="rowPath" title="${app.executablePath}">${app.executablePath}</span>
     </div>
     <div class="rowActions">
-      <button class="iconBtn editBtn" title="Editar">${window.NoxisIcons.edit(14)}</button>
-      <button class="iconBtn danger removeBtn" title="Eliminar">${window.NoxisIcons.trash(14)}</button>
+      <button class="iconBtn editBtn" title="Editar" aria-label="Editar ${app.keyword}">${window.NoxisIcons.edit(14)}</button>
+      <button class="iconBtn danger removeBtn" title="Eliminar" aria-label="Eliminar ${app.keyword}">${window.NoxisIcons.trash(14)}</button>
     </div>
   `;
   li.querySelector(".editBtn").addEventListener("click", onEdit);
@@ -511,7 +689,11 @@ function removeApp(index) {
 function renderPacks() {
   packsList.innerHTML = "";
   if (config.packs.length === 0) {
-    packsList.innerHTML = '<li class="emptyMsg">No hay grupos creados</li>';
+    packsList.innerHTML = emptyStateMarkup(
+      "No hay grupos todavía",
+      "Agrupa varias apps para abrirlas todas con una sola orden.",
+      "packs"
+    );
     return;
   }
   config.packs.forEach((pack, index) => {
@@ -527,8 +709,8 @@ function renderPacks() {
         <span class="chip">${pack.delaySeconds}s de pausa</span>
       </div>
       <div class="groupCardActions">
-        <button class="iconBtn editBtn" title="Editar">${window.NoxisIcons.edit(14)}</button>
-        <button class="iconBtn danger removeBtn" title="Eliminar">${window.NoxisIcons.trash(14)}</button>
+        <button class="iconBtn editBtn" title="Editar" aria-label="Editar ${pack.name}">${window.NoxisIcons.edit(14)}</button>
+        <button class="iconBtn danger removeBtn" title="Eliminar" aria-label="Eliminar ${pack.name}">${window.NoxisIcons.trash(14)}</button>
       </div>
     `;
     li.addEventListener("click", () => selectPack(pack));
@@ -538,9 +720,17 @@ function renderPacks() {
     });
     li.querySelector(".removeBtn").addEventListener("click", (e) => {
       e.stopPropagation();
-      removePack(index);
+      confirmRemovePack(index);
     });
     packsList.appendChild(li);
+  });
+}
+
+function confirmRemovePack(index) {
+  const pack = config.packs[index];
+  askInlineConfirm(`¿Eliminar el grupo \u201c${pack.name}\u201d?`, () => {
+    removePack(index);
+    showToast(`Grupo \u201c${pack.name}\u201d eliminado`, "success");
   });
 }
 
@@ -659,18 +849,33 @@ function selectPack(pack) {
 function renderPackApps() {
   packAppsList.innerHTML = "";
   if (!selectedPack) {
-    packAppsList.innerHTML = '<li class="emptyMsg">Selecciona un grupo para ver sus apps</li>';
+    packAppsList.innerHTML = emptyStateMarkup(
+      "Selecciona un grupo",
+      "Elige un grupo de la columna izquierda para ver y editar sus apps.",
+      "packs"
+    );
     return;
   }
   if (selectedPack.apps.length === 0) {
-    packAppsList.innerHTML = '<li class="emptyMsg">No hay apps en este grupo</li>';
+    packAppsList.innerHTML = emptyStateMarkup(
+      "Este grupo no tiene apps",
+      "Agrega aplicaciones para que se abran juntas con una sola orden.",
+      "plus"
+    );
     return;
   }
   selectedPack.apps.forEach((app, index) => {
     packAppsList.appendChild(buildAppRow(app, {
       onEdit: () => startEditPackApp(index),
-      onRemove: () => removePackApp(index)
+      onRemove: () => confirmRemovePackApp(index)
     }));
+  });
+}
+
+function confirmRemovePackApp(index) {
+  const app = selectedPack.apps[index];
+  askInlineConfirm(`¿Quitar la app \u201c${app.keyword}\u201d del grupo?`, () => {
+    removePackApp(index);
   });
 }
 
@@ -786,7 +991,15 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
   config.name = nameInput.value.trim() || "Noxis";
   config.autoStart = autoStartCheck.checked;
   config.allowMicrophone = micCheck.checked;
-  config.isDarkMode = themeCheck.checked;
+  config.theme = getActiveTheme();
+
+  config.alwaysOnTop = alwaysOnTopCheck.checked;
+  config.showInTaskbar = showInTaskbarCheck.checked;
+  config.startCorner = startCornerSelect.value;
+  const dur = parseFloat(bubbleDurationInput.value);
+  config.bubbleDuration = (!isNaN(dur) && dur > 0) ? dur : 8.5;
+  config.commandSoundEnabled = commandSoundCheck.checked;
+  config.voiceSimilarityThreshold = parseFloat(similarityRange.value);
 
   const ok = await window.configAPI.saveConfig(config);
   if (ok) {
@@ -804,16 +1017,19 @@ document.getElementById("cancelBtn").addEventListener("click", () => {
 // ---------------------------------------------------------------
 // Restablecer configuración
 // ---------------------------------------------------------------
-document.getElementById("resetBtn").addEventListener("click", async () => {
-  if (!confirm("Esto borrará toda la configuración (apps, grupos, skins, nombre). ¿Estás seguro?")) return;
-  const ok = await window.configAPI.resetConfig();
-  if (ok) {
-    showSaveStatus("Configuración restablecida");
-    setTimeout(() => {
-      loadConfig();
-      showSaveStatus("Configuración restablecida - todo limpio");
-    }, 300);
-  }
+document.getElementById("resetBtn").addEventListener("click", () => {
+  askInlineConfirm("¿Restablecer toda la configuración?",
+    "Esto borrará apps, grupos, skins y el nombre. Esta acción no se puede deshacer.",
+    async () => {
+      const ok = await window.configAPI.resetConfig();
+      if (ok) {
+        showToast("Configuración restablecida", "success");
+        setTimeout(() => {
+          loadConfig();
+        }, 300);
+      }
+    }
+  );
 });
 
 loadConfig();

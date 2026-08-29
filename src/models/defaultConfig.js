@@ -24,12 +24,18 @@ function createDefaultConfig() {
     autoStart: false,
     allowMicrophone: false,
     voiceModel: "small",
-    isDarkMode: false,
+    theme: "light",
     skinPath: null,
     selectedMicrophoneId: null,
     selectedMicrophoneName: null,
     apps: [],
-    packs: []
+    packs: [],
+    bubbleDuration: 8500,
+    commandSoundEnabled: true,
+    startCorner: "bottom-right",
+    alwaysOnTop: false,
+    showInTaskbar: true,
+    voiceSimilarityThreshold: 0.72
   };
 }
 

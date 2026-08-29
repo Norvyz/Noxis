@@ -1,6 +1,6 @@
 {
   "name": "Noxis",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Noxis - mascota de escritorio inteligente y open-source (version Electron)",
   "main": "src/main/main.js",
   "author": {

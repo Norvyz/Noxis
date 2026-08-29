@@ -7,11 +7,15 @@
 </head>
 <body>
   <div id="stage">
+    <!-- Halo de presencia (brillo pulsante detrás de Noxis) -->
+    <div id="noxisHalo" aria-hidden="true"></div>
+
+    <!-- Tarjeta de mensaje (burbuja) flotante arriba -->
     <div id="speechBubble" class="bubble">
       <span id="noxisText"></span>
     </div>
 
-    <!-- Pila vertical: estado de voz (transcripción) arriba, Noxis abajo -->
+    <!-- Pila vertical: estado de voz arriba, Noxis abajo -->
     <div id="voiceStack">
       <div id="voiceStatus" class="voice-status hidden">
         <span class="voice-dot"></span>
@@ -21,14 +25,25 @@
     </div>
 
     <!-- Chat de texto - doble click en Noxis para abrir -->
-    <div id="chatCard" class="chat-card">
+    <div id="chatCard" class="chat-card" role="dialog" aria-label="Chat con Noxis">
       <div class="chat-header">
-        <span id="chatName">Noxis</span>
-        <button id="closeChatBtn" class="icon-btn" aria-label="Cerrar" title="Cerrar"></button>
+        <div class="chat-user">
+          <img id="chatAvatar" class="chat-avatar" src="../../assets/noxis.png" alt="" draggable="false" />
+          <div class="chat-userMeta">
+            <span id="chatName">Noxis</span>
+            <span class="chat-status"><span class="chat-status-dot"></span>en línea</span>
+          </div>
+        </div>
+        <button id="closeChatBtn" class="icon-btn" aria-label="Cerrar chat" title="Cerrar"></button>
+      </div>
+      <div class="chat-body" id="chatMessages">
+        <div class="chat-msg chat-msg--noxis">
+          <span class="chat-msg-bubble">¡Hola! Escríbeme algo 👋</span>
+        </div>
       </div>
       <div class="chat-inputRow">
-        <input id="userInput" type="text" placeholder="Escríbeme algo..." autocomplete="off" />
-        <button id="sendBtn" class="icon-btn send-btn" aria-label="Enviar" title="Enviar"></button>
+        <input id="userInput" type="text" placeholder="Escríbeme algo..." autocomplete="off" aria-label="Mensaje" />
+        <button id="sendBtn" class="icon-btn send-btn" aria-label="Enviar mensaje" title="Enviar"></button>
       </div>
     </div>
   </div>

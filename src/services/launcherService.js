@@ -15,17 +15,44 @@
 // src/services/launcherService.js
 // Equivalente a los Process.Start(...) de MainWindow.xaml.cs
 
+const fs = require("fs");
+const path = require("path");
 const { spawn } = require("child_process");
 const { shell } = require("electron");
 
+// Extensiones que se resuelven como un único archivo ejecutable.
+const EXE_EXTS = [".exe", ".bat", ".cmd", ".ps1", ".lnk", ".com"];
+
 /**
- * Abre un ejecutable o ruta. Usa shell.openPath como respaldo
- * (mismo efecto que UseShellExecute = true en C#), y spawn
- * como via principal para no bloquear el proceso main.
+ * Abre un ejecutable o ruta con su aplicación asociada.
+ * - Si el argumento existe y es ejecutable (.exe/.bat/...): spawn directo.
+ * - Si es un .lnk (acceso directo): se abre con la app asociada.
+ * - Si apunta a una carpeta o archivo: shell.openPath (definida por el sistema).
+ * Devuelve true si se pudo lanzar, false si la ruta no existe.
  */
 function openApp(executablePath) {
+  const target = String(executablePath || "").trim();
+  if (!target) return false;
+
   try {
-    const child = spawn(executablePath, [], {
+    const ext = path.extname(target).toLowerCase();
+    const exists = fs.existsSync(target);
+
+    if (!exists) {
+      console.error("[launcherService] La ruta no existe:", target);
+      return false;
+    }
+
+    // Limpiamos comillas dobles que a veces traen los paths desde el diálogo
+    const clean = target.replace(/^"|"$/g, "");
+
+    // Acceso directo o carpeta/archivo no-ejecutable → lo maneja el SO
+    if (ext === ".lnk" || !EXE_EXTS.includes(ext)) {
+      shell.openPath(clean);
+      return true;
+    }
+
+    const child = spawn(clean, [], {
       detached: true,
       stdio: "ignore",
       shell: true

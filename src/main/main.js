@@ -64,7 +64,7 @@ app.whenReady().then(() => {
     return permission === "media";
   });
 
-  windows.createMainWindow();
+  windows.createMainWindow(config);
   createTray();
 
   if (config.autoStart) {
@@ -102,7 +102,7 @@ app.whenReady().then(() => {
   }, 900);
 
   app.on("activate", () => {
-    if (!windows.getMainWindow()) windows.createMainWindow();
+    if (!windows.getMainWindow()) windows.createMainWindow(config);
   });
 });
 
@@ -140,6 +140,10 @@ ipcMain.handle("get-response", async (event, rawText) => {
     voiceState = "active";
     win?.webContents.send("voice-state", "active");
     console.log("[MAIN] → despertó con nombre");
+    // Si además pide "volver/despertar/escuchar", confirma con un mensaje claro
+    if (conversationService.isWakeCommand(rawText, config)) {
+      return conversationService.getWakeResponse(config);
+    }
   }
 
   // 3) Saber si se mencionó el nombre (para permitir abrir apps)
@@ -227,6 +231,15 @@ ipcMain.handle("grammar:get", () => conversationService.buildGrammar(config));
 
 ipcMain.handle("config:get", () => reloadConfig());
 
+// Re-aplica las preferencias de ventana del widget (siempre encima,
+// mostrar en taskbar) cada vez que cambia la configuración.
+function applyWindowSettings(cfg) {
+  const win = windows.getMainWindow();
+  if (!win) return;
+  win.setAlwaysOnTop(!!cfg.alwaysOnTop);
+  win.setSkipTaskbar(!cfg.showInTaskbar);
+}
+
 ipcMain.handle("config:save", (event, newConfig) => {
   config = newConfig;
   const ok = configService.save(config);
@@ -235,6 +248,7 @@ ipcMain.handle("config:save", (event, newConfig) => {
     if (config.voiceModel && config.voiceModel !== voskService.getActiveType()) {
       voskService.setActiveType(config.voiceModel);
     }
+    applyWindowSettings(config);
     windows.getMainWindow()?.webContents.send("config-updated", config);
   }
   return ok;
@@ -267,6 +281,7 @@ ipcMain.handle("config:reset", () => {
   const fresh = require("../models/defaultConfig").createDefaultConfig();
   config = fresh;
   configService.save(config);
+  applyWindowSettings(config);
   windows.getMainWindow()?.webContents.send("config-updated", config);
   return true;
 });

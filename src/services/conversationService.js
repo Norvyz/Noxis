@@ -55,11 +55,20 @@ function editDistance(a, b) {
   return prev[n];
 }
 
-// ¿"token" es aproximadamente igual a "target"? El umbral crece con la longitud.
-function fuzzyClose(token, target) {
+// ¿"token" es aproximadamente igual a "target"?
+// El umbral crece con la longitud normalizando la distancia de Levenshtein.
+// Si se pasa un `threshold` explícito (0-1, similitud mínima requerida,
+// p. ej. 0.72 = se permite hasta ~28% de diferencia de caracteres), se usa
+// ese en vez del valor derivado de la longitud.
+function fuzzyClose(token, target, threshold) {
   const maxLen = Math.max(token.length, target.length);
   if (maxLen <= 3) return token === target;
-  return editDistance(token, target) <= Math.floor(maxLen / 4);
+  const distance = editDistance(token, target);
+  if (typeof threshold === "number") {
+    const maxDistance = Math.floor(maxLen * (1 - Math.max(0, Math.min(1, threshold))));
+    return distance <= maxDistance;
+  }
+  return distance <= Math.floor(maxLen / 4);
 }
 
 function tokensOf(text) {
@@ -104,9 +113,10 @@ function findWakeMatch(input, config) {
   const tokens = tokensOf(normalize(input));
   if (!tokens.length) return null;
   const variants = wakeWordVariants(config);
+  const threshold = typeof config.voiceSimilarityThreshold === "number" ? config.voiceSimilarityThreshold : undefined;
   for (let i = 0; i < tokens.length; i++) {
     const w = tokens[i];
-    const hit = variants.find((v) => w === v || fuzzyClose(w, v));
+    const hit = variants.find((v) => w === v || fuzzyClose(w, v, threshold));
     if (hit) return { index: i, token: w, variant: hit };
   }
   return null;
@@ -140,7 +150,36 @@ function isDeactivateCommand(input, config) {
   if (/^(off|standby)\b/.test(rest)) return true;
   if (/(para de escuchar|dejar de escuchar|deja de escuchar|parar de escuchar|deja de funcionar)/.test(rest)) return true;
   const words = rest.split(/\s+/);
-  return words.some((w) => DEACTIVATE_VERBS.some((v) => w === v || fuzzyClose(w, v)));
+  const threshold = typeof config.voiceSimilarityThreshold === "number" ? config.voiceSimilarityThreshold : undefined;
+  return words.some((w) => DEACTIVATE_VERBS.some((v) => w === v || fuzzyClose(w, v, threshold)));
+}
+
+// ¿El texto (tras quitar el nombre) pide "despertar"/"vuelve"? Se usa para
+// confirmar la salida del modo dormida con un mensaje coherente.
+const WAKE_VERBS = [
+  "vuelve", "despierta", "despertate", "despertar", "despiertate",
+  "hablar", "habla", "escucha", "escucharme", "escuchas", "activa",
+  "activar", "activarte", "desactivateme", "ready", "presente", "aqui"
+];
+
+function isWakeCommand(input, config) {
+  if (!isWakeWordDetected(input, config)) return false;
+  const rest = normalize(stripWakeWord(input, config));
+  if (!rest) return false;
+  if (/(volvi|despert|activ|escuch|habl)/.test(rest)) return true;
+  const words = rest.split(/\s+/);
+  const threshold = typeof config.voiceSimilarityThreshold === "number" ? config.voiceSimilarityThreshold : undefined;
+  return words.some((w) => WAKE_VERBS.some((v) => w === v || fuzzyClose(w, v, threshold)));
+}
+
+const WAKE_RESPONSES = (name) => [
+  `¡Listo! Aquí estoy, de nuevo activa. Puedes decirme "${name} abre..." para lanzar apps 🎧`,
+  `¡Awakened! Te escucho otra vez 🦎 ¿En qué te ayudo?`,
+  `Ya estoy despierta y escuchando. Di "${name} abre..." y el programa que quieras.`
+];
+
+function getWakeResponse(config) {
+  return pick(WAKE_RESPONSES(config.name || "Noxis"));
 }
 
 // ---------------------------------------------------------------
@@ -271,6 +310,8 @@ module.exports = {
   isWakeWordDetected,
   stripWakeWord,
   isDeactivateCommand,
+  isWakeCommand,
+  getWakeResponse,
   getConversationalResponse,
   getNamedFallback,
   buildGrammar,
