@@ -181,7 +181,7 @@
   <img src="https://github.com/Bryanmgomez.png?size=100" alt="Bryanmgomez" width="100" />
 </a>
 <a href="https://github.com/1Rizuz">
-  <img src="https://github.com/1Rizuz_.png?size=100" alt="1Rizuz" width="100" />
+  <img src="https://github.com/1Rizuz.png?size=100" alt="1Rizuz" width="100" />
 </a>
 
 </div>
