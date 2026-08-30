@@ -23,6 +23,7 @@ const chatName = document.getElementById("chatName");
 const chatAvatar = document.getElementById("chatAvatar");
 const chatMessages = document.getElementById("chatMessages");
 const closeChatBtn = document.getElementById("closeChatBtn");
+const clearChatBtn = document.getElementById("clearChatBtn");
 const sendBtn = document.getElementById("sendBtn");
 const userInput = document.getElementById("userInput");
 const voiceStatus = document.getElementById("voiceStatus");
@@ -46,6 +47,7 @@ let hideHighlightTimeout = null;
 
 // Iconos SVG
 closeChatBtn.innerHTML = window.NoxisIcons.close(16);
+clearChatBtn.innerHTML = window.NoxisIcons.trash(15);
 sendBtn.innerHTML = window.NoxisIcons.send(15);
 
 // ---------------------------------------------------------------
@@ -135,16 +137,79 @@ function closeChat() {
 // ---------------------------------------------------------------
 // Burbujas de mensaje dentro del chat
 // ---------------------------------------------------------------
-function addChatMessage(text, who) {
+const MAX_CHAT_MSG = 30;
+
+function addChatMessage(text, who, isVoice) {
+  const voice = !!isVoice;
   const row = document.createElement("div");
   row.className = "chat-msg " + (who === "user" ? "chat-msg--user" : "chat-msg--noxis");
+  if (voice) row.classList.add("chat-msg--voice");
+
+  const bubble = document.createElement("span");
+  bubble.className = "chat-msg-bubble";
+
+  if (who === "user" && voice) {
+    bubble.innerHTML = '<span class="chat-voice-icon">🎙</span>' + text;
+  } else {
+    bubble.textContent = text;
+  }
+
+  row.appendChild(bubble);
+  chatMessages.appendChild(row);
+  trimChatHistory(MAX_CHAT_MSG);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return row;
+}
+
+// Cambio 10: mensaje de sistema (centrado, estilo sutil)
+function addChatSystemMessage(text) {
+  const row = document.createElement("div");
+  row.className = "chat-msg chat-system-msg";
   const bubble = document.createElement("span");
   bubble.className = "chat-msg-bubble";
   bubble.textContent = text;
   row.appendChild(bubble);
   chatMessages.appendChild(row);
+  trimChatHistory(MAX_CHAT_MSG);
   chatMessages.scrollTop = chatMessages.scrollHeight;
   return row;
+}
+
+// Limita la cantidad de mensajes visibles en el chat
+function trimChatHistory(limit) {
+  const max = Math.max(5, limit || MAX_CHAT_MSG);
+  while (chatMessages.querySelectorAll(".chat-msg").length > max) {
+    const first = chatMessages.querySelector(".chat-msg");
+    if (first) first.remove();
+  }
+}
+
+// Limpia el historial del chat (UI + memoria del proceso main)
+async function clearChatHistory() {
+  while (chatMessages.querySelectorAll(".chat-msg").length > 0) {
+    chatMessages.querySelector(".chat-msg").remove();
+  }
+  addChatSystemMessage("— Historial borrado —");
+  try {
+    await window.noxisAPI.clearSession();
+  } catch (err) {
+    console.error("[Noxis] Error limpiando sesión:", err);
+  }
+}
+
+// Cambio 10: al cargar, restaura el historial de la sesión de voz actual
+async function restoreSessionHistory() {
+  try {
+    const history = await window.noxisAPI.getSessionHistory();
+    if (!Array.isArray(history)) return;
+    for (const entry of history) {
+      if (!entry || !entry.text) continue;
+      if (entry.role === "user") addChatMessage(entry.text, "user", true);
+      else if (entry.role === "noxis") addChatMessage(entry.text, "noxis", true);
+    }
+  } catch (err) {
+    console.error("[Noxis] Error restaurando historial:", err);
+  }
 }
 
 function showChatTyping() {
@@ -232,6 +297,8 @@ window.addEventListener("mouseup", () => {
 
 closeChatBtn.addEventListener("click", closeChat);
 
+clearChatBtn.addEventListener("click", clearChatHistory);
+
 // Cerrar el chat al hacer clic fuera de él (accesible y predecible)
 document.addEventListener("pointerdown", (e) => {
   if (!chatCard.classList.contains("open")) return;
@@ -295,6 +362,26 @@ window.noxisAPI.onPlaySound((filePath) => {
   }
 });
 
+// Lee texto en voz alta (web speech API del navegador/Electron)
+window.noxisAPI.onSpeak((text) => {
+  speakText(text);
+});
+
+function speakText(text) {
+  const content = String(text || "").trim();
+  if (!content) return;
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(content);
+  utter.lang = "es-ES";
+  utter.rate = 1;
+  utter.pitch = 1;
+  const voices = window.speechSynthesis.getVoices();
+  const esVoice = voices.find((v) => /es-/i.test(v.lang)) || null;
+  if (esVoice) utter.voice = esVoice;
+  window.speechSynthesis.speak(utter);
+}
+
 window.noxisAPI.onConfigUpdated((config) => {
   chatName.textContent = config.name || "Noxis";
   applyTheme(config.theme || "light");
@@ -310,11 +397,13 @@ window.noxisAPI.onConfigUpdated((config) => {
 
   const nextModelType = config.voiceModel || "small";
   if (nextModelType !== modelType) {
-    // Cambió el modelo de voz → recargar recognizer con la nueva URL
+    // Cambió el modelo de voz → recargar con el motor correcto (Vosk o Whisper)
     modelType = nextModelType;
     const wasListening = isListening;
     if (wasListening) stopListening();
     resetVoskModel();
+    WHISPER.ready = false;
+    resetWhisperVad();
     if (micEnabled) startListening();
     return;
   }
@@ -359,22 +448,34 @@ window.noxisAPI.getSkinPath().then((skinPath) => {
 window.noxisAPI.getNoxisName().then((name) => {
   chatName.textContent = name || "Noxis";
 });
-window.noxisAPI.getConfig().then((cfg) => {
-  if (!cfg) return;
-  applyTheme(cfg.theme || "light");
-  if (typeof cfg.bubbleDuration === "number" && cfg.bubbleDuration > 0) {
-    bubbleDuration = cfg.bubbleDuration;
+window.noxisAPI.getConfig().then(async (cfg) => {
+  if (cfg) {
+    applyTheme(cfg.theme || "light");
+    if (typeof cfg.bubbleDuration === "number" && cfg.bubbleDuration > 0) {
+      bubbleDuration = cfg.bubbleDuration;
+    }
+    updateActionHighlightConfig(cfg);
+    if (cfg.skinPath) {
+      noxisImage.src = `file://${cfg.skinPath}`;
+      chatAvatar.src = `file://${cfg.skinPath}`;
+    }
+    if (cfg.voiceModel) modelType = cfg.voiceModel;
+    micEnabled = !!cfg.allowMicrophone;
+  } else {
+    micEnabled = await window.noxisAPI.getMicEnabled().catch(() => false);
   }
-  updateActionHighlightConfig(cfg);
-  if (cfg.voiceModel) modelType = cfg.voiceModel;
-}).catch(() => {});
-window.noxisAPI.getMicEnabled().then((enabled) => {
-  micEnabled = enabled;
-  console.log("[Noxis] Micrófono habilitado:", micEnabled);
+
+  // Esperamos a conocer el modelo (config) antes de abrir el micrófono:
+  // evita iniciar un modelo Vosk viejo si el usuario eligió Whisper (o al revés).
+  console.log("[Noxis] Micrófono habilitado:", micEnabled, "| modelo:", modelType);
   if (micEnabled) startListening();
-}).catch((err) => {
-  console.error("[Noxis] Error al obtener estado del mic:", err);
+}).catch(async () => {
+  micEnabled = await window.noxisAPI.getMicEnabled().catch(() => false);
+  if (micEnabled) startListening();
 });
+
+// Cambio 10: restaura el historial de la sesión de voz en el chat
+restoreSessionHistory();
 
 // ---------------------------------------------------------------
 // Vosk - Reconocimiento de voz offline
@@ -382,6 +483,7 @@ window.noxisAPI.getMicEnabled().then((enabled) => {
 let voskModel = null;
 let voskRecognizer = null;
 let voskReady = false;
+let voskInitializing = null; // evita lanzar dos cargas en paralelo
 let audioContext = null;
 let mediaStream = null;
 let processor = null;
@@ -425,8 +527,12 @@ window.noxisAPI.onVoskStatus((info) => {
     // El modelo activo está listo. Si veníamos de un modelo distinto (o de un
     // arranque fallido), recargamos limpio con el URL correcto en vez de
     // quedarnos colgados en "Cargando modelo de voz".
-    if (voskModel && !voskReady) resetVoskModel();
-    voskReady = true;
+    if (info.type === "whisper") {
+      WHISPER.ready = true;
+    } else {
+      if (voskModel && !voskReady) resetVoskModel();
+      voskReady = true;
+    }
     showVoiceStatus("Modelo listo!");
     setTimeout(hideVoiceStatus, 2000);
     if (micEnabled) startListening();
@@ -470,56 +576,90 @@ async function initVosk() {
     return false;
   }
 
+  if (voskInitializing) return voskInitializing;
+  voskInitializing = doInitVosk();
+  try {
+    return await voskInitializing;
+  } finally {
+    voskInitializing = null;
+  }
+}
+
+async function doInitVosk() {
   const modelUrl = await getModelUrlWithRetry();
   if (!modelUrl) {
-    // El modelo activo aún no está instalado/listo (ej: acabamos de activar
-    // el "Preciso" y se está descargando). No fallamos en silencio: avisamos
-    // y el widget arrancará cuando llegue el evento "ready" de ese modelo.
+    // El modelo activo aún no está instalado/listo (ej: acabamos de
+    // activar el "Preciso" y se está descargando).
     console.log("[Noxis] Modelo", modelType, "aún no listo, esperando descarga...");
     showVoiceStatus("Preparando modelo de voz…");
     return false;
   }
 
   console.log("[Noxis] Cargando modelo Vosk desde:", modelUrl);
-  showVoiceStatus("Cargando modelo de voz...");
+  const isPrecise = modelType === "precise";
+  showVoiceStatus(
+    isPrecise
+      ? "Cargando modelo Preciso… pesa 1.5 GB y la primera vez tarda unos minutos"
+      : "Cargando modelo de voz..."
+  );
 
-  // El modelo "Preciso" (~2.5GB ya extraído) puede tardar mucho o, en
-  // equipos/entornos con poca memoria disponible, hacer que el Web Worker
-  // de vosk-browser se quede colgado sin nunca resolver ni rechazar la
-  // promesa (falla "silenciosa" típica de WASM sin memoria suficiente).
-  // Sin un límite de tiempo, eso deja al usuario viendo "Cargando modelo
-  // de voz..." para siempre. Con el timeout, al menos se lo avisamos.
-  const LOAD_TIMEOUT_MS = 120000; // 2 min — de sobra para 2.5GB en disco/SSD
-
+  // El modelo "Preciso" (~2.5GB ya extraído) tarda bastante en cargar en el
+  // Web Worker de vosk-browser. Importante: NO abandonar la promesa cuando
+  // tarda: si la soltamos, el modelo termina de cargar pero nadie retoma la
+  // escucha ("parece que cargó pero no funciona"). Avisamos el progreso y
+  // seguimos esperando; si no carga en 10 min, recién ahí pasamos a un plan B.
+  let modelPromise;
   try {
-    voskModel = await Promise.race([
-      window.Vosk.createModel(modelUrl, 0),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("timeout")), LOAD_TIMEOUT_MS)
-      ),
-    ]);
-    voskReady = true;
-    console.log("[Noxis] Vosk modelo listo");
-    return true;
+    modelPromise = window.Vosk.createModel(modelUrl, 0);
   } catch (err) {
-    if (err && err.message === "timeout") {
-      console.error("[Noxis] Timeout cargando el modelo Vosk (posible falta de memoria)");
-      showMessage(
-        "El modelo de voz no cargó a tiempo. Si elegiste \"Preciso\", puede que tu PC " +
-        "no tenga memoria suficiente para cargarlo en el navegador interno — probá con " +
-        "el modelo \"Estándar\" desde Configuración."
-      );
-      hideVoiceStatus();
-      return false;
-    }
-    console.error("[Noxis] Error cargando modelo Vosk:", err);
-    if (/fetch|network|load/i.test(String(err && err.message))) {
-      showVoiceStatus("Descarga aún en curso, reintentando…");
-    } else {
-      showMessage("Error cargando modelo de voz.");
-    }
+    console.error("[Noxis] Error al iniciar la carga del modelo Vosk:", err);
+    showMessage("No se pudo iniciar la carga del modelo de voz.");
     return false;
   }
+
+  const warn1 = setTimeout(() => {
+    showVoiceStatus(
+      isPrecise
+        ? "Sigo cargando el modelo Preciso… la primera vez tarda varios minutos."
+        : "Sigo cargando el modelo de voz…"
+    );
+  }, 45000);
+  const warn2 = setTimeout(() => {
+    showVoiceStatus("El modelo está tardando de más. Te aviso si no llega a cargar…");
+  }, 180000);
+
+  const settled = await Promise.race([
+    modelPromise.then((m) => ({ model: m })),
+    new Promise((resolve) => setTimeout(() => resolve(null), 600000)) // 10 min
+  ]);
+
+  clearTimeout(warn1);
+  clearTimeout(warn2);
+
+  if (!settled) {
+    modelPromise.catch(() => {}); // ignorar un fallo tardío de la promesa abandonada
+    if (isPrecise) {
+      console.error("[Noxis] El modelo Preciso no cargó en 10 min → volver al Estándar");
+      showMessage(
+        "El modelo Preciso no pudo cargar en este equipo. Vuelvo al Estándar para que " +
+        "sigas hablando conmigo; podés reintentar el Preciso desde Configuración."
+      );
+      resetVoskModel();
+      try {
+        await window.noxisAPI.setVoiceModel("small");
+      } catch (e) {
+        console.error("[Noxis] No pude cambiar al modelo Estándar:", e);
+      }
+      return false;
+    }
+    showMessage("El modelo de voz no cargó. Reintentá desde Configuración.");
+    return false;
+  }
+
+  voskModel = settled.model;
+  voskReady = true;
+  console.log("[Noxis] Vosk modelo listo");
+  return true;
 }
 
 // ---------------------------------------------------------------
@@ -609,12 +749,14 @@ function createVoskRecognizer() {
 async function processFinalText(text) {
   console.log("[Noxis] VOZ FINAL:", text);
   showVoiceStatus("Procesando...");
+  addChatMessage(text, "user", true);
 
   try {
     const response = await window.noxisAPI.sendMessage(text);
     console.log("[Noxis] Respuesta:", response);
     if (response && response.trim() !== "") {
       showMessage(response);
+      addChatMessage(response, "noxis", true);
     }
   } catch (err) {
     console.error("[Noxis] Error al enviar:", err);
@@ -646,7 +788,12 @@ async function startAudioCapture() {
     processor = audioContext.createScriptProcessor(2048, 1, 1);
 
     processor.onaudioprocess = (event) => {
-      if (!isListening || !voskRecognizer) return;
+      if (!isListening) return;
+      if (modelType === "whisper") {
+        handleWhisperAudio(event.inputBuffer.getChannelData(0));
+        return;
+      }
+      if (!voskRecognizer) return;
       try {
         voskRecognizer.acceptWaveform(event.inputBuffer);
       } catch (e) {
@@ -688,6 +835,141 @@ function stopAudioCapture() {
 }
 
 // ---------------------------------------------------------------
+// Whisper (GPU local vía Ollama) - transcripción por fragmentos
+// ---------------------------------------------------------------
+const WHISPER = {
+  ready: false,
+  buf: [],        // muestras Float32 del segmento en curso
+  extra: [],      // muestras capturadas mientras se transcribe
+  speaking: false,
+  silenceFrames: 0,
+  speechFrames: 0,
+  sending: false,
+  noiseFloor: 0.005
+};
+
+const WHISPER_FRAME = 2048;
+const WHISPER_MAX_LEN = 12 * 16000;
+
+function whisperRms(frame) {
+  let sum = 0;
+  for (let i = 0; i < frame.length; i++) sum += frame[i] * frame[i];
+  return Math.sqrt(sum / frame.length);
+}
+
+function resetWhisperVad() {
+  WHISPER.buf = [];
+  WHISPER.extra = [];
+  WHISPER.speaking = false;
+  WHISPER.silenceFrames = 0;
+  WHISPER.speechFrames = 0;
+  WHISPER.sending = false;
+  WHISPER.noiseFloor = 0.005;
+}
+
+function handleWhisperAudio(frame) {
+  const rms = whisperRms(frame);
+  const threshold = Math.max(0.008, WHISPER.noiseFloor * 3.5);
+  const target = WHISPER.sending ? WHISPER.extra : WHISPER.buf;
+
+  if (rms > threshold) {
+    WHISPER.silenceFrames = 0;
+    WHISPER.speechFrames++;
+    if (!WHISPER.speaking && WHISPER.speechFrames >= 2) WHISPER.speaking = true;
+    for (let i = 0; i < frame.length; i++) target.push(frame[i]);
+  } else if (WHISPER.speaking) {
+    for (let i = 0; i < frame.length; i++) target.push(frame[i]);
+    if (++WHISPER.silenceFrames >= 10) finishWhisperSegment(false); // ~1.6 s de silencio
+  } else {
+    WHISPER.speechFrames = 0;
+    WHISPER.noiseFloor = WHISPER.noiseFloor + 0.02 * (rms - WHISPER.noiseFloor);
+  }
+
+  if (WHISPER.sending) {
+    if (WHISPER.extra.length > WHISPER_MAX_LEN) {
+      WHISPER.extra.splice(0, WHISPER.extra.length - WHISPER_MAX_LEN);
+    }
+  } else if (WHISPER.buf.length > WHISPER_MAX_LEN) {
+    finishWhisperSegment(true);
+  }
+}
+
+function finishWhisperSegment(force) {
+  const samples = WHISPER.buf;
+  WHISPER.buf = [];
+  WHISPER.speaking = false;
+  WHISPER.speechFrames = 0;
+  WHISPER.silenceFrames = 0;
+
+  if (!force && samples.length < 8000) { // < 0.5 s: descartar
+    moveWhisperExtra();
+    return;
+  }
+  if (WHISPER.sending) {
+    WHISPER.extra = samples.concat(WHISPER.extra);
+    return;
+  }
+  startWhisperSend(samples);
+}
+
+function moveWhisperExtra() {
+  if (WHISPER.extra.length) {
+    WHISPER.buf = WHISPER.extra;
+    WHISPER.extra = [];
+    WHISPER.speaking = true;
+    if (WHISPER.buf.length > WHISPER_MAX_LEN) finishWhisperSegment(true);
+  }
+}
+
+async function startWhisperSend(samples) {
+  WHISPER.sending = true;
+  showVoiceStatus("Entendiendo…");
+  try {
+    const res = await window.noxisAPI.whisperTranscribe(samples);
+    if (res && res.ok && res.text) {
+      processFinalText(res.text);
+    } else {
+      if (isDormant) showVoiceStatus("💤 Dormida — di su nombre");
+      else hideVoiceStatus();
+    }
+  } catch (err) {
+    console.error("[Noxis] Error transcribiendo:", err);
+    if (isDormant) showVoiceStatus("💤 Dormida — di su nombre");
+    else hideVoiceStatus();
+  } finally {
+    WHISPER.sending = false;
+    const leftover = WHISPER.extra;
+    WHISPER.extra = [];
+    if (!isListening) return;
+    if (leftover.length) {
+      WHISPER.buf = leftover;
+      WHISPER.speaking = true;
+    }
+  }
+}
+
+async function ensureWhisperReady() {
+  if (WHISPER.ready) return true;
+  try {
+    const st = await window.noxisAPI.getWhisperStatus();
+    if (st && st.ready) {
+      WHISPER.ready = true;
+      return true;
+    }
+    if (st && st.pulling) {
+      showVoiceStatus(`Descargando Whisper… ${st.pullPct != null ? st.pullPct + "%" : ""}`);
+    } else if (st && st.lastError) {
+      showVoiceStatus("Whisper no disponible: " + st.lastError);
+    } else {
+      showVoiceStatus("Preparando Whisper… (primera vez descarga ~600 MB)");
+    }
+  } catch (err) {
+    showVoiceStatus("Preparando Whisper…");
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------
 // Escucha continua
 // ---------------------------------------------------------------
 async function startListening() {
@@ -697,19 +979,29 @@ async function startListening() {
   if (!micEnabled) return;
   isStarting = true;
 
-  const ready = await initVosk();
-  if (!ready) {
-    isStarting = false;
-    return;
+  if (modelType === "whisper") {
+    const wok = await ensureWhisperReady();
+    if (!wok) {
+      isStarting = false;
+      return;
+    }
+  } else {
+    const ready = await initVosk();
+    if (!ready) {
+      isStarting = false;
+      return;
+    }
   }
 
   await refreshGrammar();
 
-  createVoskRecognizer();
-  if (!voskRecognizer) {
-    isStarting = false;
-    showMessage("No pude crear el reconocedor de voz.");
-    return;
+  if (modelType !== "whisper") {
+    createVoskRecognizer();
+    if (!voskRecognizer) {
+      isStarting = false;
+      showMessage("No pude crear el reconocedor de voz.");
+      return;
+    }
   }
 
   const audioOk = await startAudioCapture();
@@ -734,6 +1026,7 @@ function stopListening() {
   flushTimer = null;
   utteranceBuffer = "";
   stopAudioCapture();
+  resetWhisperVad();
   if (voskRecognizer) {
     try { voskRecognizer.remove(); } catch (e) { /* */ }
     voskRecognizer = null;

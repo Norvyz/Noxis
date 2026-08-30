@@ -1229,10 +1229,22 @@ button.secondaryBtn:active {
 }
 
 .modelVer {
-  margin-left: auto;
+  margin-left: 8px;
   font-size: 11px;
   color: var(--text-secondary);
   font-family: monospace;
+}
+
+.modelBadge {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 999px;
+  padding: 2px 8px;
+  text-transform: uppercase;
 }
 
 .modelDesc {
@@ -1821,4 +1833,109 @@ button.secondaryBtn:active {
 
 .hidden {
   display: none !important;
+}
+
+/* Aliases de voz */
+.aliasList {
+  margin-bottom: 10px;
+  list-style: none;
+}
+
+.aliasAddBtn {
+  width: 100%;
+  justify-content: center;
+}
+
+.aliasList .itemRow .rowKeyword {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.aliasList .itemRow .rowPath {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+/* =============================================================
+   Visión IA
+   ============================================================= */
+.visionSpecsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.visionSpec {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.visionSpecWide {
+  grid-column: 1 / -1;
+}
+
+.visionSpec .specLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+.visionSpec .specValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.visionActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.visionTestResult {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  max-height: 260px;
+  overflow: auto;
+}
+
+.visionHintsList {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.visionHintsList li {
+  padding: 8px 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.visionHintsList li b {
+  color: var(--text);
 }

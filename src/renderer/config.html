@@ -34,6 +34,10 @@
           <span class="navIcon" data-icon-nav="mic"></span>
           <span class="navLabel">Voz</span>
         </button>
+        <button class="tabBtn" data-tab="vision">
+          <span class="navIcon" data-icon-nav="eye"></span>
+          <span class="navLabel">Visión IA</span>
+        </button>
         <button class="tabBtn" data-tab="apps">
           <span class="navIcon" data-icon-nav="apps"></span>
           <span class="navLabel">Aplicaciones</span>
@@ -206,18 +210,6 @@
             </div>
           </div>
         </div>
-
-        <div class="card">
-          <div class="cardHeader">
-            <h3>Modelo de voz</h3>
-            <p class="cardSub">Elige cuánto espacio quieres usar. Toca uno para activarlo; si no está descargado, se descargará automáticamente.</p>
-          </div>
-          <div id="modelCards" class="modelCards"></div>
-          <div id="modelProgressWrap" class="modelProgressWrap hidden">
-            <span class="modelProgressLabel" id="modelProgressLabel"></span>
-            <progress id="modelProgress" class="modelProgressBar" max="100" value="0"></progress>
-          </div>
-        </div>
       </section>
 
       <!-- TAB COMPORTAMIENTO -->
@@ -313,6 +305,51 @@
             </div>
           </div>
         </div>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Personalidad y conversación</h3>
+            <p class="cardSub">Noxis charla más como persona: habla por su cuenta y responde con la IA.</p>
+          </div>
+
+          <div class="switchRow">
+            <div class="switchLabel">
+              <span class="switchTitle">Hablar por su cuenta</span>
+              <span class="switchSub">Noxis inicia conversaciones y comenta cosas de vez en cuando</span>
+            </div>
+            <label class="switch">
+              <input id="proactiveTalkCheck" type="checkbox" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <label class="field">
+            <span>Cada cuánto habla (minutos)</span>
+            <select id="proactiveIntervalSelect">
+              <option value="5">Cada 5 minutos</option>
+              <option value="10">Cada 10 minutos</option>
+              <option value="15">Cada 15 minutos</option>
+              <option value="20">Cada 20 minutos</option>
+              <option value="25" selected>Cada 25 minutos</option>
+              <option value="30">Cada 30 minutos</option>
+              <option value="45">Cada 45 minutos</option>
+              <option value="60">Cada 1 hora</option>
+              <option value="90">Cada 1 hora y media</option>
+              <option value="120">Cada 2 horas</option>
+            </select>
+          </label>
+
+          <div class="switchRow">
+            <div class="switchLabel">
+              <span class="switchTitle">IA para charlar</span>
+              <span class="switchSub">Las charlas casuales ("contame algo", "¿estás triste?") las responde la IA local cuando está lista</span>
+            </div>
+            <label class="switch">
+              <input id="useAiChatCheck" type="checkbox" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
       </section>
 
       <!-- TAB VOZ -->
@@ -323,6 +360,19 @@
             <p class="pageSub">Cómo responde Noxis a tu voz y qué sonidos reproduce.</p>
           </div>
         </header>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Modelo de voz</h3>
+            <p class="cardSub">El modelo define cuánto te entiende. Si Noxis no entiende bien, elegí el <b>Preciso</b> (se descarga solo y mejora muchísimo el español).</p>
+          </div>
+          <div id="modelCards" class="modelCards"></div>
+          <div id="modelProgressWrap" class="modelProgressWrap hidden">
+            <span class="modelProgressLabel" id="modelProgressLabel"></span>
+            <progress id="modelProgress" class="modelProgressBar" max="100" value="0"></progress>
+          </div>
+          <p class="hint">💡 ¿Te dicta cualquier cosa? Probá el modelo <b>Preciso</b> y subí el umbral de similitud de más abajo. La primera vez tarda unos minutos en descargar (1.5 GB) y en cargar.</p>
+        </div>
 
         <div class="card">
           <div class="cardHeader">
@@ -368,16 +418,113 @@
             <p class="cardSub">Frases que Noxis ya entiende de fábrica.</p>
           </div>
           <ul class="commandList">
-            <li><span class="commandKey">"{"nombre}" abre discord"</span><span class="commandVal">Abre una aplicación o grupo configurado</span></li>
-            <li><span class="commandKey">"{"nombre}" cierra discord"</span><span class="commandVal">Cierra una aplicación configurada</span></li>
-            <li><span class="commandKey">"{"nombre"} desactívate"</span><span class="commandVal">Noxis deja de escuchar (dormida)</span></li>
-            <li><span class="commandKey">"{"nombre} vuelve / despierta"</span><span class="commandVal">Reanuda la escucha</span></li>
+            <li><span class="commandKey">"abre discord"</span><span class="commandVal">Abre una aplicación configurada</span></li>
+            <li><span class="commandKey">"abre trabajo"</span><span class="commandVal">Abre todas las apps de un grupo configurado</span></li>
+            <li><span class="commandKey">"abre streaming solo discord"</span><span class="commandVal">Abre solo una app de un grupo ("solo", "sin", "excepto")</span></li>
+            <li><span class="commandKey">"abre lo de antes"</span><span class="commandVal">Repite el último grupo ejecutado</span></li>
+            <li><span class="commandKey">"cierra discord"</span><span class="commandVal">Cierra una aplicación o un grupo configurado</span></li>
+            <li><span class="commandKey">"cuánto es 7 por 8"</span><span class="commandVal">Resuelve cálculos sencillos</span></li>
+            <li><span class="commandKey">"dime un número entre 1 y 10"</span><span class="commandVal">Genera un número al azar</span></li>
+            <li><span class="commandKey">"tira un dado de 20"</span><span class="commandVal">Lanza un dado con la cantidad de caras que elijas</span></li>
+            <li><span class="commandKey">"cara o cruz"</span><span class="commandVal">Lanza una moneda al aire</span></li>
+            <li><span class="commandKey">"qué hora es" / "qué día es"</span><span class="commandVal">Te dice la hora y la fecha actual</span></li>
+            <li><span class="commandKey">"cuéntame un chiste"</span><span class="commandVal">Cuenta un chiste para animarte</span></li>
+            <li><span class="commandKey">"¿quién eres?" / "¿qué puedes hacer?"</span><span class="commandVal">Información sobre Noxis y sus funciones</span></li>
+            <li><span class="commandKey">"cuánto llevas activa"</span><span class="commandVal">Estado de la sesión actual</span></li>
+            <li><span class="commandKey">"recuérdame en 10 minutos tomar agua"</span><span class="commandVal">Crea un recordatorio</span></li>
+            <li><span class="commandKey">"cambia el tema a oscuro"</span><span class="commandVal">Cambia el tema de color de la interfaz</span></li>
+            <li><span class="commandKey">"muévete a la esquina superior derecha"</span><span class="commandVal">Mueve la ventana de Noxis a otra esquina</span></li>
+            <li><span class="commandKey">"desactívate" / "vuelve"</span><span class="commandVal">Duerme o despierta a Noxis</span></li>
             <li><span class="commandKey">"hola", "¿cómo estás?", "adiós"</span><span class="commandVal">Conversación básica</span></li>
           </ul>
         </div>
       </section>
 
-      <!-- TAB APPS -->
+      <!-- TAB VISIÓN IA -->
+      <section id="tab-vision" class="tab">
+        <header class="pageHeader">
+          <div class="pageHeaderText">
+            <h2>Visión IA</h2>
+            <p class="pageSub">Una IA local que ve tu pantalla y te ayuda. Noxis detecta tu equipo, descarga e instala todo automáticamente.</p>
+          </div>
+        </header>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Tu equipo</h3>
+            <p class="cardSub">Componentes detectados para elegir el modelo adecuado.</p>
+          </div>
+          <div class="visionSpecsGrid">
+            <div class="visionSpec"><span class="specLabel">CPU</span><span class="specValue" id="visionCpu">Detectando…</span></div>
+            <div class="visionSpec"><span class="specLabel">Núcleos</span><span class="specValue" id="visionCores">—</span></div>
+            <div class="visionSpec"><span class="specLabel">RAM</span><span class="specValue" id="visionRam">—</span></div>
+            <div class="visionSpec"><span class="specLabel">GPU</span><span class="specValue" id="visionGpu">—</span></div>
+            <div class="visionSpec visionSpecWide"><span class="specLabel">Modelo sugerido</span><span class="specValue" id="visionRec">—</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>IA local (Ollama)</h3>
+            <p class="cardSub">Noxis se descarga e instala el runtime y el modelo por vos. Funciona sin internet ni cuentas: todo queda en tu PC.</p>
+          </div>
+          <div class="visionSpecsGrid">
+            <div class="visionSpec"><span class="specLabel">Runtime (Ollama)</span><span class="specValue" id="visionRuntime">Detectando…</span></div>
+            <div class="visionSpec"><span class="specLabel">Modelo</span><span class="specValue" id="visionModel">—</span></div>
+          </div>
+          <div id="visionProgressWrap" class="modelProgressWrap hidden">
+            <span class="modelProgressLabel" id="visionProgressLabel"></span>
+            <progress id="visionProgress" class="modelProgressBar" max="100" value="0"></progress>
+          </div>
+          <p class="hint hidden" id="visionInstalledHint"></p>
+          <div class="visionActions">
+            <button id="visionInstallBtn" class="primaryBtn">Instalar IA</button>
+            <button id="visionRefreshBtn" class="secondaryBtn"><span class="btnIcon" data-icon="refresh"></span> Detectar</button>
+            <button id="visionCancelBtn" class="secondaryBtn dangerBtn hidden">Cancelar</button>
+          </div>
+          <p class="hint">Tamaño del instalador: ~700 MB + el modelo (1.7 a 8 GB según tu RAM). La descarga tarda unos minutos.</p>
+          <div class="switchRow">
+            <div class="switchLabel">
+              <span class="switchTitle">Leer respuestas en voz alta</span>
+              <span class="switchSub">Noxis lee con voz las respuestas de la IA (pantalla, ideas, textos)</span>
+            </div>
+            <label class="switch">
+              <input id="visionSpeakCheck" type="checkbox" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Probar IA</h3>
+            <p class="cardSub">Captura tu pantalla y pedile a la IA que te la describa al instante.</p>
+          </div>
+          <div class="visionActions">
+            <button id="visionTestBtn" class="secondaryBtn" disabled>Capturar y analizar pantalla</button>
+          </div>
+          <pre id="visionTestResult" class="visionTestResult hidden"></pre>
+        </div>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Qué podés pedirle a la IA</h3>
+            <p class="cardSub">Funciona por voz y también tecleando en el chat.</p>
+          </div>
+          <ul class="visionHintsList">
+            <li>👀 <b>Ver tu pantalla:</b> "mirá mi pantalla" · "describime lo que estoy viendo"</li>
+            <li>💡 <b>Ideas y decisiones:</b> "dame una idea" · "qué me recomendás" · "ayudame a decidir"</li>
+            <li>📖 <b>Explicar:</b> "explicame qué es la gravedad en simple"</li>
+            <li>📝 <b>Resumir:</b> "resumime este texto: …" · "resumí lo que tengo copiado"</li>
+            <li>🌐 <b>Traducir:</b> "traducime hola al inglés"</li>
+            <li>✍️ <b>Redactar:</b> "escribime un mensaje de cumpleaños"</li>
+            <li>🗂 <b>Organizar:</b> "organizame el día" · "haceme un plan de estudios"</li>
+            <li>🖼 <b>Archivos:</b> "analizá la imagen foto.png" · "preguntale a la IA sobre mi archivo notas.txt"</li>
+            <li>📋 <b>Copiar y guardar:</b> "copiá la respuesta" · "guardá la respuesta en un archivo"</li>
+          </ul>
+        </div>
+      </section>
+
       <section id="tab-apps" class="tab">
         <header class="pageHeader">
           <div class="pageHeaderText">
@@ -391,6 +538,17 @@
           </div>
         </header>
         <ul id="appsList" class="itemList cardList"></ul>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Alias de voz</h3>
+            <p class="cardSub">Traduce palabras por otras al escucharte. Ideal para apps difíciles de pronunciar o nombres largos.</p>
+          </div>
+          <ul id="aliasesList" class="itemList cardList aliasList"></ul>
+          <button id="addAliasBtn" class="secondaryBtn aliasAddBtn">
+            <span class="btnIcon" data-icon="plus"></span> Agregar alias
+          </button>
+        </div>
       </section>
 
       <!-- TAB PACKS -->
@@ -629,6 +787,26 @@
       <div class="modalActions">
         <button id="editPackAppCancelBtn" class="secondaryBtn">Cancelar</button>
         <button id="editPackAppConfirmBtn" class="primaryBtn">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Alias de voz -->
+  <div id="addAliasModal" class="modalOverlay" role="dialog" aria-modal="true" aria-label="Alias de voz">
+    <div class="modal">
+      <h3>Agregar alias</h3>
+      <label class="field">
+        <span>Palabra que dirás por voz</span>
+        <input id="aliasFromInput" type="text" placeholder="ej: hoona, live, termi" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span>Se interpreta como (palabra clave de una app o grupo)</span>
+        <input id="aliasToInput" type="text" placeholder="ej: hl, work, terminal" autocomplete="off" />
+      </label>
+      <p class="hint">Ej: alias "live" → "league of legends" para abrir el juego diciendo "Noxis abre live".</p>
+      <div class="modalActions">
+        <button id="addAliasCancelBtn" class="secondaryBtn">Cancelar</button>
+        <button id="addAliasConfirmBtn" class="primaryBtn">Agregar</button>
       </div>
     </div>
   </div>

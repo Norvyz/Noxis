@@ -18,5 +18,14 @@ contextBridge.exposeInMainWorld("configAPI", {
   openExternal: (url) => ipcRenderer.invoke("open-external", url),
   onPlaySound: (callback) => {
     ipcRenderer.on("play-sound", (event, filePath) => callback(filePath));
+  },
+  detectHardware: () => ipcRenderer.invoke("vision:detect"),
+  getVisionStatus: () => ipcRenderer.invoke("vision:status"),
+  refreshVisionStatus: () => ipcRenderer.invoke("vision:refresh"),
+  installVision: (modelName) => ipcRenderer.invoke("vision:install", modelName),
+  cancelVision: () => ipcRenderer.invoke("vision:cancel"),
+  testVision: () => ipcRenderer.invoke("vision:test"),
+  onVisionStatus: (callback) => {
+    ipcRenderer.on("vision-status", (event, status) => callback(status));
   }
 });

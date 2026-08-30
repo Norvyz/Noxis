@@ -16,22 +16,23 @@ const MODELS = {
     url: "https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip",
     sizeMB: 40,
     description:
-      "Ligero y de arranque rápido (~40 MB). Vocabulario limitado: comete más errores con palabras raras."
+      "Ligero y de arranque rápido (~40 MB). Sirve para comandos cortos, pero falla con palabras raras o frases largas."
   },
   precise: {
     id: "precise",
-    label: "Preciso",
+    label: "Preciso (recomendado)",
     version: "vosk-model-es-0.42",
     url: "https://alphacephei.com/vosk/models/vosk-model-es-0.42.zip",
     sizeMB: 1485,
     description:
-      "Alta precisión (~1.5 GB, ~2.5 GB al instalarlo). Escucha mejor el nombre y los comandos, pero ocupa mucho más."
+      "Máxima precisión en español (~1.5 GB de descarga). Te entiende frases completas y palabras raras: es el que hace que Noxis no te malinterprete."
   }
 };
 
 let localServer = null;
 let localPort = 0;
 let activeType = "small";
+const inFlightModels = {}; // candado: evita descargar dos veces el mismo modelo
 
 function getModelRoot() {
   return path.join(app.getPath("userData"), MODEL_DIR_NAME);
@@ -208,45 +209,52 @@ async function ensureModel(type) {
     return { downloaded: true, already: true };
   }
 
-  if (!fs.existsSync(modelDir)) {
-    fs.mkdirSync(modelDir, { recursive: true });
-  }
+  // Si ya hay una descarga en curso del mismo modelo, no duplicarla.
+  if (inFlightModels[type]) return inFlightModels[type];
 
-  if (!fs.existsSync(zipPath)) {
-    console.log(`[vosk] Descargando modelo ${type} (~${cfg.sizeMB}MB)...`);
-    sendStatus({ type, status: "downloading", pct: 0, detail: `Descargando modelo ${cfg.label} (0%)...` });
-
-    let lastPct = -1;
-    try {
-      await downloadFile(cfg.url, zipPath, (pct) => {
-        if (pct !== lastPct) {
-          lastPct = pct;
-          sendStatus({ type, status: "downloading", pct, detail: `Descargando modelo ${cfg.label}: ${pct}%` });
-        }
-      });
-    } catch (err) {
-      sendStatus({ type, status: "error", detail: "No se pudo descargar el modelo" });
-      throw new Error(`No se pudo descargar el modelo ${type}: ${err.message}`);
+  inFlightModels[type] = (async () => {
+    if (!fs.existsSync(modelDir)) {
+      fs.mkdirSync(modelDir, { recursive: true });
     }
-  }
 
-  if (!fs.existsSync(tarPath)) {
-    sendStatus({ type, status: "preparing", detail: `Preparando modelo ${cfg.label}...` });
-    try {
-      await convertZipToTarGz(zipPath, tarPath, modelDir);
-    } catch (err) {
-      sendStatus({ type, status: "error", detail: "Error al procesar el modelo" });
-      throw new Error(`Error al procesar el modelo ${type}: ${err.message}`);
+    if (!fs.existsSync(zipPath)) {
+      console.log(`[vosk] Descargando modelo ${type} (~${cfg.sizeMB}MB)...`);
+      sendStatus({ type, status: "downloading", pct: 0, detail: `Descargando modelo ${cfg.label} (0%)...` });
+
+      let lastPct = -1;
+      try {
+        await downloadFile(cfg.url, zipPath, (pct) => {
+          if (pct !== lastPct) {
+            lastPct = pct;
+            sendStatus({ type, status: "downloading", pct, detail: `Descargando modelo ${cfg.label}: ${pct}%` });
+          }
+        });
+      } catch (err) {
+        sendStatus({ type, status: "error", detail: "No se pudo descargar el modelo" });
+        throw new Error(`No se pudo descargar el modelo ${type}: ${err.message}`);
+      }
     }
-  }
 
-  try { fs.unlinkSync(zipPath); } catch (e) { /* */ }
+    if (!fs.existsSync(tarPath)) {
+      sendStatus({ type, status: "preparing", detail: `Preparando modelo ${cfg.label}...` });
+      try {
+        await convertZipToTarGz(zipPath, tarPath, modelDir);
+      } catch (err) {
+        sendStatus({ type, status: "error", detail: "Error al procesar el modelo" });
+        throw new Error(`Error al procesar el modelo ${type}: ${err.message}`);
+      }
+    }
 
-  fs.writeFileSync(markerPath, "ok");
-  sendStatus({ type, status: "ready" });
-  console.log(`[vosk] Modelo ${type} listo!`);
+    try { fs.unlinkSync(zipPath); } catch (e) { /* */ }
 
-  return { downloaded: true, already: false };
+    fs.writeFileSync(markerPath, "ok");
+    sendStatus({ type, status: "ready" });
+    console.log(`[vosk] Modelo ${type} listo!`);
+
+    return { downloaded: true, already: false };
+  })().finally(() => { delete inFlightModels[type]; });
+
+  return inFlightModels[type];
 }
 
 function getModelUrl() {
@@ -281,7 +289,8 @@ function getModelInfo() {
     version: MODELS[id].version,
     sizeMB: MODELS[id].sizeMB,
     description: MODELS[id].description,
-    installed: isInstalled(id)
+    installed: isInstalled(id),
+    recommended: id === "precise"
   }));
 }
 

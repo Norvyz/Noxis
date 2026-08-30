@@ -3,6 +3,7 @@ const { Tray, Menu, app, nativeImage } = require("electron");
 const windows = require("./windows");
 
 let tray = null;
+let currentState = "active";
 
 const ICON_ICO = path.join(__dirname, "../../assets/logo/LogoCircular.ico");
 const ICON_PNG = path.join(__dirname, "../../assets/logo/LogoCircular.png");
@@ -20,20 +21,19 @@ function trayIcon() {
   return null;
 }
 
-function createTray() {
-  const icon = trayIcon();
-  if (!icon) {
-    console.error("[Tray] No se encontró un ícono válido para la bandeja");
-    return null;
-  }
-  tray = new Tray(icon);
-  tray.setToolTip("Noxis");
+function stateLabel(state) {
+  if (state === "dormant") return "Noxis dormida 💤";
+  if (state === "no-mic") return "Noxis sin micrófono 🔊";
+  return "Noxis activa 🎧";
+}
 
-  const menu = Menu.buildFromTemplate([
+function buildMenu(state) {
+  return Menu.buildFromTemplate([
     {
-      label: "Configuración",
-      click: () => windows.createConfigWindow()
+      label: stateLabel(state),
+      enabled: false
     },
+    { type: "separator" },
     {
       label: "Mostrar / Ocultar",
       click: () => {
@@ -42,14 +42,40 @@ function createTray() {
         win.isVisible() ? win.hide() : win.show();
       }
     },
+    {
+      label: "Configuración",
+      click: () => windows.createConfigWindow()
+    },
     { type: "separator" },
+    {
+      label: "Reiniciar Noxis",
+      click: () => {
+        app.relaunch();
+        app.exit(0);
+      }
+    },
     {
       label: "Cerrar Noxis",
       click: () => app.quit()
     }
   ]);
+}
 
-  tray.setContextMenu(menu);
+function updateTrayState(state) {
+  currentState = state || "active";
+  if (!tray) return;
+  tray.setContextMenu(buildMenu(currentState));
+}
+
+function createTray() {
+  const icon = trayIcon();
+  if (!icon) {
+    console.error("[Tray] No se encontró un ícono válido para la bandeja");
+    return null;
+  }
+  tray = new Tray(icon);
+  tray.setToolTip("Noxis");
+  tray.setContextMenu(buildMenu(currentState));
 
   tray.on("double-click", () => {
     windows.getMainWindow()?.show();
@@ -58,4 +84,4 @@ function createTray() {
   return tray;
 }
 
-module.exports = { createTray };
+module.exports = { createTray, updateTrayState };
