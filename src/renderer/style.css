@@ -247,47 +247,6 @@ html, body {
   animation: noxisPoke 0.3s ease;
 }
 
-/* ---------- Marco de resaltado al ejecutar una acción ----------
-   Rodea a Noxis con un cuadro (color/grosor/redondez configurables)
-   cuando abre o cierra una aplicación. El renderer ajusta los valores
-   (border-color/width/radius) desde la configuración. */
-
-#noxisStage {
-  position: relative;
-  width: 210px;
-  height: 210px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-#noxisImage {
-  position: relative;
-  z-index: 2;
-}
-
-.action-highlight {
-  position: absolute;
-  inset: -6px;
-  border: 5px solid #22c55e;
-  border-radius: 30px;
-  box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
-  opacity: 0;
-  transform: scale(0.94);
-  pointer-events: none;
-  z-index: 1;
-  transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.34, 1.4, 0.44, 1);
-}
-
-.action-highlight.visible {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.action-highlight.disabled {
-  display: none;
-}
-
 /* ---------- Tarjeta de mensaje (burbuja) ---------- */
 
 .bubble {
@@ -588,53 +547,6 @@ html, body {
   transform: scale(0.92);
 }
 
-/* Acciones del header del chat (limpiar + cerrar) */
-.chat-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-/* Cambio 10: mensaje de voz (trae un ícono de micrófono) */
-.chat-msg--voice .chat-msg-bubble {
-  display: inline-flex;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.chat-msg--voice.chat-msg--noxis .chat-msg-bubble {
-  border-left: 3px solid var(--noxis-accent);
-  padding-left: 9px;
-}
-
-.chat-voice-icon {
-  font-size: 10px;
-  line-height: 1.45;
-  flex-shrink: 0;
-  opacity: 0.6;
-  margin-right: 5px;
-}
-
-.chat-voice-text {
-  min-width: 0;
-}
-
-/* Cambio 10: mensaje de sistema (centrado, estilo sutil) */
-.chat-system-msg {
-  justify-content: center;
-}
-
-.chat-system-msg .chat-msg-bubble {
-  background: transparent;
-  color: var(--placeholder);
-  font-size: 11px;
-  font-style: italic;
-  opacity: 0.9;
-  border-radius: 12px;
-  max-width: 100%;
-  animation: none;
-}
-
 /* ---------- Estado de voz ---------- */
 
 .voice-status {
@@ -700,8 +612,7 @@ html, body {
   }
   .bubble,
   .chat-card,
-  .voice-status,
-  .action-highlight {
+  .voice-status {
     transition: opacity 0.1s ease;
   }
 }

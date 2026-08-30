@@ -1,3 +1,18 @@
+// Noxis
+// Copyright (C) 2026 Norvyz
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+// src/preload/preload.js
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("noxisAPI", {
@@ -12,19 +27,6 @@ contextBridge.exposeInMainWorld("noxisAPI", {
   getVoskModelUrl: () => ipcRenderer.invoke("get-vosk-model-url"),
   getVoskStatus: () => ipcRenderer.invoke("get-vosk-status"),
   getGrammar: () => ipcRenderer.invoke("grammar:get"),
-  setVoiceModel: (type) => ipcRenderer.invoke("model:set-active", type),
-
-  getWhisperStatus: () => ipcRenderer.invoke("whisper:status"),
-  whisperTranscribe: (samples) => ipcRenderer.invoke("whisper:transcribe", samples),
-
-  getSessionHistory: () => ipcRenderer.invoke("session:history"),
-  clearSession: () => ipcRenderer.invoke("session:clear"),
-  addReminder: (text, minutes) => ipcRenderer.invoke("reminder:add", text, minutes),
-  listReminders: () => ipcRenderer.invoke("reminder:list"),
-  cancelReminder: (id) => ipcRenderer.invoke("reminder:cancel", id),
-  reminderAdd: (text, minutes) => ipcRenderer.invoke("reminder:add", text, minutes),
-  reminderList: () => ipcRenderer.invoke("reminder:list"),
-  reminderCancel: (id) => ipcRenderer.invoke("reminder:cancel", id),
 
   onShowMessage: (callback) => {
     ipcRenderer.on("show-message", (event, msg) => callback(msg));
@@ -40,14 +42,5 @@ contextBridge.exposeInMainWorld("noxisAPI", {
   },
   onPlaySound: (callback) => {
     ipcRenderer.on("play-sound", (event, filePath) => callback(filePath));
-  },
-  onActionHighlight: (callback) => {
-    ipcRenderer.on("action-highlight", () => callback());
-  },
-  onSpeak: (callback) => {
-    ipcRenderer.on("speak-text", (event, text) => callback(text));
-  },
-  onVisionStatus: (callback) => {
-    ipcRenderer.on("vision-status", (event, status) => callback(status));
   }
 });

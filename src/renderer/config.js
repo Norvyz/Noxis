@@ -33,14 +33,6 @@ const packAppsList = document.getElementById("packAppsList");
 const selectedPackTitle = document.getElementById("selectedPackTitle");
 const addPackAppBtn = document.getElementById("addPackAppBtn");
 
-const aliasesList = document.getElementById("aliasesList");
-const addAliasBtn = document.getElementById("addAliasBtn");
-const addAliasModal = document.getElementById("addAliasModal");
-const aliasFromInput = document.getElementById("aliasFromInput");
-const aliasToInput = document.getElementById("aliasToInput");
-const addAliasConfirmBtn = document.getElementById("addAliasConfirmBtn");
-const addAliasCancelBtn = document.getElementById("addAliasCancelBtn");
-
 const addAppModal = document.getElementById("addAppModal");
 const addAppKeywordInput = document.getElementById("addAppKeywordInput");
 const addAppPathInput = document.getElementById("addAppPathInput");
@@ -93,10 +85,6 @@ const showInTaskbarCheck = document.getElementById("showInTaskbarCheck");
 const startCornerSelect = document.getElementById("startCornerSelect");
 const bubbleDurationInput = document.getElementById("bubbleDurationInput");
 const commandSoundCheck = document.getElementById("commandSoundCheck");
-const commandSoundLabel = document.getElementById("commandSoundLabel");
-const commandSoundBrowseBtn = document.getElementById("commandSoundBrowseBtn");
-const commandSoundPreviewBtn = document.getElementById("commandSoundPreviewBtn");
-const commandSoundResetBtn = document.getElementById("commandSoundResetBtn");
 const similarityRange = document.getElementById("similarityRange");
 const similarityValue = document.getElementById("similarityValue");
 const sidebarAvatarImg = document.getElementById("sidebarAvatarImg");
@@ -104,21 +92,6 @@ const toastStack = document.getElementById("toastStack");
 const inlineConfirm = document.getElementById("inlineConfirm");
 const confirmYes = document.getElementById("confirmYes");
 const confirmNo = document.getElementById("confirmNo");
-
-const actionHighlightCheck = document.getElementById("actionHighlightCheck");
-const actionHighlightControls = document.getElementById("actionHighlightControls");
-const actionHighlightColorInput = document.getElementById("actionHighlightColorInput");
-const actionHighlightColorText = document.getElementById("actionHighlightColorText");
-const actionHighlightWidthRange = document.getElementById("actionHighlightWidthRange");
-const actionHighlightWidthValue = document.getElementById("actionHighlightWidthValue");
-const actionHighlightRadiusRange = document.getElementById("actionHighlightRadiusRange");
-const actionHighlightRadiusValue = document.getElementById("actionHighlightRadiusValue");
-const highlightPreview = document.getElementById("highlightPreview");
-
-const visionSpeakCheck = document.getElementById("visionSpeakCheck");
-const proactiveTalkCheck = document.getElementById("proactiveTalkCheck");
-const proactiveIntervalSelect = document.getElementById("proactiveIntervalSelect");
-const useAiChatCheck = document.getElementById("useAiChatCheck");
 
 let inlineConfirmCallback = null;
 
@@ -166,14 +139,13 @@ function renderModelCards(info) {
       <div class="modelCardTop">
         <input type="radio" name="voiceModel" value="${model.id}" ${model.id === info.active ? "checked" : ""} />
         <span class="modelName">${model.label}</span>
-        ${model.recommended ? '<span class="modelBadge">RECOMENDADO</span>' : ""}
         <span class="modelVer">${model.version}</span>
       </div>
       <div class="modelDesc">${model.description}</div>
       <div class="modelSize">${fmtMB(model.sizeMB)} para instalar</div>
       ${model.id === "precise" ? `
-      <div class="modelWarn">💡 La primera carga tarda un par de minutos y usa más memoria.
-      Para uso diario con más precisión, es la mejor opción en español.</div>` : ""}
+      <div class="modelWarn">⚠️ Requiere mucha memoria y puede no cargar en todos los equipos.
+      Se recomienda el modelo <b>Estándar</b> para uso diario.</div>` : ""}
       <progress class="modelCardBar" max="100" value="${pct}" ${downloading ? "" : "disabled"}></progress>
       <div class="modelCardFooter">
         <span class="modelStatus ${statusCls}">${statusText}</span>
@@ -375,26 +347,9 @@ async function loadConfig() {
   bubbleDurationInput.value = (typeof config.bubbleDuration === "number" && config.bubbleDuration > 0)
     ? config.bubbleDuration : 8.5;
   commandSoundCheck.checked = config.commandSoundEnabled !== false;
-  updateCommandSoundLabel();
   const sim = (typeof config.voiceSimilarityThreshold === "number") ? config.voiceSimilarityThreshold : 0.72;
   similarityRange.value = sim;
   similarityValue.textContent = Number(sim).toFixed(2);
-
-  actionHighlightCheck.checked = config.actionHighlightEnabled !== false;
-  visionSpeakCheck.checked = config.visionSpeak !== false;
-  proactiveTalkCheck.checked = config.proactiveTalk !== false;
-  proactiveIntervalSelect.value = String(
-    (typeof config.proactiveInterval === "number" && config.proactiveInterval >= 5)
-      ? config.proactiveInterval : 25
-  );
-  useAiChatCheck.checked = config.useAiChat !== false;
-  actionHighlightColorInput.value = /^#[0-9a-fA-F]{6}$/.test(config.actionHighlightColor)
-    ? config.actionHighlightColor : "#22c55e";
-  actionHighlightWidthRange.value = (typeof config.actionHighlightWidth === "number" && config.actionHighlightWidth >= 1)
-    ? config.actionHighlightWidth : 5;
-  actionHighlightRadiusRange.value = (typeof config.actionHighlightRadius === "number" && config.actionHighlightRadius >= 0)
-    ? config.actionHighlightRadius : 30;
-  updateHighlightControls();
 
   const applySkin = (p) => {
     const src = p ? `file://${p}` : "../../assets/noxis.png";
@@ -412,11 +367,8 @@ async function loadConfig() {
   if (config.allowMicrophone) loadMicDevices();
 
   loadModelSection();
-  loadVisionSection();
   renderApps();
   renderPacks();
-  if (!Array.isArray(config.aliases)) config.aliases = [];
-  renderAliases();
 }
 
 // ---------------------------------------------------------------
@@ -482,42 +434,6 @@ async function loadMicDevices() {
 micSelect.addEventListener("change", () => {
   config.selectedMicrophoneId = micSelect.value;
   config.selectedMicrophoneName = micSelect.selectedOptions[0]?.textContent || null;
-});
-
-// ---------------------------------------------------------------
-// Sonido de comando personalizado
-// ---------------------------------------------------------------
-function updateCommandSoundLabel() {
-  commandSoundLabel.textContent = config.commandSoundPath
-    ? config.commandSoundPath
-    : "Predeterminado (sonido de Noxis)";
-}
-
-commandSoundBrowseBtn.addEventListener("click", async () => {
-  const filePath = await window.configAPI.chooseSound();
-  if (!filePath) return;
-  config.commandSoundPath = filePath;
-  updateCommandSoundLabel();
-});
-
-commandSoundPreviewBtn.addEventListener("click", () => {
-  window.configAPI.previewSound(config.commandSoundPath);
-});
-
-commandSoundResetBtn.addEventListener("click", () => {
-  config.commandSoundPath = null;
-  updateCommandSoundLabel();
-});
-
-window.configAPI.onPlaySound((filePath) => {
-  if (!filePath) return;
-  try {
-    const audio = new Audio(`file://${filePath}`);
-    audio.volume = 1;
-    audio.play().catch((err) => console.error("[Noxis] No se pudo reproducir el sonido:", err));
-  } catch (err) {
-    console.error("[Noxis] Error al crear el audio:", err);
-  }
 });
 
 // ---------------------------------------------------------------
@@ -588,33 +504,6 @@ similarityRange.addEventListener("input", () => {
   similarityValue.textContent = Number(similarityRange.value).toFixed(2);
 });
 
-// Marco de resaltado (tab Comportamiento)
-function updateHighlightControls() {
-  actionHighlightControls.classList.toggle("hidden", !actionHighlightCheck.checked);
-  actionHighlightWidthValue.textContent = actionHighlightWidthRange.value;
-  actionHighlightRadiusValue.textContent = actionHighlightRadiusRange.value;
-  const color = actionHighlightColorInput.value;
-  actionHighlightColorText.textContent = color;
-  if (highlightPreview) {
-    highlightPreview.style.borderColor = color;
-    highlightPreview.style.borderWidth = `${actionHighlightWidthRange.value}px`;
-    highlightPreview.style.borderRadius = `${actionHighlightRadiusRange.value}px`;
-    highlightPreview.style.boxShadow = `0 0 18px ${hexToRgba(color, 0.4)}`;
-  }
-}
-
-// Convierte #rrggbb a rgba() para el brillo del marco
-function hexToRgba(hex, alpha) {
-  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || "");
-  if (!m) return `rgba(34, 197, 94, ${alpha})`;
-  return `rgba(${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}, ${alpha})`;
-}
-
-actionHighlightCheck.addEventListener("change", updateHighlightControls);
-actionHighlightColorInput.addEventListener("input", updateHighlightControls);
-actionHighlightWidthRange.addEventListener("input", updateHighlightControls);
-actionHighlightRadiusRange.addEventListener("input", updateHighlightControls);
-
 let lastFocused = null; // elemento con foco antes de abrir el modal (para devolverlo)
 
 function openModal(modal) {
@@ -632,7 +521,7 @@ function closeModal(modal) {
   lastFocused = null;
 }
 
-[addAppModal, addPackModal, addPackAppModal, editAppModal, editPackModal, editPackAppModal, addAliasModal].forEach((modal) => {
+[addAppModal, addPackModal, addPackAppModal, editAppModal, editPackModal, editPackAppModal].forEach((modal) => {
   modal.addEventListener("click", (e) => {
     if (e.target === modal) closeModal(modal);
   });
@@ -1096,215 +985,6 @@ function removePackApp(index) {
 }
 
 // ---------------------------------------------------------------
-// Alias de voz
-// ---------------------------------------------------------------
-function buildAliasRow(alias, onRemove) {
-  const li = document.createElement("li");
-  li.className = "itemRow";
-  li.innerHTML = `
-      <div class="rowInfo">
-        <span class="rowKeyword">${alias.from}</span>
-        <span class="rowPath">→ ${alias.to}</span>
-      </div>
-      <div class="rowActions">
-        <button class="iconBtn danger removeBtn" title="Eliminar" aria-label="Eliminar alias ${alias.from}">${window.NoxisIcons.trash(14)}</button>
-      </div>
-    `;
-  li.querySelector(".removeBtn").addEventListener("click", onRemove);
-  return li;
-}
-
-function renderAliases() {
-  aliasesList.innerHTML = "";
-  const aliases = config.aliases || [];
-  if (aliases.length === 0) {
-    aliasesList.innerHTML = emptyStateMarkup(
-      "No tienes alias",
-      "Crea alias para decir la palabra que quieras y Noxis la entienda como otra. Ej: \u201clive\u201d → \u201cleague of legends\u201d.",
-      "adjust"
-    );
-    return;
-  }
-  aliases.forEach((alias, index) => {
-    aliasesList.appendChild(
-      buildAliasRow(alias, () => confirmRemoveAlias(index))
-    );
-  });
-}
-
-addAliasBtn.addEventListener("click", () => {
-  aliasFromInput.value = "";
-  aliasToInput.value = "";
-  openModal(addAliasModal);
-  aliasFromInput.focus();
-});
-
-function confirmRemoveAlias(index) {
-  const alias = (config.aliases || [])[index];
-  askInlineConfirm(`¿Eliminar el alias \u201c${alias.from}\u201d → \u201c${alias.to}\u201d?`, () => {
-    config.aliases.splice(index, 1);
-    renderAliases();
-    showToast("Alias eliminado", "success");
-  });
-}
-
-addAliasConfirmBtn.addEventListener("click", () => {
-  const from = aliasFromInput.value.trim().toLowerCase();
-  const to = aliasToInput.value.trim().toLowerCase();
-  if (!from) {
-    aliasFromInput.focus();
-    return;
-  }
-  if (!to) {
-    aliasToInput.focus();
-    return;
-  }
-  const aliases = config.aliases || (config.aliases = []);
-  if (aliases.some((a) => a.from === from)) {
-    aliasFromInput.classList.add("error");
-    setTimeout(() => aliasFromInput.classList.remove("error"), 1500);
-    return;
-  }
-  aliases.push({ from, to });
-  renderAliases();
-  closeModal(addAliasModal);
-});
-
-addAliasCancelBtn.addEventListener("click", () => closeModal(addAliasModal));
-
-aliasFromInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") aliasToInput.focus();
-  if (e.key === "Escape") closeModal(addAliasModal);
-});
-
-aliasToInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") addAliasConfirmBtn.click();
-  if (e.key === "Escape") closeModal(addAliasModal);
-});
-
-// ---------------------------------------------------------------
-// Visión IA (Ollama local + captura de pantalla)
-// ---------------------------------------------------------------
-let visionStatus = null;
-
-function getEl(id) {
-  return document.getElementById(id);
-}
-
-function renderVisionStatus(status) {
-  if (!status) return;
-  visionStatus = status;
-
-  getEl("visionCpu").textContent = (status.hardware && status.hardware.cpu) ? status.hardware.cpu : "—";
-  getEl("visionCores").textContent = (status.hardware && status.hardware.cores) ? `${status.hardware.cores} núcleos` : "—";
-  getEl("visionRam").textContent = (status.hardware && status.hardware.ramGB) ? `${status.hardware.ramGB} GB` : "—";
-  getEl("visionGpu").textContent =
-    (status.hardware && status.hardware.gpu && status.hardware.gpu.length)
-      ? status.hardware.gpu.map((g) => g.name + (g.vramGB > 0 ? ` (${g.vramGB} GB)` : "")).join("; ")
-      : "—";
-  getEl("visionRec").textContent = status.recommended
-    ? `${status.recommended.label} (~${status.recommended.approxGB} GB)`
-    : "—";
-
-  getEl("visionRuntime").textContent = status.runtimeInstalled
-    ? (status.alive ? "Instalado y activo ✓" : "Instalado (servicio apagado)")
-    : "No instalado";
-  getEl("visionModel").textContent =
-    status.installedModels && status.installedModels.length
-      ? (status.modelInstalled
-          ? `${status.recommended ? status.recommended.name : "modelo"} · listo ✓`
-          : `Instalados: ${status.installedModels.join(", ")}`)
-      : "Sin descargar";
-
-  const installing =
-    status.status === "downloading-runtime" ||
-    status.status === "installing-runtime" ||
-    status.status === "pulling-model";
-
-  if (installing) {
-    getEl("visionProgressWrap").classList.remove("hidden");
-    if (status.status === "downloading-runtime") {
-      const pct = status.runtimeDownloadPct;
-      getEl("visionProgressLabel").textContent =
-        pct != null ? `⏳ Descargando IA… ${pct}%` : "⏳ Descargando IA…";
-      getEl("visionProgress").value = pct || 0;
-    } else if (status.status === "installing-runtime") {
-      getEl("visionProgressLabel").textContent = "⚙️ Instalando… esto puede tardar ~1 minuto";
-      getEl("visionProgress").removeAttribute("value");
-    } else if (status.status === "pulling-model") {
-      getEl("visionProgressLabel").textContent = status.pullLine || "⬇️ Descargando modelo…";
-      const m = /^Descargando modelo… (\d+)%/.exec(status.pullLine || "");
-      if (m) getEl("visionProgress").value = parseInt(m[1], 10);
-      else getEl("visionProgress").removeAttribute("value");
-    }
-  } else {
-    getEl("visionProgressWrap").classList.add("hidden");
-  }
-
-  const ready = status.canAnalyze;
-  getEl("visionInstallBtn").textContent = installing
-    ? "Instalando…"
-    : ready ? "IA lista ✓" : "Instalar IA";
-  getEl("visionInstallBtn").disabled = installing || ready;
-  getEl("visionRefreshBtn").disabled = installing;
-  getEl("visionCancelBtn").classList.toggle("hidden", !status.inProgress);
-  getEl("visionTestBtn").disabled = !ready;
-
-  const hint = getEl("visionInstalledHint");
-  if (status.status === "error" && status.error) {
-    hint.textContent = `⚠️ ${status.error}`;
-    hint.classList.remove("hidden");
-  } else {
-    hint.classList.add("hidden");
-  }
-}
-
-async function loadVisionSection() {
-  try {
-    let status = await window.configAPI.getVisionStatus();
-    const hw = await window.configAPI.detectHardware();
-    renderVisionStatus(Object.assign({}, status || {}, { hardware: hw || null }));
-  } catch (err) {
-    console.error("[config] error cargando Visión IA:", err);
-  }
-}
-
-getEl("visionRefreshBtn").addEventListener("click", async () => {
-  getEl("visionRefreshBtn").disabled = true;
-  try {
-    renderVisionStatus(await window.configAPI.refreshVisionStatus());
-  } catch (err) {
-    console.error("[config] error refreshing visión:", err);
-  }
-  getEl("visionRefreshBtn").disabled = false;
-});
-
-getEl("visionInstallBtn").addEventListener("click", () => {
-  const recommended = visionStatus && visionStatus.recommended;
-  window.configAPI.installVision(recommended ? recommended.name : "");
-});
-
-getEl("visionCancelBtn").addEventListener("click", () => {
-  window.configAPI.cancelVision();
-});
-
-getEl("visionTestBtn").addEventListener("click", async () => {
-  getEl("visionTestBtn").disabled = true;
-  const result = getEl("visionTestResult");
-  result.textContent = "📸 Capturando y analizando la pantalla…";
-  result.classList.remove("hidden");
-  try {
-    const res = await window.configAPI.testVision();
-    result.textContent = (res && res.message) ? res.message : "Sin respuesta.";
-  } catch (err) {
-    result.textContent = `Error: ${err.message}`;
-  }
-  getEl("visionTestBtn").disabled = false;
-});
-
-window.configAPI.onVisionStatus((status) => renderVisionStatus(status));
-
-// ---------------------------------------------------------------
 // Guardar / Cancelar
 // ---------------------------------------------------------------
 document.getElementById("saveBtn").addEventListener("click", async () => {
@@ -1320,15 +1000,6 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
   config.bubbleDuration = (!isNaN(dur) && dur > 0) ? dur : 8.5;
   config.commandSoundEnabled = commandSoundCheck.checked;
   config.voiceSimilarityThreshold = parseFloat(similarityRange.value);
-
-  config.actionHighlightEnabled = actionHighlightCheck.checked;
-  config.visionSpeak = visionSpeakCheck.checked;
-  config.proactiveTalk = proactiveTalkCheck.checked;
-  config.proactiveInterval = Math.max(5, parseInt(proactiveIntervalSelect.value, 10) || 25);
-  config.useAiChat = useAiChatCheck.checked;
-  config.actionHighlightColor = actionHighlightColorInput.value;
-  config.actionHighlightWidth = parseInt(actionHighlightWidthRange.value, 10) || 5;
-  config.actionHighlightRadius = parseInt(actionHighlightRadiusRange.value, 10) || 0;
 
   const ok = await window.configAPI.saveConfig(config);
   if (ok) {

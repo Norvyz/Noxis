@@ -1,3 +1,18 @@
+// Noxis
+// Copyright (C) 2026 Norvyz
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+// src/preload/configPreload.js
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("configAPI", {
@@ -5,8 +20,6 @@ contextBridge.exposeInMainWorld("configAPI", {
   saveConfig: (config) => ipcRenderer.invoke("config:save", JSON.parse(JSON.stringify(config))),
   chooseSkin: () => ipcRenderer.invoke("config:choose-skin"),
   chooseExecutable: () => ipcRenderer.invoke("config:choose-executable"),
-  chooseSound: () => ipcRenderer.invoke("config:choose-sound"),
-  previewSound: (filePath) => ipcRenderer.invoke("sound:preview", filePath),
   resetConfig: () => ipcRenderer.invoke("config:reset"),
   getConfigPath: () => ipcRenderer.invoke("config:get-path"),
   getModelInfo: () => ipcRenderer.invoke("model:get-info"),
@@ -15,17 +28,5 @@ contextBridge.exposeInMainWorld("configAPI", {
   onModelStatus: (callback) => {
     ipcRenderer.on("vosk-status", (event, info) => callback(info));
   },
-  openExternal: (url) => ipcRenderer.invoke("open-external", url),
-  onPlaySound: (callback) => {
-    ipcRenderer.on("play-sound", (event, filePath) => callback(filePath));
-  },
-  detectHardware: () => ipcRenderer.invoke("vision:detect"),
-  getVisionStatus: () => ipcRenderer.invoke("vision:status"),
-  refreshVisionStatus: () => ipcRenderer.invoke("vision:refresh"),
-  installVision: (modelName) => ipcRenderer.invoke("vision:install", modelName),
-  cancelVision: () => ipcRenderer.invoke("vision:cancel"),
-  testVision: () => ipcRenderer.invoke("vision:test"),
-  onVisionStatus: (callback) => {
-    ipcRenderer.on("vision-status", (event, status) => callback(status));
-  }
+  openExternal: (url) => ipcRenderer.invoke("open-external", url)
 });

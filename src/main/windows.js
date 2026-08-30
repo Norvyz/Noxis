@@ -1,3 +1,17 @@
+// Noxis
+// Copyright (C) 2026 Norvyz
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 const path = require("path");
 const { BrowserWindow, screen, globalShortcut, nativeImage } = require("electron");
 
@@ -13,6 +27,7 @@ function trayIcon() {
   for (const p of candidates) {
     let img = nativeImage.createFromPath(p);
     if (!img.isEmpty()) {
+      // Fuerza tamaño de bandeja (evita que Windows re-escale de más y se vea borroso)
       img = img.resize({ width: 16, height: 16, quality: "best" });
       return img;
     }
@@ -74,7 +89,7 @@ function createMainWindow(config) {
     skipTaskbar: !config.showInTaskbar,
     alwaysOnTop: !!config.alwaysOnTop,
     hasShadow: false,
-    icon: getIconPath(),
+    icon: getIconPath(), // Ícono de la ventana principal
     webPreferences: {
       preload: path.join(__dirname, "../preload/preload.js"),
       contextIsolation: true,
@@ -87,6 +102,7 @@ function createMainWindow(config) {
   mainWindow.loadFile(path.join(__dirname, "../renderer/index.html"));
   mainWindow.setMenuBarVisibility(false);
 
+  // Consola/DevTools deshabilitadas para el usuario final
   mainWindow.webContents.on("devtools-opened", () => {
     mainWindow.webContents.closeDevTools();
   });
@@ -128,6 +144,7 @@ function createConfigWindow() {
   configWindow.setMenuBarVisibility(false);
   configWindow.loadFile(path.join(__dirname, "../renderer/config.html"));
 
+  // Consola/DevTools deshabilitadas para el usuario final
   configWindow.webContents.on("devtools-opened", () => {
     configWindow.webContents.closeDevTools();
   });

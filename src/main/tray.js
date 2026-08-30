@@ -1,9 +1,25 @@
+// Noxis
+// Copyright (C) 2026 Norvyz
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+// src/main/tray.js
+// Equivalente a InitNotifyIcon() de MainWindow.xaml.cs
+
 const path = require("path");
 const { Tray, Menu, app, nativeImage } = require("electron");
 const windows = require("./windows");
 
 let tray = null;
-let currentState = "active";
 
 const ICON_ICO = path.join(__dirname, "../../assets/logo/LogoCircular.ico");
 const ICON_PNG = path.join(__dirname, "../../assets/logo/LogoCircular.png");
@@ -14,57 +30,12 @@ function trayIcon() {
   for (const p of candidates) {
     let img = nativeImage.createFromPath(p);
     if (!img.isEmpty()) {
+      // Fuerza tamaño de bandeja (evita que Windows re-escale de más y se vea borroso)
       img = img.resize({ width: 16, height: 16, quality: "best" });
       return img;
     }
   }
   return null;
-}
-
-function stateLabel(state) {
-  if (state === "dormant") return "Noxis dormida 💤";
-  if (state === "no-mic") return "Noxis sin micrófono 🔊";
-  return "Noxis activa 🎧";
-}
-
-function buildMenu(state) {
-  return Menu.buildFromTemplate([
-    {
-      label: stateLabel(state),
-      enabled: false
-    },
-    { type: "separator" },
-    {
-      label: "Mostrar / Ocultar",
-      click: () => {
-        const win = windows.getMainWindow();
-        if (!win) return;
-        win.isVisible() ? win.hide() : win.show();
-      }
-    },
-    {
-      label: "Configuración",
-      click: () => windows.createConfigWindow()
-    },
-    { type: "separator" },
-    {
-      label: "Reiniciar Noxis",
-      click: () => {
-        app.relaunch();
-        app.exit(0);
-      }
-    },
-    {
-      label: "Cerrar Noxis",
-      click: () => app.quit()
-    }
-  ]);
-}
-
-function updateTrayState(state) {
-  currentState = state || "active";
-  if (!tray) return;
-  tray.setContextMenu(buildMenu(currentState));
 }
 
 function createTray() {
@@ -75,7 +46,28 @@ function createTray() {
   }
   tray = new Tray(icon);
   tray.setToolTip("Noxis");
-  tray.setContextMenu(buildMenu(currentState));
+
+  const menu = Menu.buildFromTemplate([
+    {
+      label: "Configuración",
+      click: () => windows.createConfigWindow()
+    },
+    {
+      label: "Mostrar / Ocultar",
+      click: () => {
+        const win = windows.getMainWindow();
+        if (!win) return;
+        win.isVisible() ? win.hide() : win.show();
+      }
+    },
+    { type: "separator" },
+    {
+      label: "Cerrar Noxis",
+      click: () => app.quit()
+    }
+  ]);
+
+  tray.setContextMenu(menu);
 
   tray.on("double-click", () => {
     windows.getMainWindow()?.show();
@@ -84,4 +76,4 @@ function createTray() {
   return tray;
 }
 
-module.exports = { createTray, updateTrayState };
+module.exports = { createTray };
