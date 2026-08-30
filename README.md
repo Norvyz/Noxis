@@ -57,7 +57,7 @@
 - Cambia la apariencia de tu mascota (skins)
 - Nombre personalizable (wake word a tu gusto)
 - Tema claro y oscuro
-- Doble modelo de voz: Estándar (40 MB) o Preciso (1.5 GB), con descarga integrada
+- Modelo de voz Estándar (40 MB) con descarga integrada
 
 </td>
     <td width="50%" valign="top">
@@ -180,8 +180,8 @@
 <a href="https://github.com/Bryanmgomez">
   <img src="https://github.com/Bryanmgomez.png?size=100" alt="Bryanmgomez" width="100" />
 </a>
-<a href="https://github.com/Rizuz">
-  <img src="https://github.com/iRizuz_.png?size=100" alt="1Rizuz" width="100" />
+<a href="https://github.com/1Rizuz">
+  <img src="https://github.com/1Rizuz_.png?size=100" alt="1Rizuz" width="100" />
 </a>
 
 </div>
@@ -200,6 +200,6 @@ Este proyecto es **software libre** bajo la licencia **GPL-3.0**. Toda marca, se
 
 <div align="center">
 
-<sub>Hecho con 💚 por <a href="https://github.com/Norvyz">Norvyz</a></sub>
+<sub>Hecho con 💚 por <a href="https://github.com/Norvyz">Norvyz, Bryan y Rizuz</a></sub>
 
 </div>

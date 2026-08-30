@@ -91,7 +91,7 @@ app.whenReady().then(() => {
     if (config.allowMicrophone && !voskService.getModelUrl()) {
       win.webContents.send(
         "show-message",
-        "Ahora mismo no puedo escucharte 🔊 Para configurarlo entra a Configuración: con click derecho sobre mí, o con la flechita ↑ de la barra de tareas (ícono de Noxis) → Configuración. Ahí eliges el modelo Estándar o Preciso."
+        "Ahora mismo no puedo escucharte 🔊 Para configurarlo entra a Configuración: con click derecho sobre mí, o con la flechita ↑ de la barra de tareas (ícono de Noxis) → Configuración. Ahí puedes descargar el modelo de voz."
       );
     } else {
       win.webContents.send(
@@ -203,9 +203,9 @@ ipcMain.handle("model:get-info", () => ({
   active: voskService.getActiveType()
 }));
 
-// Activa un modelo de voz (descargado o no) y avisa al widget
+// Activa el modelo de voz (descargado o no) y avisa al widget
 ipcMain.handle("model:set-active", (event, type) => {
-  if (type !== "small" && type !== "precise") return false;
+  if (type !== "small") return false;
   config.voiceModel = type;
   configService.save(config);
   voskService.setActiveType(type);
@@ -215,7 +215,7 @@ ipcMain.handle("model:set-active", (event, type) => {
 
 // Descarga un modelo en background; el progreso llega por "vosk-status"
 ipcMain.handle("model:download", (event, type) => {
-  if (type !== "small" && type !== "precise") return false;
+  if (type !== "small") return false;
   Promise.resolve(voskService.download(type)).catch((err) => {
     console.error("[MAIN] Error descargando modelo:", err.message);
   });

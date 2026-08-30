@@ -14,7 +14,7 @@
 
 // src/services/voskService.js
 // Descarga modelo Vosk (.zip), extrae, reempaqueta como .tar.gz, sirve por HTTP.
-// Soporta dos modelos: "small" (ligero, 40MB) y "precise" (preciso, ~1.5GB).
+// Solo se usa el modelo "small" (ligero, 40MB).
 
 const fs = require("fs");
 const path = require("path");
@@ -36,16 +36,7 @@ const MODELS = {
     url: "https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip",
     sizeMB: 40,
     description:
-      "Ligero y de arranque rápido (~40 MB). Vocabulario limitado: comete más errores con palabras raras."
-  },
-  precise: {
-    id: "precise",
-    label: "Preciso",
-    version: "vosk-model-es-0.42",
-    url: "https://alphacephei.com/vosk/models/vosk-model-es-0.42.zip",
-    sizeMB: 1485,
-    description:
-      "Alta precisión (~1.5 GB, ~2.5 GB al instalarlo). Escucha mejor el nombre y los comandos, pero ocupa mucho más."
+      "Ligero y de arranque rápido (~40 MB). Ideal para el uso diario con Noxis."
   }
 };
 
@@ -91,6 +82,18 @@ function migrateLegacySmall() {
   console.log("[vosk] Modelo small migrado a subcarpeta");
 }
 
+// Limpieza: el modelo "precise" (vosk-model-es-0.42) ya no se usa. Borramos
+// su carpeta si existe para no dejar .zip ni archivos huérfanos en disco.
+function cleanupObsoleteModels() {
+  const preciseDir = path.join(getModelRoot(), "precise");
+  if (fs.existsSync(preciseDir)) {
+    try {
+      fs.rmSync(preciseDir, { recursive: true, force: true });
+      console.log("[vosk] Carpeta del modelo precise (vosk-model-es-0.42) eliminada");
+    } catch (e) { /* */ }
+  }
+}
+
 // ---------------------------------------------------------------
 // Notificaciones (broadcast a todas las ventanas)
 // ---------------------------------------------------------------
@@ -102,7 +105,7 @@ function sendStatus(info) {
 }
 
 // ---------------------------------------------------------------
-// Servidor HTTP local — sirve el .tar.gz de cada modelo
+// Servidor HTTP local — sirve el .tar.gz del modelo activo
 // ---------------------------------------------------------------
 function startLocalServer() {
   return new Promise((resolve, reject) => {
@@ -112,9 +115,7 @@ function startLocalServer() {
     }
 
     localServer = http.createServer((req, res) => {
-      const typeForPath = { "/model-small.tar.gz": "small", "/model-precise.tar.gz": "precise" }[req.url]
-        || activeType; // "/model.tar.gz" → modelo activo (compat)
-      const tarPath = path.join(getModelDir(typeForPath), "model.tar.gz");
+      const tarPath = path.join(getModelDir(activeType), "model.tar.gz");
 
       if (!fs.existsSync(tarPath)) {
         res.writeHead(404);
@@ -295,7 +296,7 @@ async function ensureModel(type) {
 function getModelUrl() {
   if (!localPort) return null;
   if (!isInstalled(activeType)) return null;
-  return `http://127.0.0.1:${localPort}/model-${activeType}.tar.gz`;
+  return `http://127.0.0.1:${localPort}/model.tar.gz`;
 }
 
 function setActiveType(type) {
@@ -334,6 +335,7 @@ async function download(type) {
 
 async function start(type) {
   migrateLegacySmall();
+  cleanupObsoleteModels();
   if (type) setActiveType(type);
 
   const port = await startLocalServer();

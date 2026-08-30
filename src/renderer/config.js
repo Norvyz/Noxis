@@ -143,9 +143,6 @@ function renderModelCards(info) {
       </div>
       <div class="modelDesc">${model.description}</div>
       <div class="modelSize">${fmtMB(model.sizeMB)} para instalar</div>
-      ${model.id === "precise" ? `
-      <div class="modelWarn">⚠️ Requiere mucha memoria y puede no cargar en todos los equipos.
-      Se recomienda el modelo <b>Estándar</b> para uso diario.</div>` : ""}
       <progress class="modelCardBar" max="100" value="${pct}" ${downloading ? "" : "disabled"}></progress>
       <div class="modelCardFooter">
         <span class="modelStatus ${statusCls}">${statusText}</span>
