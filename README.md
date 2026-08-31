@@ -141,6 +141,74 @@
 
 <div align="center">
 
+<h1><a id="companion"></a>Companion Mode</h1>
+
+<h3>Noxis no solo responde: también te observa, te cuida y te habla de vez en cuando.</h3>
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+
+#### Detección de apps
+- Noxis detecta qué aplicación estás usando
+- Reacciona con frases al cambiar de app (Chrome, Discord, VS Code, etc.)
+- Cooldown configurable para no ser invasiva
+- Probabilidad aleatoria: aunque se cumpla el cooldown, a veces se queda callada
+
+</td>
+    <td width="50%" valign="top">
+
+#### Horario y recordatorios
+- Saluda distinto según la hora: mañana, tarde, noche o madrugada
+- Recordatorio periódico de hidratación (cada 90 min, configurable)
+- Información fija sobre consumo diario de agua (2-2.5 L/día)
+- "Pensamientos random" de la mascota cada 45-120 min
+
+</td>
+  </tr>
+</table>
+
+<h4>Sin IA: todo se resuelve con frases predefinidas, temporizadores y Math.random().</h4>
+
+#### Personalizar frases
+
+Todas las frases están en `src/services/phrases.json`. Puedes editarlas directamente sin tocar código:
+
+```json
+{
+  "timeOfDay": {
+    "morning": ["Buenos días ☀️ Arrancamos con todo?"],
+    "afternoon": ["Buenas tardes! Cómo viene el día?"],
+    "evening": ["Buenas noches! Cerramos algo pendiente?"],
+    "night": ["Son las 3am... no deberías estar durmiendo?"]
+  },
+  "appReactions": {
+    "chrome.exe": ["Navegando? No te pierdas en YouTube 🦎"],
+    "discord.exe": ["Discord! Hablando con amigos?"],
+    "default": ["Usando {appName}? Interesante."]
+  },
+  "hydration": ["Recordatorio: tomate un vaso de agua 💧"],
+  "randomThoughts": ["A veces me pregunto si los geckos digitales sueñan con ovejas eléctricas 🦎"]
+}
+```
+
+#### Constantes configurables (en `companionService.js`)
+
+| Constante | Default | Descripción |
+|---|---|---|
+| `COOLDOWN_MS` | 15 min | Tiempo mínimo entre mensajes espontáneos |
+| `SPEAK_PROBABILITY` | 0.3 (30%) | Probabilidad de hablar cuando se cumple el cooldown |
+| `HYDRATION_INTERVAL_MS` | 90 min | Intervalo del recordatorio de hidratación |
+| `RANDOM_THOUGHT_MIN_MS` | 45 min | Mínimo entre pensamientos random |
+| `RANDOM_THOUGHT_MAX_MS` | 120 min | Máximo entre pensamientos random |
+| `APP_DWELL_MS` | 5 min | Tiempo mínimo en una app antes de reaccionar |
+
+</div>
+
+---
+
+<div align="center">
+
 <h1><a id="screenshots"></a>Screenshots</h1>
 
 <br/>

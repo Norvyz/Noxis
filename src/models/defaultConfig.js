@@ -35,7 +35,12 @@ function createDefaultConfig() {
     startCorner: "bottom-right",
     alwaysOnTop: false,
     showInTaskbar: true,
-    voiceSimilarityThreshold: 0.72
+    voiceSimilarityThreshold: 0.72,
+    // Comportamiento companion (habla sola, detecta apps, recordatorios)
+    companionEnabled: true,
+    companionCooldownMinutes: 15,
+    companionHydrationMinutes: 90,
+    companionSpeakProbability: 0.3
   };
 }
 

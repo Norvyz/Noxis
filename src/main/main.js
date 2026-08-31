@@ -25,6 +25,7 @@ const configService = require("../services/configService");
 const packService = require("../services/packService");
 const conversationService = require("../services/conversationService");
 const systemCommandHandler = require("../services/systemCommandHandler");
+const companionService = require("../services/companionService");
 const voskService = require("../services/voskService");
 
 app.commandLine.appendSwitch("enable-features", "SpeechRecognition");
@@ -100,6 +101,14 @@ app.whenReady().then(() => {
         `¡Hola! Soy ${config.name} 👋 Háblame normal, o di mi nombre para abrir apps.`
       );
     }
+
+    // Iniciar comportamiento companion (habla sola, detecta apps, recordatorios)
+    if (config.companionEnabled !== false) {
+      companionService.start((msg) => {
+        const w = windows.getMainWindow();
+        if (w) w.webContents.send("show-message", msg);
+      }, config);
+    }
   }, 900);
 
   app.on("activate", () => {
@@ -112,6 +121,10 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     // en Windows/Linux dejamos correr por el tray, no llamamos app.quit()
   }
+});
+
+app.on("before-quit", () => {
+  companionService.stop();
 });
 
 // ---------------------------------------------------------------
@@ -276,6 +289,7 @@ ipcMain.handle("config:save", (event, newConfig) => {
       voskService.setActiveType(config.voiceModel);
     }
     applyWindowSettings(config);
+    companionService.updateConfig(config);
     windows.getMainWindow()?.webContents.send("config-updated", config);
   }
   return ok;

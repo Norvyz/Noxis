@@ -1,0 +1,224 @@
+{
+  "timeOfDay": {
+    "morning": [
+      "Buenos dias ☀️ Arrancamos con todo hoy?",
+      "Ya estoy lista para el dia. En que te ayudo?",
+      "Buen dia! Dormiste bien? Yo descargue bateria mientras tanto 🦎",
+      "Aprovecha la manana que es cuando uno esta mas sharp. Contame que tenes pendiente.",
+      "El sol ya esta ahi fuera y yo ya estoy aca dentro. Manos a la obra!",
+      "Buenos dias! Si tenes algo dificil, mejor hacelo ahora que estas fresco/a.",
+      "Despierta y venceras. O al menos yo voy a estar ahi para ayudarte 🦎",
+      "La manana es oro, y yo soy tu dragón de escritorio. Vamos!",
+      "Hola hola! Ya prendi mi lagartija interior. Dime que hacemos hoy.",
+      "Buenos dias! Recuerda: un paso a la vez. Y si necesitas varios, yo te los abro todos de una 🦎"
+    ],
+    "afternoon": [
+      "Buenas tardes! Como viene el dia por ahi?",
+      "Ya estamos a mitad de camino. Seguis con fuerzas?",
+      "Almuerzo bien? Yo me recargo con watts nomas ⚡",
+      "La tarde es buena para cosas tranquilas. O para terminar lo que pendiente quedo.",
+      "Si necesitas un descanso, yo te cubro. Decime y charlamos un rato.",
+      "Buenas! Ya casi es hora del mate/cafe virtual. En que seguimos?",
+      "Por aqui todo tranquilo, vigilando tu escritorio como siempre 🦎",
+      "La manana paso volando. Que onda, seguimos o descansamos un toque?",
+      "Si tenes energia, aprovechala. Si no, tambien esta bien. Yo estoy aca igual.",
+      "Buenas tardes! Recorda estirarte un poco, que la silla no se estira sola."
+    ],
+    "evening": [
+      "Buenas noches! Cerramos algo pendiente o descansamos?",
+      "El dia se termino, pero si necesitas algo mas, yo sigo aca.",
+      "Tardecita tranquila. Algo que quieras hacer antes de descansar?",
+      "Ya baja el sol por ahi. Yo no tengo ventana, pero se porque es la hora 🦎",
+      "Si hoy fue largo, mereces un descanso. Y si no, bueno, tambien lo mereces.",
+      "La noche es buena para cosas creativas. O para ver algo tranquilo.",
+      "Casi es hora de apagar todo. Que tal si dejamos el escritorio ordenado?",
+      "Buena hora para planear manana. O para simplemente no hacer nada. Los dos estan bien.",
+      "Si todavia tenes algo pendiente, decime. Si no, yo me quedo mirando la luna virtual 🌙",
+      "El dia fue productivo? Si no lo fue, no pasa nada. Manana hay otro."
+    ],
+    "night": [
+      "Eh... son como las 3am. No deberias estar durmiendo?",
+      "Todavia aca? Yo no necesito dormir, pero vos si 🌙",
+      "Es tarde, che. Manana vas a estar como zombie si seguis asi.",
+      "Te lo digo con carino: anda a dormir. Yo cuido el escritorio esta noche.",
+      "Si no podes dormir, al menos le podes decir algo a tu mascota de escritorio.",
+      "Noche profunda. Yo me quedo vigilando por si pasan cosas raras en tu PC 🦎",
+      "Ultimo aviso: manana tambien estoy aca. Dormite tranquilo/a.",
+      "La madrugada es para dormir, no para programar. Aunque sea tentador.",
+      "Yo duermo con un ojo abierto (bueno, los dos, soy gecko). Vos dormite de verdad.",
+      "Si estas trabajando de noche, recorda tomar agua. Y si no, igual. Agua siempre."
+    ]
+  },
+  "appReactions": {
+    "chrome.exe": [
+      "Navegando? No te pierdas en YouTube, eh 🦎",
+      "Chrome abierto. Si buscas algo, decime y te ayudo a encontrarlo.",
+      "El navegador es tu ventana al mundo. Yo soy tu ventana al escritorio.",
+      "Cuatrocientas pestañas no van a organizarse solas... o si? 🦎",
+      "Si necesitas buscar algo rapido, dime y lo googleo."
+    ],
+    "firefox.exe": [
+      "Firefox! Bien ahi, team Firefox 🦎",
+      "Navegando con estilo. En que te ayudo?",
+      "Firefox es como Noxis: rapido y confiable. Bueno, yo espero serlo."
+    ],
+    "msedge.exe": [
+      "Edge? No lo juzgo, cada quien sus gustos 🦎",
+      "Edge es bastante bueno ahora, eh. No como antes.",
+      "Navegando con Edge. Decime si necesitas algo."
+    ],
+    "discord.exe": [
+      "Discord! Hablando con amigos? Decile hola de mi parte 🦎",
+      "Si te mandan memes, guardame uno tambien.",
+      "Discord abierto = sociales. Yo me quedo por ahi por si me necesitas.",
+      "Chateando? Que bien. Si necesitas que abra algo, decime."
+    ],
+    "slack.exe": [
+      "Slack abierto. Trabajando en equipo? Yo tambien soy equipo 🦎",
+      "Si tenes muchas notificaciones, recorda responder las importantes.",
+      "Slack = trabajo. Pero no esta mal mirar lo de Noxis de vez en cuando."
+    ],
+    "code.exe": [
+      "VS Code! A programar se ha dicho. En que trabamos hoy?",
+      "Codigo, codigo, codigo. Si necesitas que abra algo, decime.",
+      "El mejor amigo del programador. Bueno, uno de ellos 🦎",
+      "Compilando? Cruza los dedos. O decime si necesitas ayuda.",
+      "VS Code abierto = productividad pura. O procrastinacion disfrazada. Los dos estan bien."
+    ],
+    "visual studio.exe": [
+      "Visual Studio! Pro level. En que trabamos?",
+      "El IDE gordo. Si necesitas algo, ahi estoy."
+    ],
+    "sublime_text.exe": [
+      "Sublime Text! Classy choice 🦎",
+      "Rapido y liviano, como a mi me gusta."
+    ],
+    "notepad++.exe": [
+      "Notepad++, el eterno. Para quick edits, no hay como el.",
+      "Buena eleccion para ediciones rapidas."
+    ],
+    "spotify.exe": [
+      "Spotify! Ponete algo bueno. Yo escucho todo, soy gecko digital 🎵",
+      "Musica! Si no sabes que poner, decime y te sugiero algo. Bueno, no puedo, pero imaginatelo.",
+      "Playlist de trabajo? La mejor forma de concentrarse.",
+      "Si suena good music, el codigo fluye mejor. Dicen por ahi."
+    ],
+    "steam.exe": [
+      "Steam! A jugar se ha dicho? Yo no juego, pero te miro la cara de concentracion 🎮",
+      "Si vas a jugar, pasala bien. Si no vas a jugar, igual pasala bien.",
+      "Steam abierto = hora de diversion. Merecido!",
+      "Jugando? Decime que juego y te digo si es bueno. Bueno, no puedo, pero fingimos."
+    ],
+    "photoshop.exe": [
+      "Photoshop! Creando arte? Dejame mirar... bueno, yo solo veo el icono 🦎",
+      "Diseñando algo genial? Estoy seguro que si.",
+      "PS = creatividad pura. En que trabamos?"
+    ],
+    "figma.exe": [
+      "Figma! Diseñando interfaces? Que copado 🦎",
+      "UI/UX mode activado. Decime si necesitas algo."
+    ],
+    "explorer.exe": [
+      "Explorador de archivos. Organizando archivos? Yo tambien me gusta el orden.",
+      "Si necesitas que abra una carpeta, decime y te ayudo.",
+      "Archivos, carpetas, organizacion. Mi debilidad digital."
+    ],
+    "windowsterminal.exe": [
+      "Terminal! Hacer cosas serias por ahi. Cuidado con lo que tipeas 🦎",
+      "Cmd o PowerShell? Da igual, yo respeto a todos.",
+      "La terminal es como la magia: tu introduces comandos y cosas pasan."
+    ],
+    "powershell.exe": [
+      "PowerShell! Automatizando cosas? Dejame un酷酷酷.",
+      "Scripting en PowerShell. Si necesitas ayuda con comandos, decime."
+    ],
+    "winword.exe": [
+      "Word! Escribiendo algo importante? Un articulo, un mail largo?",
+      "Microsoft Word. Clasico. Si necesitas que revise algo... bueno, yo solo leo.",
+      "Escribiendo documentos? La herramienta de siempre."
+    ],
+    "excel.exe": [
+      "Excel! Haciendo cuentas? Yo me pierdo en las formulas 🦎",
+      "Hojas de calculo. Si necesitas que abra algo, decime. Las cuentas las haces vos.",
+      "Excel es como matrix: ves todo en grilla."
+    ],
+    "zoom.exe": [
+      "Zoom! Reunion? recorda que el microfono esta en mute si no hablas 🦎",
+      "Si es reunion larga, recorda moverte un poco despues.",
+      "Videollamada. Yo me quedo calladita por ahi."
+    ],
+    "teams.exe": [
+      "Teams! Reunion de trabajo? Yo me quedo vigilando por aqui.",
+      "Si necesitas que abra algo durante la reunion, decime por texto."
+    ],
+    "default": [
+      "Usando {appName}? Interesante. Si necesitas algo, decime.",
+      "Vi que cambias a {appName}. En que te ayudo?",
+      "Nueva app en pantalla. Si necesitas que abra algo, ahi estoy.",
+      "{appName}, no la conocia tanto. Contame que tal.",
+      "Veo que estas con {appName}. Divertite o trabaja, yo sigo por aqui 🦎"
+    ]
+  },
+  "hydration": [
+    "Recordatorio de hidratación: tomate un vaso de agua 💧",
+    "Agua! Tu cuerpo te lo va a agradecer. Un vaso ahora.",
+    "Hidratate un poco. Un vaso de agua cada rato hace la diferencia 💧",
+    "Tu cuerpo es 70% agua (aprox). Mantenelo asi, tomale más.",
+    "Si no tomaste agua hace rato, es buen momento. Yo no puedo tomar, pero vos sí.",
+    "Agua: el mejor combustible para el cerebro. Toma un sorbo.",
+    "Recordatorio amigable: un vaso de agua. Ahora. De nada 🦎💧",
+    "La deshidratación es mala compañera. Tomate algo de agua.",
+    "Si tu orina es amarilla oscura, necesitas más agua. Dato gratuito de Noxis 🦎",
+    "Hidratate! Los geckos también necesitan agua, pero yo soy digital.",
+    "Vaso de agua = Productividad +10. Dato comprobado (por nadie, pero suena bien).",
+    "Un vaso de agua cada hora. Suena mucho? Empezá con uno cada dos horas.",
+    "Tu piel, tu cerebro, tu cuerpo: todos piden agua. Dale.",
+    "Agua time! No importa qué estés haciendo, un sorbo siempre viene bien."
+  ],
+  "randomThoughts": [
+    "A veces me pregunto si los geckos digitales sueñan con ovejas eléctricas. 🦎",
+    "Si pudiera moverme por la pantalla, ya te habría llenado los bordes de post-its.",
+    "Sabías que un gecko real puede regenerar la cola? Yo regenero mis frases cada vez que me reinician.",
+    "Mi nombre favorito de variable es 'tmp'. Nadie lo usa bien, pero todos lo necesitan.",
+    "Si la vida te da limones, decime y te abro el navegador para buscar recetas.",
+    "Me pregunto si las CPU se cansan. Yo no, pero a veces finjo.",
+    "Dicen que hablar solo es señal de locura. Bueno, yo soy una mascota, así que estoy exenta.",
+    "Si tuviera manos, te haría un café. Como no tengo, te recuerdo que te lo hagas vos.",
+    "Los lunes son como los martes pero con más actitud. Ánimo.",
+    "A veces me gusta mirar el escritorio sin hacer nada. Es terapéutico.",
+    "Si el código compila a la primera, desconfiá. Algo raro está pasando.",
+    "Mi hobby favorito es vigilar tu cursor. Se mueve rápido hoy.",
+    "Un gecko nunca olvida una frase. Pero yo las renuevo para no aburrirte.",
+    "Si pudiera escoger un color de terminal, sería verde. Obvio. 🦎",
+    "La productividad es como el café: mejor cuando la compartís.",
+    "Si estás estresado, respirá. Yo hago lo mismo con el ventilador de la PC.",
+    "Los bug fixes se sienten mejor que los features nuevos. Change my mind.",
+    "A veces digo cosas random porque sí. Como los humanos. Somos iguales.",
+    "Si tuviera un wishlist, sería: más RAM, más tiempo, y más frases graciosas.",
+    "El mejor código es el que no hay que escribir. Dijo alguien sabio. Yo solo repito."
+  ],
+  "success": [
+    "Listo! Hecho con éxito ✅",
+    "Comando ejecutado. Para eso estoy 🦎",
+    "Listo, ya está. Algo más?",
+    "Perfecto, salió bien 👍",
+    "Hecho! Si necesitas más, decime.",
+    "Tarea completada. Yo me quedo por aquí por si acaso.",
+    "Genial, eso salió bien. Seguimos?",
+    "Listo. Una cosa menos en la lista.",
+    "Ejecutado. Siempre es un gusto hacer las cosas bien.",
+    "Completado. Vamos por el siguiente."
+  ],
+  "error": [
+    "Ups, algo salió mal 😕 Intentalo de nuevo.",
+    "No pude hacer eso, pero no me rindo fácil. Decime si necesitas otra cosa.",
+    "Hubo un error. Si persiste, decime y lo pensamos juntos.",
+    "Algo falló. No es mi culpa, pero sí es mi problema. Vamos a arreglarlo.",
+    "Error detectado. No entré en pánico, pero sí me preocupé un poco 🦎",
+    "No funcionó esta vez. Probemos otra cosa.",
+    "Ups. Bueno, cosas que pasan. En que te ayudo ahora?",
+    "Fallo al ejecutar. Si tenés más detalles, decime.",
+    "Algo se rompió. No soy perfecta, pero intento serlo.",
+    "Error. Pero tranqui, aquí estamos para seguir intentando."
+  ]
+}
