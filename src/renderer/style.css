@@ -199,15 +199,19 @@ html, body {
   100% { transform: scale(1); }
 }
 
-/* Halo de presencia pulsante detrás de Noxis.
-   Antes iba anclado por abajo (bottom:26px), pegado al fondo de la
-   ventana. Ahora la mascota se subió (ver #voiceStack) para dejar espacio
-   debajo para el chat, así que el halo se ancla por arriba con el mismo
-   número que la imagen (191px) para seguir quedando centrado detrás de
-   Noxis. */
+/* Salto al hablar (solo para skins PNG; los GIF ya se mueven solos) */
+@keyframes noxisTalk {
+  0%, 100% { transform: translateY(0) scale(1); }
+  20% { transform: translateY(-16px) scale(1.05) rotate(2deg); }
+  40% { transform: translateY(0) scale(0.98) rotate(-1deg); }
+  60% { transform: translateY(-10px) scale(1.03) rotate(1.5deg); }
+  80% { transform: translateY(0) scale(1.01); }
+}
+
+
 #noxisHalo {
   position: absolute;
-  top: 191px;
+  top: 231px;
   left: 50%;
   width: 210px;
   height: 210px;
@@ -220,15 +224,10 @@ html, body {
   animation: noxisHalo 3.4s ease-in-out infinite;
 }
 
-/* Pila vertical (transcripción arriba + Noxis abajo).
-   Antes estaba pegada al fondo de la ventana (bottom:6px) y el chat se
-   abría prácticamente en el mismo sitio, montándose sobre la mascota.
-   Ahora la subimos y la anclamos por arriba (top:150px) para que quede
-   espacio libre DEBAJO de Noxis (hasta el fondo de la ventana) y ahí es
-   donde vive el chat (.chat-card), sin taparla nunca. */
+
 #voiceStack {
   position: absolute;
-  top: 150px;
+  top: 190px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -257,36 +256,28 @@ html, body {
   animation: noxisPoke 0.3s ease;
 }
 
+#noxisImage.talk {
+  animation: noxisTalk 0.7s ease;
+}
+
 /* ---------- Tarjeta de mensaje (burbuja) ---------- */
 
 .bubble {
-  /* Se ancla justo encima de la mascota (que ahora empieza en top:150px)
-     y crece hacia arriba, nunca se monta sobre #voiceStack.
-
-     Pediste que en vez de hacer scroll vertical cuando el texto es largo,
-     el globo se AGRANDE A LO ANCHO (más fácil de leer que un bloque
-     angosto con scroll). Por eso ya no tiene una altura fija chiquita:
-     max-width subió de 280px a 340px (la ventana también se ensanchó,
-     ver windows.js) y el ancho real del globo se ajusta solo al
-     contenido (nunca se declara "width", así que por defecto ocupa lo
-     que el texto necesite, hasta ese máximo, y solo si el texto es
-     MUY largo empieza a usar líneas extra). El scroll (overflow-y) se
-     deja únicamente como red de seguridad para mensajes gigantes. */
   position: absolute;
-  bottom: 600px; /* justo encima de la mascota: winH(740) - mascotTop(150) + 10 */
-  top: 12px;      /* tope superior de seguridad: nunca sale del stage */
+  bottom: 600px; 
   left: 50%;
   transform: translateX(-50%) translateY(8px) scale(0.94);
   width: fit-content;
-  max-width: 340px;
-  max-height: 100%;
+  max-width: 400px; 
+  max-height: 168px; 
   overflow-y: auto;
   scrollbar-width: thin;
   white-space: normal;
+  overflow-wrap: break-word;
   background: var(--bubble-bg);
   color: var(--bubble-text);
   padding: 13px 18px;
-  border-radius: 20px 20px 20px 6px; /* burbuja cómica asimétrica, con la "punta" abajo, apuntando a la mascota */
+  border-radius: 20px 20px 20px 6px;
   font-size: 13px;
   line-height: 1.5;
   box-shadow: var(--shadow-soft);
@@ -297,7 +288,7 @@ html, body {
 
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.24s ease, transform 0.32s cubic-bezier(0.34, 1.56, 0.4, 1); /* spring */
+  transition: opacity 0.24s ease, transform 0.32s cubic-bezier(0.34, 1.56, 0.4, 1);
 }
 
 .bubble::after {
@@ -322,14 +313,6 @@ html, body {
 /* ---------- Chat card ---------- */
 
 .chat-card {
-  /* z-index alto a propósito: #voiceStack (mascota + transcripción) tiene
-     z-index:1, y sin z-index propio el navegador pintaba el chat detrás
-     de la mascota. Con z-index mayor, el chat siempre queda al frente.
-
-     Además, ahora la mascota vive arriba (#voiceStack: top:150px) y deja
-     libre toda la franja de abajo, así que este chat -anclado al fondo de
-     la ventana con bottom:14px- abre DEBAJO de Noxis en vez de montarse
-     encima. */
   position: absolute;
   bottom: 14px;
   left: 50%;
@@ -354,6 +337,23 @@ html, body {
   opacity: 1;
   transform: translateX(-50%) translateY(0) scale(1);
   pointer-events: auto;
+}
+
+/* Posición personalizada (arrastrable): se ubica por left/top inline, sin centrado */
+.chat-card.custom {
+  bottom: auto;
+  left: auto;
+  transform: translateY(14px) scale(0.95);
+}
+.chat-card.custom.open {
+  transform: translateY(0) scale(1);
+}
+.chat-card.custom .chat-header {
+  cursor: grab;
+  user-select: none;
+}
+.chat-card.custom .chat-header:active {
+  cursor: grabbing;
 }
 
 .chat-header {

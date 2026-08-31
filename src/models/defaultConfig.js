@@ -28,6 +28,8 @@ function createDefaultConfig() {
     skinPath: null,
     selectedMicrophoneId: null,
     selectedMicrophoneName: null,
+    selectedOutputDeviceId: null,
+    selectedOutputDeviceName: null,
     apps: [],
     packs: [],
     bubbleDuration: 8500,
@@ -35,6 +37,8 @@ function createDefaultConfig() {
     startCorner: "bottom-right",
     alwaysOnTop: false,
     showInTaskbar: true,
+    // Posición del chat de texto dentro de la ventana (left/top en px), o null = posición por defecto
+    chatPosition: null,
     voiceSimilarityThreshold: 0.72,
     // Comportamiento companion (habla sola, detecta apps, recordatorios)
     companionEnabled: true,

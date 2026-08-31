@@ -37,5 +37,6 @@ contextBridge.exposeInMainWorld("configAPI", {
   clearLearnedWords: () => ipcRenderer.invoke("learn:clear-all"),
   onLearnProgress: (callback) => {
     ipcRenderer.on("learn:progress", (event, info) => callback(info));
-  }
+  },
+  listAudioOutputs: () => ipcRenderer.invoke("audio:list-outputs")
 });

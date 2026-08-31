@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld("noxisAPI", {
   sendMessage: (text) => ipcRenderer.invoke("get-response", text),
   openConfig: () => ipcRenderer.invoke("open-config-window"),
   dragWindow: (screenX, screenY, offsetX, offsetY) => ipcRenderer.invoke("drag-window", screenX, screenY, offsetX, offsetY),
+  saveChatPosition: (pos) => ipcRenderer.invoke("chat:save-position", pos),
   getConfig: () => ipcRenderer.invoke("config:get"),
   getSkinPath: () => ipcRenderer.invoke("get-skin-path"),
   getNoxisName: () => ipcRenderer.invoke("get-noxis-name"),

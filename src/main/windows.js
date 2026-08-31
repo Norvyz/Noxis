@@ -46,8 +46,8 @@ function setWindowIcon() {
 function createMainWindow(config) {
   config = config || {};
   const { width: screenW, height: screenH } = screen.getPrimaryDisplay().workAreaSize;
-  const winW = 380; // antes 320: más ancho para que la burbuja pueda crecer horizontal en vez de hacer scroll
-  const winH = 740; // antes 340/430: deja espacio arriba (burbuja) Y abajo de la mascota (chat), ver style.css
+  const winW = 460; // antes 320: más ancho para que la burbuja pueda crecer horizontal en vez de hacer scroll
+  const winH = 780; // antes 340/430: deja espacio arriba (burbuja) Y abajo de la mascota (chat), ver style.css
   const margin = 40;
 
   let x = screenW - winW - margin;
@@ -113,9 +113,9 @@ function createConfigWindow() {
   }
 
   configWindow = new BrowserWindow({
-    width: 860,
+    width: 960,
     height: 640,
-    minWidth: 700,
+    minWidth: 960,
     minHeight: 500,
     resizable: true,
     title: "Configuración - Noxis",

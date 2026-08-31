@@ -35,6 +35,7 @@ let isListening = false; // captura de audio activa (mic encendido → siempre e
 let isDormant = false;   // dormida: solo reacciona a su nombre
 let isStarting = false;
 let micEnabled = false;
+let currentSkinPath = null; // ruta del skin actual (para saber si el PNG se puede animar)
 
 // Iconos SVG
 closeChatBtn.innerHTML = window.NoxisIcons.close(16);
@@ -51,6 +52,27 @@ function showMessage(message) {
   hideBubbleTimeout = setTimeout(() => {
     speechBubble.classList.remove("visible");
   }, bubbleDuration);
+  // Efecto de movimiento en la mascota al responder (solo PNG; los GIF ya se animan)
+  animateNoxisTalk();
+}
+
+// ---------------------------------------------------------------
+// Efecto de "salto al hablar" sobre la mascota cada vez que responde.
+// Solo se aplica cuando el skin es PNG (o no se definió ninguno), NO en GIF,
+// porque un GIF ya trae su propia animación y no conviene encimarle otra.
+// ---------------------------------------------------------------
+function isSkinStaticPng() {
+  if (currentSkinPath) {
+    return currentSkinPath.toLowerCase().endsWith(".png");
+  }
+  return true; // skin por defecto (assets/noxis.png) es PNG
+}
+
+function animateNoxisTalk() {
+  if (!isSkinStaticPng()) return;
+  noxisImage.classList.remove("talk");
+  void noxisImage.offsetWidth; // reinicia la animación aunque responda seguido
+  noxisImage.classList.add("talk");
 }
 
 // ---------------------------------------------------------------
@@ -79,6 +101,84 @@ function closeChat() {
   chatCard.classList.remove("open");
   userInput.blur();
 }
+
+// ---------------------------------------------------------------
+// Chat de texto: posición arrastrable (se guarda en config)
+// ---------------------------------------------------------------
+const CHAT_MARGIN = 10; // margen mínimo respecto a los bordes de la ventana
+
+function clampChatPosition(left, top) {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const cw = chatCard.offsetWidth || 288;
+  const ch = chatCard.offsetHeight || 420;
+  left = Math.max(CHAT_MARGIN, Math.min(vw - cw - CHAT_MARGIN, left));
+  top = Math.max(CHAT_MARGIN, Math.min(vh - ch - CHAT_MARGIN, top));
+  return { left, top };
+}
+
+function getDefaultChatPosition() {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const cw = chatCard.offsetWidth || 288;
+  const ch = chatCard.offsetHeight || 420;
+  return clampChatPosition((vw - cw) / 2, vh - ch - 14);
+}
+
+let hasCustomChatPosition = false;
+
+function applyChatPosition() {
+  chatCard.classList.add("custom");
+  let pos;
+  if (window.savedChatPosition) {
+    pos = clampChatPosition(window.savedChatPosition.left, window.savedChatPosition.top);
+    hasCustomChatPosition = true;
+  } else {
+    pos = getDefaultChatPosition();
+    hasCustomChatPosition = false;
+  }
+  chatCard.style.left = pos.left + "px";
+  chatCard.style.top = pos.top + "px";
+}
+
+function saveChatPosition() {
+  const pos = clampChatPosition(
+    parseFloat(chatCard.style.left) || 0,
+    parseFloat(chatCard.style.top) || 0
+  );
+  window.noxisAPI.saveChatPosition({ left: Math.round(pos.left), top: Math.round(pos.top) });
+}
+
+const chatHeaderEl = chatCard.querySelector(".chat-header");
+let chatDragging = false;
+let chatDragOffsetX = 0;
+let chatDragOffsetY = 0;
+
+// Arrastrar el chat desde su cabecera para moverlo por la ventana
+chatHeaderEl.addEventListener("mousedown", (e) => {
+  if (e.button !== 0) return;
+  if (e.target.closest("#closeChatBtn")) return;
+  e.preventDefault();
+  const rect = chatCard.getBoundingClientRect();
+  chatDragOffsetX = e.clientX - rect.left;
+  chatDragOffsetY = e.clientY - rect.top;
+  if (!chatCard.style.left || !chatCard.style.top) applyChatPosition();
+  chatDragging = true;
+});
+
+window.addEventListener("mousemove", (e) => {
+  if (!chatDragging) return;
+  const pos = clampChatPosition(e.clientX - chatDragOffsetX, e.clientY - chatDragOffsetY);
+  chatCard.style.left = pos.left + "px";
+  chatCard.style.top = pos.top + "px";
+});
+
+window.addEventListener("mouseup", () => {
+  if (!chatDragging) return;
+  chatDragging = false;
+  hasCustomChatPosition = true;
+  saveChatPosition();
+});
 
 // ---------------------------------------------------------------
 // Burbujas de mensaje dentro del chat
@@ -247,6 +347,7 @@ window.noxisAPI.onConfigUpdated((config) => {
     bubbleDuration = config.bubbleDuration;
   }
   if (config.skinPath) {
+    currentSkinPath = config.skinPath;
     noxisImage.src = `file://${config.skinPath}`;
     chatAvatar.src = `file://${config.skinPath}`;
   }
@@ -296,6 +397,7 @@ window.noxisAPI.onVoiceState((state) => {
 // ---------------------------------------------------------------
 window.noxisAPI.getSkinPath().then((skinPath) => {
   if (skinPath) {
+    currentSkinPath = skinPath;
     noxisImage.src = `file://${skinPath}`;
     chatAvatar.src = `file://${skinPath}`;
   }
@@ -310,6 +412,10 @@ window.noxisAPI.getConfig().then((cfg) => {
     bubbleDuration = cfg.bubbleDuration;
   }
   if (cfg.voiceModel) modelType = cfg.voiceModel;
+  if (cfg.chatPosition && typeof cfg.chatPosition.left === "number" && typeof cfg.chatPosition.top === "number") {
+    window.savedChatPosition = cfg.chatPosition;
+  }
+  applyChatPosition();
 }).catch(() => {});
 window.noxisAPI.getMicEnabled().then((enabled) => {
   micEnabled = enabled;
@@ -476,7 +582,7 @@ const FLUSH_DELAY = 1500;
 const OPEN_WORDS = ["abre", "abrir", "abri", "abreme", "abrieme", "abrirme"];
 const DEACT_WORDS = [
   "desactivar", "desactiva", "desactivame", "desactivate", "apaga", "apagate",
-  "apagar", "duerme", "duermete", "dormir", "detente", "descansa", "callate",
+  "apagar", "duerme", "duermete", "dormir", "detente", "callate",
   "off", "standby"
 ];
 

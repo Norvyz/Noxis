@@ -1,21 +1,3 @@
-// Noxis
-// Copyright (C) 2026 Norvyz
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-// You should have received a copy of the GNU General Public License
-// along with this program. If not, see <https://www.gnu.org/licenses/>.
-
-// src/services/systemCommandHandler.js
-// Parsea comandos de voz del sistema y despacha a systemService.
-// Sin dependencias de IA: regex + fuzzy match (Levenshtein) sobre tokens.
-
 const systemService = require("./systemService");
 const voiceMatcher = require("./voiceMatcher");
 
@@ -66,9 +48,10 @@ function clearPendingVolume() {
   pendingVolume = null;
 }
 
-function setPendingVolume() {
+function setPendingVolume(direction) {
   clearPendingVolume();
   pendingVolume = {
+    direction: direction || null, // "up" | "down" | null
     timeout: setTimeout(() => {
       pendingVolume = null;
     }, 10000)
@@ -251,7 +234,7 @@ function extractNoteName(text) {
 // Mapa de números en letras (normalizados sin tildes) → valor numérico.
 const NUM_WORDS = {
   // 0 - 15
-  cero: 0, un: 1, uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5,
+  cero: 0, zero: 0, un: 1, uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5,
   seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10, once: 11, doce: 12,
   trece: 13, catorce: 14, quince: 15,
   // 16 - 29, en una sola palabra
@@ -274,16 +257,17 @@ function evalNumberSequence(tokens, i) {
   const first = tokens[i];
   const v = NUM_WORDS[first];
   if (v === undefined) return null;
-  // Decena compuesta: "cincuenta y cinco" → 55
-  if (COMPOUND_TENS.includes(first)) {
-    if (i + 2 < tokens.length && tokens[i + 1] === "y") {
-      const unit = NUM_WORDS[tokens[i + 2]];
-      if (unit !== undefined && unit > 0 && unit < 10) {
-        return v + unit;
-      }
+// Decena compuesta: "cincuenta y cinco" → 55, "cincuenta cinco" → 55
+if (COMPOUND_TENS.includes(first)) {
+  const unitIdx = i + (tokens[i + 1] === "y" ? 2 : 1);
+  if (unitIdx < tokens.length) {
+    const unit = NUM_WORDS[tokens[unitIdx]];
+    if (unit !== undefined && unit > 0 && unit < 10) {
+      return v + unit;
     }
-    return v;
   }
+  return v;
+}
   return v;
 }
 
@@ -316,6 +300,21 @@ function extractVolumePercent(text) {
   return null;
 }
 
+// Aplica el volumen y devuelve la respuesta (avisa si falló al cambiarlo).
+// direction: "up" | "down" | null (por si el nivel debe subir o bajar).
+// Si piden 0 → muteamos (más fiable que bajar por pasos hasta silencio).
+async function applyVolume(pct, direction) {
+  if (pct === 0) {
+    await systemService.muteToggle();
+    return "Volumen al 0% 🔇 (silenciado)";
+  }
+  const result = await systemService.setVolume(pct, direction);
+  if (result && result.ok) {
+    return `Volumen ajustado a ${pct}% 🔊`;
+  }
+  return "No pude ajustar el volumen 😕 Revisá que tu dispositivo de salida esté activo.";
+}
+
 // ---------------------------------------------------------------
 // Handler principal
 // ---------------------------------------------------------------
@@ -335,9 +334,9 @@ async function handleCommand(text, config, onMessage, mainWindow) {
   if (hasPendingVolume()) {
     const pct = extractVolumePercent(t);
     if (pct !== null) {
+      const dir = pendingVolume.direction;
       clearPendingVolume();
-      await systemService.setVolume(pct);
-      return `Volumen ajustado a ${pct}% 🔊`;
+      return await applyVolume(pct, dir);
     }
     // Si no pudo extraer número, informar
     return "No entendí el número. Di un valor del 0 al 100.";
@@ -473,25 +472,23 @@ async function handleCommand(text, config, onMessage, mainWindow) {
     return "Silencio desactivado 🔊";
   }
 
-  // --- 7) Subir volumen → fijar al porcentaje dicho (o preguntar el nivel) ---
+  // --- 7) Subir volumen → si piden nivel, setear ; si no, preguntar el % ---
   if (hasAnyToken(t, VOLUME_UP_VERBS) && hasAnyToken(t, VOLUME_WORDS)) {
     const pct = extractVolumePercent(t);
     if (pct !== null) {
-      await systemService.setVolume(pct);
-      return `Volumen ajustado a ${pct}% 🔊`;
+      return await applyVolume(pct, "up");
     }
-    setPendingVolume();
+    setPendingVolume("up");
     return "¿A qué nivel? Dime un número del 0 al 100.";
   }
 
-  // --- 8) Bajar volumen → fijar al porcentaje dicho (o preguntar el nivel) ---
+  // --- 8) Bajar volumen → si piden nivel, setear ; si no, preguntar el % ---
   if (hasAnyToken(t, VOLUME_DOWN_VERBS) && hasAnyToken(t, VOLUME_WORDS)) {
     const pct = extractVolumePercent(t);
     if (pct !== null) {
-      await systemService.setVolume(pct);
-      return `Volumen ajustado a ${pct}% 🔊`;
+      return await applyVolume(pct, "down");
     }
-    setPendingVolume();
+    setPendingVolume("down");
     return "¿A qué nivel? Dime un número del 0 al 100.";
   }
 
@@ -499,8 +496,7 @@ async function handleCommand(text, config, onMessage, mainWindow) {
   if (hasAnyToken(t, VOLUME_SET_VERBS) && hasAnyToken(t, VOLUME_WORDS)) {
     const pct = extractVolumePercent(t);
     if (pct !== null) {
-      await systemService.setVolume(pct);
-      return `Volumen ajustado a ${pct}% 🔊`;
+      return await applyVolume(pct);
     }
     return "¿A qué porcentaje? Di 'pon el volumen al' seguido de un número del 0 al 100.";
   }

@@ -68,79 +68,216 @@ function sendVkKey(charCode) {
   return runPowershell(script);
 }
 
-function setVolume(level) {
+// Pulsa una tecla de volumen real del sistema (VK_VOLUME_MUTE/DOWN/UP) vía
+// keybd_event. Estas teclas SÍ mueven el volumen audible en cualquier
+// dispositivo, incluidos los virtuales de SteelSeries que bloquean CoreAudio.
+function pressMediaKey(vk) {
   if (!isWin32()) return Promise.resolve(notSupported());
-  const val = Math.max(0, Math.min(100, Math.round(level || 60)));
+  const hex = "0x" + vk.toString(16);
   const script = `
-$ErrorActionPreference = 'Stop'
-Add-Type -Namespace CoreAudio -Name VolumeWrapper -MemberDefinition @"
-using System;
-using System.Runtime.InteropServices;
-[Guid("5CDF2C82-841E-4546-9722-0CF74078229A"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-interface IAudioEndpointVolume {
-  int RegisterControlChangeNotify(IntPtr pNotifications);
-  int UnregisterControlChangeNotify(IntPtr pNotifications);
-  int GetChannelCount(out int pnChannelCount);
-  int SetMasterVolumeLevelScalar(float fLevel, Guid pguidEventContext);
-  int GetMasterVolumeLevelScalar(out float pfLevel);
-  int SetMasterVolumeLevel(float fLevelDB, Guid pguidEventContext);
-  int GetMasterVolumeLevel(out float pfLevelDB);
-  int SetChannelVolumeLevelScalar(uint nChannel, float fLevel, Guid pguidEventContext);
-  int GetChannelVolumeLevelScalar(uint nChannel, out float pfLevel);
-  int SetChannelVolumeLevel(uint nChannel, float fLevelDB, Guid pguidEventContext);
-  int GetChannelVolumeLevel(uint nChannel, out float pfLevelDB);
-  int SetMute(bool bMute, Guid pguidEventContext);
-  int GetMute(out bool pbMute);
-}
-[Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
-class MMDeviceEnumeratorComObject { }
-
-[Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-interface IMMDeviceEnumerator {
-  int EnumAudioEndpoints(int dataFlow, int dwStateMask, out IMMDevice ppDevices);
-  int GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice ppEndpoint);
-  int GetDevice(string pwstrId, out IMMDevice ppDevice);
-  int RegisterEndpointNotificationCallback(IntPtr pClient);
-  int UnregisterEndpointNotificationCallback(IntPtr pClient);
-}
-[Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-interface IMMDevice {
-  int Activate(ref Guid iid, int dwClsCtx, IntPtr pActivationParams, out IAudioEndpointVolume ppInterface);
-  int OpenPropertyStore(int stgmAccess, IntPtr ppProperties);
-  int GetId(out string ppstrId);
-  int GetState(out int pdwState);
-}
-public class Volume {
-  public static void Set(int level) {
-    var devEnum = (IMMDeviceEnumerator)(new MMDeviceEnumeratorComObject());
-    IMMDevice dev;
-    devEnum.GetDefaultAudioEndpoint(0, 1, out dev);
-    IAudioEndpointVolume epv;
-    Guid iid = typeof(IAudioEndpointVolume).GUID;
-    dev.Activate(ref iid, 1, IntPtr.Zero, out epv);
-    epv.SetMasterVolumeLevelScalar(level / 100f, Guid.Empty);
-    Marshal.ReleaseComObject(epv);
-  }
-}
-"@
-[CoreAudio.VolumeWrapper.Volume]::Set(${val})
+Add-Type -TypeDefinition 'using System;using System.Runtime.InteropServices;public static class MK{[DllImport("user32.dll")]public static extern void keybd_event(byte bVk,byte bScan,uint dwFlags,System.UIntPtr dwExtraInfo);}'
+[MK]::keybd_event([byte]${hex},0,0,[UIntPtr]::Zero)
+Start-Sleep -Milliseconds 60
+[MK]::keybd_event([byte]${hex},0,2,[UIntPtr]::Zero)
 `;
   return runPowershell(script);
 }
 
+// Ajusta el volumen del sistema aproximándose al % pedido. Lee el nivel REAL con
+// waveOutGetVolume y calcula el delta exacto (target - actual), pulsando la tecla de
+// volumen (VK) la cantidad de pasos justa. Esto hace que "de 16 a 75" suba 59 puntos
+// (no desde supuesto 0) y "a 15" baje desde el actual. La dirección del verbo solo
+// se usa como respaldo si no se puede leer el nivel.
+function setVolume(level, direction) {
+  if (!isWin32()) return Promise.resolve(notSupported());
+  const val = Math.max(0, Math.min(100, Math.round(level || 60)));
+  const dir = direction === "up" || direction === "down" ? direction : null;
+  const dirInt = dir === "up" ? 1 : dir === "down" ? -1 : 0;
+  const script = `
+$ErrorActionPreference = 'SilentlyContinue'
+Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+public static class NoxisVol {
+  [DllImport("winmm.dll")] public static extern uint waveOutGetVolume(IntPtr hwo, out uint pdwVolume);
+  [DllImport("user32.dll")] public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, System.UIntPtr dwExtraInfo);
+  const uint KEYUP = 2;
+
+  public static int GetCurrent() {
+    uint v;
+    if (waveOutGetVolume(IntPtr.Zero, out v) != 0) return -1;
+    return (int)Math.Round((double)(v & 0xFFFF) * 100.0 / 65535.0);
+  }
+
+  // direction de respaldo: 1=subir, -1=bajar, 0=auto
+  public static int Run(int target, int direction) {
+    byte up = 0xAF, down = 0xAE;
+    int from = GetCurrent();
+    bool readOk = (from >= 0 && from <= 100);
+    int delta;
+    if (!readOk) {
+      // no se pudo leer → supuestos según dirección
+      delta = direction >= 0 ? target : -(100 - target);
+    } else {
+      delta = target - from;
+      // Sanidad con el verbo: si pidió SUBIR pero la lectura dice que ya está
+      // por encima del target (lectura fija en 100), o pidió BAJAR y dice que
+      // está por debajo (lectura fija en 0), la lectura no es confiable →
+      // mover desde el extremo opuesto así el volumen cambia en la dirección pedida.
+      if (direction > 0 && delta < 0)  delta = target;      // subir desde ~0
+      if (direction < 0 && delta > 0)  delta = -(100 - target); // bajar desde ~100
+    }
+    byte vk = delta > 0 ? up : down;
+    int steps = (int)Math.Round(Math.Abs(delta) / 2.0);
+    if (delta == 0) steps = 0;
+    steps = Math.Min(Math.Max(steps, 0), 60);
+    for (int i = 0; i < steps; i++) {
+      keybd_event(vk, 0, 0, UIntPtr.Zero);
+      keybd_event(vk, 0, KEYUP, UIntPtr.Zero);
+      System.Threading.Thread.Sleep(40);
+    }
+    return target;
+  }
+}
+"@
+$dirInt = ${dirInt}
+$steps = [NoxisVol]::Run(${val}, $dirInt)
+`;
+  return new Promise((resolve) => {
+    execFile(
+      systemExe("WindowsPowerShell\\v1.0\\powershell.exe"),
+      ["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", script],
+      { windowsHide: true, timeout: 20000 },
+      (err) => {
+        if (err) {
+          console.error("[systemService] setVolume fallo:", err.message);
+          resolve({ ok: false, reason: "exec-error" });
+          return;
+        }
+        resolve({ ok: true, volume: val });
+      }
+    );
+  });
+}
+
+// Lista los dispositivos de salida (render) con su id, nombre y si es el por defecto.
+function listAudioOutputs() {
+  if (!isWin32()) return Promise.resolve({ ok: false, reason: "not-supported", devices: [] });
+  const script = `
+$ErrorActionPreference = 'Stop'
+Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+
+public static class NoxisOuts {
+  [StructLayout(LayoutKind.Sequential)]
+  public struct PROPERTYKEY { public Guid fmtid; public uint pid; }
+  [StructLayout(LayoutKind.Explicit)]
+  public struct PROPVARIANT { [FieldOffset(0)] public ushort vt; [FieldOffset(8)] public IntPtr pointer; }
+
+  [Guid("886d8eeb-8cf2-4446-8d02-cdba1dbdcf99"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  public interface IPropertyStore {
+    int GetCount(out int c);
+    int GetAt(int i, out PROPERTYKEY pk);
+    int GetValue(ref PROPERTYKEY key, out PROPVARIANT pv);
+    int SetValue(ref PROPERTYKEY key, ref PROPVARIANT pv);
+    int Commit();
+  }
+  [Guid("5CDF2C82-841E-4546-9722-0CF74078229A"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  public interface IAudioEndpointVolume {
+    int SetMasterVolumeLevelScalar(float fLevel, Guid pguidEventContext);
+  }
+  [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
+  public class MMDeviceEnumeratorComObject { }
+  [Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  public interface IMMDeviceEnumerator {
+    int EnumAudioEndpoints(int dataFlow, int dwStateMask, out IMMDeviceCollection ppDevices);
+    int GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice ppEndpoint);
+  }
+  [Guid("0BD7A1BE-7A1A-44DB-8397-CC5392387B5E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  public interface IMMDeviceCollection { int GetCount(out int c); int Item(int n, out IMMDevice pp); }
+  [Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  public interface IMMDevice {
+    int Activate(ref Guid iid, int dwClsCtx, IntPtr pActivationParams, out IAudioEndpointVolume ppInterface);
+    int OpenPropertyStore(int stgmAccess, out IPropertyStore ppProperties);
+    int GetId([MarshalAs(UnmanagedType.LPWStr)] out string id);
+    int GetState(out int state);
+  }
+  public static string Run() {
+    PROPERTYKEY pk = new PROPERTYKEY { fmtid = new Guid("a45c254e-df1c-4efd-8020-67d146a850e0"), pid = 14 };
+    var e=(IMMDeviceEnumerator)(new MMDeviceEnumeratorComObject());
+    string defId = null;
+    try { IMMDevice dd; e.GetDefaultAudioEndpoint(0,1,out dd); string d; dd.GetId(out d); defId = d; } catch {}
+    IMMDeviceCollection c; e.EnumAudioEndpoints(0,1,out c);
+    int n; c.GetCount(out n);
+    var sb = new StringBuilder();
+    sb.AppendLine("DEFAULT_ID=" + defId);
+    for (int i=0;i<n;i++){
+      IMMDevice d; c.Item(i,out d);
+      string id; d.GetId(out id);
+      string name = "";
+      IPropertyStore ps;
+      try { d.OpenPropertyStore(0,out ps); if(ps!=null){ PROPVARIANT pv; if(ps.GetValue(ref pk,out pv)==0 && pv.vt==31 && pv.pointer!=IntPtr.Zero) name=Marshal.PtrToStringUni(pv.pointer); } } catch {}
+      sb.AppendLine("DEV:" + id + "|" + name + "|" + (id==defId));
+    }
+    return sb.ToString();
+  }
+}
+"@
+[NoxisOuts]::Run()
+`;
+  return new Promise((resolve) => {
+    execFile(
+      systemExe("WindowsPowerShell\\v1.0\\powershell.exe"),
+      ["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", script],
+      { windowsHide: true, timeout: 15000 },
+      (err, stdout) => {
+        if (err) {
+          console.error("[systemService] listAudioOutputs fallo:", err.message);
+          resolve({ ok: false, reason: "exec-error", devices: [] });
+          return;
+        }
+        const out = String(stdout || "");
+        const devices = [];
+        let defaultId = null;
+        const mDefault = out.match(/DEFAULT_ID=(\S+)/);
+        if (mDefault) defaultId = mDefault[1];
+        for (const line of out.split(/\r?\n/)) {
+          if (!line.startsWith("DEV:")) continue;
+          const body = line.slice(4);
+          const idx = body.indexOf("|");
+          if (idx < 0) continue;
+          const id = body.slice(0, idx);
+          const rest = body.slice(idx + 1);
+          const idx2 = rest.lastIndexOf("|");
+          const name = idx2 >= 0 ? rest.slice(0, idx2) : rest;
+          const isDefault = idx2 >= 0 ? rest.slice(idx2 + 1) === "true" : false;
+          devices.push({ id, name, isDefault });
+        }
+        if (defaultId != null && devices.length && !devices.some((d) => d.isDefault)) {
+          const def = devices.find((d) => d.id === defaultId);
+          if (def) def.isDefault = true;
+        }
+        resolve({ ok: true, devices, defaultId });
+      }
+    );
+  });
+}
+
 function volumeUp() {
   if (!isWin32()) return Promise.resolve(notSupported());
-  return sendVkKey(175); // VK_VOLUME_UP
+  return pressMediaKey(0xAF); // VK_VOLUME_UP
 }
 
 function volumeDown() {
   if (!isWin32()) return Promise.resolve(notSupported());
-  return sendVkKey(174); // VK_VOLUME_DOWN
+  return pressMediaKey(0xAE); // VK_VOLUME_DOWN
 }
 
 function muteToggle() {
   if (!isWin32()) return Promise.resolve(notSupported());
-  return sendVkKey(173); // VK_VOLUME_MUTE
+  return pressMediaKey(0xAD); // VK_VOLUME_MUTE
 }
 
 function lockScreen() {
@@ -386,63 +523,29 @@ function readTextFile(target) {
 // Volumen: leer nivel actual
 // =========================================================
 
+// Lee el volumen del sistema global (winmm waveOutGetVolume). Este refleja el
+// nivel maestro real y funciona con dispositivos virtuales como SteelSeries.
 function getVolume() {
   if (!isWin32()) return Promise.resolve(notSupported());
   const script = `
 $ErrorActionPreference = 'Stop'
-Add-Type -Namespace CoreAudio -Name VolumeWrapper -MemberDefinition @"
+Add-Type -TypeDefinition @"
 using System;
 using System.Runtime.InteropServices;
-[Guid("5CDF2C82-841E-4546-9722-0CF74078229A"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-interface IAudioEndpointVolume {
-  int RegisterControlChangeNotify(IntPtr pNotifications);
-  int UnregisterControlChangeNotify(IntPtr pNotifications);
-  int GetChannelCount(out int pnChannelCount);
-  int SetMasterVolumeLevelScalar(float fLevel, Guid pguidEventContext);
-  int GetMasterVolumeLevelScalar(out float pfLevel);
-  int SetMasterVolumeLevel(float fLevelDB, Guid pguidEventContext);
-  int GetMasterVolumeLevel(out float pfLevelDB);
-  int SetChannelVolumeLevelScalar(uint nChannel, float fLevel, Guid pguidEventContext);
-  int GetChannelVolumeLevelScalar(uint nChannel, out float pfLevel);
-  int SetChannelVolumeLevel(uint nChannel, float fLevelDB, Guid pguidEventContext);
-  int GetChannelVolumeLevel(uint nChannel, out float pfLevelDB);
-  int SetMute(bool bMute, Guid pguidEventContext);
-  int GetMute(out bool pbMute);
-}
-[Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
-class MMDeviceEnumeratorComObject { }
 
-[Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-interface IMMDeviceEnumerator {
-  int EnumAudioEndpoints(int dataFlow, int dwStateMask, out IMMDevice ppDevices);
-  int GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice ppEndpoint);
-  int GetDevice(string pwstrId, out IMMDevice ppDevice);
-  int RegisterEndpointNotificationCallback(IntPtr pClient);
-  int UnregisterEndpointNotificationCallback(IntPtr pClient);
-}
-[Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-interface IMMDevice {
-  int Activate(ref Guid iid, int dwClsCtx, IntPtr pActivationParams, out IAudioEndpointVolume ppInterface);
-  int OpenPropertyStore(int stgmAccess, IntPtr ppProperties);
-  int GetId(out string ppstrId);
-  int GetState(out int pdwState);
-}
-public class VolumeGet {
-  public static float Get() {
-    var devEnum = (IMMDeviceEnumerator)(new MMDeviceEnumeratorComObject());
-    IMMDevice dev;
-    devEnum.GetDefaultAudioEndpoint(0, 1, out dev);
-    IAudioEndpointVolume epv;
-    Guid iid = typeof(IAudioEndpointVolume).GUID;
-    dev.Activate(ref iid, 1, IntPtr.Zero, out epv);
-    float level;
-    epv.GetMasterVolumeLevelScalar(out level);
-    Marshal.ReleaseComObject(epv);
-    return level;
+public static class NoxisGetVol {
+  [DllImport("winmm.dll")] public static extern uint waveOutGetVolume(IntPtr hwo, out uint pdwVolume);
+
+  public static int Get() {
+    uint v;
+    uint r = waveOutGetVolume(IntPtr.Zero, out v);
+    if (r != 0) return -1;
+    double pct = (double)(v & 0xFFFF) * 100.0 / 65535.0;
+    return (int)Math.Round(pct);
   }
 }
 "@
-[Math]::Round([CoreAudio.VolumeWrapper.VolumeGet]::Get() * 100)
+[NoxisGetVol]::Get()
 `;
   return new Promise((resolve) => {
     execFile(
@@ -456,7 +559,7 @@ public class VolumeGet {
           return;
         }
         const pct = parseInt((stdout || "").trim(), 10);
-        if (isNaN(pct)) {
+        if (isNaN(pct) || pct < 0) {
           resolve({ ok: false, reason: "parse-error" });
           return;
         }
@@ -536,6 +639,7 @@ function closeApp(processName) {
 
 module.exports = {
   setVolume,
+  listAudioOutputs,
   volumeUp,
   volumeDown,
   muteToggle,
