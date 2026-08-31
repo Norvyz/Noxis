@@ -24,6 +24,8 @@ const micCheck = document.getElementById("micCheck");
 const micDeviceRow = document.getElementById("micDeviceRow");
 const micSelect = document.getElementById("micSelect");
 const refreshMicBtn = document.getElementById("refreshMicBtn");
+const outputSelect = document.getElementById("outputSelect");
+const refreshOutputBtn = document.getElementById("refreshOutputBtn");
 const skinPreview = document.getElementById("skinPreview");
 const skinPathLabel = document.getElementById("skinPathLabel");
 
@@ -272,6 +274,7 @@ async function loadModelSection() {
 // Iconos SVG
 // ---------------------------------------------------------------
 refreshMicBtn.innerHTML = window.NoxisIcons.refresh(15);
+refreshOutputBtn.innerHTML = window.NoxisIcons.refresh(15);
 document.querySelectorAll(".btnIcon").forEach((el) => {
   const name = el.dataset.icon;
   if (window.NoxisIcons[name]) el.innerHTML = window.NoxisIcons[name](14);
@@ -347,13 +350,28 @@ if (aboutLinks) {
 // ---------------------------------------------------------------
 // Carga inicial
 // ---------------------------------------------------------------
+// Rellena la lista de "Comandos disponibles" con el nombre real configurado.
+// Reemplaza cada "{nombre}" por el nombre de Noxis (por defecto "Noxis").
+function renderCommandDocs(name) {
+  const safeName = (name || "Noxis").trim() || "Noxis";
+  const docSection = document.getElementById("tab-commands");
+  if (!docSection) return;
+
+  docSection.querySelectorAll(".commandKey").forEach((el) => {
+    el.textContent = el.textContent.replace(/\{nombre\}/g, safeName);
+  });
+
+  const sub = document.getElementById("commandsSub");
+  if (sub) sub.innerHTML = `Estas son las frases que <b>${safeName}</b> entiende de fábrica. Si cambiás su nombre en General, estos comandos usan ese nombre.`;
+}
+
 async function loadConfig() {
   config = await window.configAPI.getConfig();
-
   nameInput.value = config.name;
   autoStartCheck.checked = !!config.autoStart;
   micCheck.checked = !!config.allowMicrophone;
   applyTheme(config.theme || "light");
+  loadOutputDevices();
 
   alwaysOnTopCheck.checked = !!config.alwaysOnTop;
   showInTaskbarCheck.checked = config.showInTaskbar !== false;
@@ -364,6 +382,8 @@ async function loadConfig() {
   const sim = (typeof config.voiceSimilarityThreshold === "number") ? config.voiceSimilarityThreshold : 0.72;
   similarityRange.value = sim;
   similarityValue.textContent = Number(sim).toFixed(2);
+
+  renderCommandDocs(config.name || "Noxis");
 
   const applySkin = (p) => {
     const src = p ? `file://${p}` : "../../assets/noxis.png";
@@ -460,6 +480,71 @@ async function loadMicDevices() {
 micSelect.addEventListener("change", () => {
   config.selectedMicrophoneId = micSelect.value;
   config.selectedMicrophoneName = micSelect.selectedOptions[0]?.textContent || null;
+});
+
+// ---------------------------------------------------------------
+// Salida de audio principal
+// ---------------------------------------------------------------
+refreshOutputBtn.addEventListener("click", loadOutputDevices);
+
+async function loadOutputDevices() {
+  let devices = [];
+  try {
+    const res = await window.configAPI.listAudioOutputs();
+    devices = (res && res.devices) || [];
+  } catch (err) {
+    console.error("[config] no se pudieron listar las salidas:", err);
+  }
+
+  // Filtra dispositivos que en realidad son el micrófono virtual (ej: SteelSeries
+  // expone "SteelSeries Sonar - Microphone" como endpoint render) para no confundir.
+  const normalizedName = (n) => (n || "").toLowerCase();
+  const isMicLike = (n) => {
+    const s = normalizedName(n);
+    return /micr[oó]fon/.test(s) || /microphone/.test(s) || /\bmic\b/.test(s);
+  };
+  const realOutputs = devices.filter((d) => !isMicLike(d.name));
+
+  outputSelect.innerHTML = "";
+  if (!realOutputs.length) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "Salida por defecto del sistema";
+    outputSelect.appendChild(opt);
+    if (config.selectedOutputDeviceId) {
+      config.selectedOutputDeviceId = null;
+      config.selectedOutputDeviceName = null;
+    }
+    return;
+  }
+
+  realOutputs.forEach((dev, i) => {
+    const opt = document.createElement("option");
+    opt.value = dev.id;
+    opt.textContent = dev.name || `Salida ${i + 1}`;
+    if (dev.isDefault) opt.textContent += " (por defecto)";
+    outputSelect.appendChild(opt);
+  });
+
+  let matched = false;
+  if (config.selectedOutputDeviceId) {
+    outputSelect.value = config.selectedOutputDeviceId;
+    matched = outputSelect.value === config.selectedOutputDeviceId;
+  }
+  if (!matched) {
+    const def = realOutputs.find((d) => d.isDefault);
+    if (def) outputSelect.value = def.id;
+  }
+
+  if (outputSelect.value) {
+    config.selectedOutputDeviceId = outputSelect.value;
+    config.selectedOutputDeviceName = outputSelect.selectedOptions[0]?.textContent || null;
+  }
+}
+
+outputSelect.addEventListener("change", () => {
+  config.selectedOutputDeviceId = outputSelect.value || null;
+  config.selectedOutputDeviceName = outputSelect.selectedOptions[0]?.textContent || null;
 });
 
 // ---------------------------------------------------------------

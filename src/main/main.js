@@ -28,6 +28,7 @@ const systemCommandHandler = require("../services/systemCommandHandler");
 const companionService = require("../services/companionService");
 const fileLearningService = require("../services/fileLearningService");
 const voskService = require("../services/voskService");
+const systemService = require("../services/systemService");
 
 app.commandLine.appendSwitch("enable-features", "SpeechRecognition");
 app.commandLine.appendSwitch("no-sandbox");
@@ -151,6 +152,13 @@ ipcMain.handle("get-response", async (event, rawText) => {
 
   const hasWake = conversationService.isWakeWordDetected(rawText, config);
 
+  // Si Noxis está oculta en la bandeja ("descansa") y le hablan por su nombre,
+  // vuelve a aparecer en pantalla. Igual seguimos procesando el comando.
+  if (hasWake && win && !win.isVisible()) {
+    win.show();
+    console.log("[MAIN] → volvió a aparecer (estaba oculta en la bandeja)");
+  }
+
   // 1) "Noxis desactívate" (o similar) → modo dormida
   if (hasWake && conversationService.isDeactivateCommand(rawText, config)) {
     voiceState = "dormant";
@@ -179,6 +187,15 @@ ipcMain.handle("get-response", async (event, rawText) => {
   if (hasWake) {
     text = conversationService.stripWakeWord(rawText, config);
     console.log("[MAIN] Texto tras stripWakeWord:", text);
+  }
+
+  // 3.5) "Noxis descansa" → se oculta en la bandeja pero SIGUE escuchando.
+  // No entra en modo dormida: si le hablan por su nombre, vuelve a aparecer
+  // (se maneja arriba con win.show() cuando hasWake y estaba oculta).
+  if (hasWake && /^(descansa|descansar|descansamo|descansemos|descansame)\b/.test(text)) {
+    win?.hide();
+    console.log("[MAIN] → oculta en la bandeja, sigo escuchando");
+    return "Ok, me escondo en la bandeja 🙂 Sigo escuchándote, decime mi nombre y aparezco de nuevo.";
   }
 
   // 4) Comandos de apps/grupos SOLO si se mencionó el nombre
@@ -233,6 +250,16 @@ ipcMain.handle("drag-window", (event, screenX, screenY, offsetX, offsetY) => {
   win.setPosition(Math.round(screenX - offsetX), Math.round(screenY - offsetY));
 });
 
+// Guarda la posición del chat de texto dentro de la ventana (persistente)
+ipcMain.handle("chat:save-position", (event, pos) => {
+  if (!pos || typeof pos.left !== "number" || typeof pos.top !== "number") return false;
+  config.chatPosition = {
+    left: Math.round(pos.left),
+    top: Math.round(pos.top)
+  };
+  return configService.save(config);
+});
+
 ipcMain.handle("get-skin-path", () => config.skinPath);
 ipcMain.handle("get-noxis-name", () => config.name);
 ipcMain.handle("get-mic-enabled", () => !!config.allowMicrophone);
@@ -271,6 +298,9 @@ ipcMain.handle("model:download", (event, type) => {
 ipcMain.handle("grammar:get", () => conversationService.buildGrammar(config));
 
 ipcMain.handle("config:get", () => reloadConfig());
+
+// Lista los dispositivos de salida de audio para el selector de config
+ipcMain.handle("audio:list-outputs", () => systemService.listAudioOutputs());
 
 // Re-aplica las preferencias de ventana del widget (siempre encima,
 // mostrar en taskbar) cada vez que cambia la configuración.

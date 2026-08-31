@@ -25,10 +25,19 @@ const tokensOf = voiceMatcher.tokensOf;
 const normalize = voiceMatcher.normalize;
 
 const OPEN_VERBS = ["abre", "abrir", "abri", "abreme", "abrieme", "abrirme"];
+const CLOSE_VERBS = ["cierra", "cerrar", "cierrame", "cerrame", "cerralo", "cerra", "cierra todas"];
+
+function hasVerb(wordList, text) {
+  const words = tokensOf(text);
+  return words.some((w) => wordList.some((v) => w === v || fuzzyClose(w, v)));
+}
 
 function hasOpenVerb(text) {
-  const words = tokensOf(text);
-  return words.some((w) => OPEN_VERBS.some((v) => w === v || fuzzyClose(w, v)));
+  return hasVerb(OPEN_VERBS, text);
+}
+
+function hasCloseVerb(text) {
+  return hasVerb(CLOSE_VERBS, text);
 }
 
 // Match de una keyword (puede ser de varias palabras, ej. "visual studio")
@@ -40,22 +49,77 @@ function phraseMatches(text, phrase) {
   return phraseWords.every((pw) => words.some((w) => w === pw || fuzzyClose(w, pw)));
 }
 
+// Encuentra un pack o app cuya keyword/name aparezca en el texto (exacta o fuzzy)
+function matchPack(text, config) {
+  return config.packs.find(
+    (p) => text.includes(normalize(p.keyword)) || phraseMatches(text, p.keyword) || phraseMatches(text, p.name)
+  );
+}
+
+function matchApp(text, config) {
+  return config.apps.find(
+    (a) => text.includes(normalize(a.keyword)) || phraseMatches(text, a.keyword)
+  );
+}
+
 /**
- * Busca un comando "abre X" dentro de config.apps o config.packs
- * y lo ejecuta. onMessage(text) se llama para mandar feedback
- * a la ventana (equivalente a ShowMessage()).
+ * Busca un comando "abre X" o "cierra X" dentro de config.apps o config.packs
+ * y lo ejecuta. oferta "cierra <grupo>" consulta el pack por su palabra clave
+ * e intenta cerrar todas las apps del grupo. onMessage(text) da feedback.
  */
 async function handleCommand(input, config, onMessage) {
   const text = normalize(input);
 
-  if (!hasOpenVerb(text)) {
+  const isOpen = hasOpenVerb(text);
+  const isClose = hasCloseVerb(text);
+  if (!isOpen && !isClose) {
     return null;
   }
+  if (isOpen && isClose) {
+    return null; // ambigüo: ni abrir ni cerrar en claro
+  }
 
+  // ---- CIERRES ----
+  if (isClose) {
+    // 1) grupo de trabajo: "cierra trabajo" → cierra las apps del pack
+    const pack = matchPack(text, config);
+    if (pack) {
+      if (pack.apps.length === 0) {
+        return `El grupo ${pack.name} no tiene aplicaciones para cerrar 🦎`;
+      }
+
+      soundService.playCommandSound(config);
+
+      onMessage(`Cerrando grupo ${pack.name} 🔻`);
+
+      let problemas = 0;
+      for (const app of pack.apps) {
+        const closed = await launcherService.closeApp(app.executablePath);
+        if (!closed) problemas++;
+      }
+
+      if (problemas > 0) {
+        return `Listo. Cerré las apps del grupo ${pack.name} (${pack.apps.length - problemas} de ${pack.apps.length}).`;
+      }
+      return `Listo 😎 Cerré el grupo ${pack.name}`;
+    }
+
+    // 2) app suelta: "cierra chrome"
+    const app = matchApp(text, config);
+    if (app) {
+      soundService.playCommandSound(config);
+      const closed = await launcherService.closeApp(app.executablePath);
+      return closed
+        ? `Cerré ${app.keyword} 🔻`
+        : `No encontré ${app.keyword} corriendo para cerrar 😕`;
+    }
+
+    return "No conozco qué cerrar aun 🦎";
+  }
+
+  // ---- APERTURAS ----
   // 1) intenta un pack primero (igual que en la version WPF)
-  const pack = config.packs.find(
-    (p) => text.includes(normalize(p.keyword)) || phraseMatches(text, p.keyword)
-  );
+  const pack = matchPack(text, config);
   if (pack) {
     if (pack.apps.length === 0) {
       return `El grupo ${pack.name} no tiene aplicaciones aun 🦎`;
@@ -75,9 +139,7 @@ async function handleCommand(input, config, onMessage) {
   }
 
   // 2) si no es un pack, busca una app suelta
-  const app = config.apps.find(
-    (a) => text.includes(normalize(a.keyword)) || phraseMatches(text, a.keyword)
-  );
+  const app = matchApp(text, config);
   if (app) {
     soundService.playCommandSound(config);
 

@@ -34,6 +34,10 @@
           <span class="navIcon" data-icon-nav="mic"></span>
           <span class="navLabel">Voz</span>
         </button>
+        <button class="tabBtn" data-tab="commands">
+          <span class="navIcon" data-icon-nav="code"></span>
+          <span class="navLabel">Comandos</span>
+        </button>
         <button class="tabBtn" data-tab="apps">
           <span class="navIcon" data-icon-nav="apps"></span>
           <span class="navLabel">Aplicaciones</span>
@@ -49,7 +53,7 @@
       </nav>
 
       <div class="sidebarFooter">
-        <div class="sidebarVersion">v0.1.0</div>
+        <div class="sidebarVersion">V.1.1.0</div>
         <div class="links" id="externalLinks">
           <a href="https://github.com/Norvyz/Noxis" title="GitHub">
             <span class="btnIcon" data-icon="link"></span>
@@ -122,6 +126,17 @@
                 <select id="micSelect"></select>
                 <button id="refreshMicBtn" class="iconBtn" title="Detectar micrófonos"></button>
               </div>
+            </label>
+          </div>
+
+          <div id="outputDeviceRow" class="micDeviceRow">
+            <label class="field noBottom">
+              <span>Salida de audio principal</span>
+              <div class="micSelectRow">
+                <select id="outputSelect"></select>
+                <button id="refreshOutputBtn" class="iconBtn" title="Detectar salidas de audio"></button>
+              </div>
+              <p class="hint">Noxis bajará el volumen en esta salida. Se detecta automáticamente.</p>
             </label>
           </div>
         </div>
@@ -307,19 +322,6 @@
 
         <div class="card">
           <div class="cardHeader">
-            <h3>Comandos integrados</h3>
-            <p class="cardSub">Frases que Noxis ya entiende de fábrica.</p>
-          </div>
-          <ul class="commandList">
-            <li><span class="commandKey">"{"nombre}" abre discord"</span><span class="commandVal">Abre una aplicación o grupo configurado</span></li>
-            <li><span class="commandKey">"{"nombre"} desactívate"</span><span class="commandVal">Noxis deja de escuchar (dormida)</span></li>
-            <li><span class="commandKey">"{"nombre} vuelve / despierta"</span><span class="commandVal">Reanuda la escucha</span></li>
-            <li><span class="commandKey">"hola", "¿cómo estás?", "adiós"</span><span class="commandVal">Conversación básica</span></li>
-          </ul>
-        </div>
-
-        <div class="card">
-          <div class="cardHeader">
             <h3>Aprendizaje de archivos</h3>
             <p class="cardSub">Noxis puede leer archivos de texto (.txt, .docx, .pdf, .xlsx) de una carpeta para ampliar su vocabulario de reconocimiento de voz. Sin IA: solo extrae y cuenta palabras frecuentes.</p>
           </div>
@@ -371,6 +373,70 @@
               <div id="learnWordsList" style="max-height: 200px; overflow-y: auto; background: var(--panel-2); border: 1px solid var(--border); border-radius: 11px; padding: 10px; display: flex; flex-wrap: wrap; gap: 6px;"></div>
             </label>
           </div>
+        </div>
+      </section>
+
+      <!-- TAB COMANDOS -->
+      <section id="tab-commands" class="tab">
+        <header class="pageHeader">
+          <div class="pageHeaderText">
+            <h2>Comandos disponibles</h2>
+            <p class="pageSub" id="commandsSub">Estas son las frases que <b>Noxis</b> entiende de fábrica. Si cambiás su nombre en General, estos comandos usan ese nombre.</p>
+          </div>
+        </header>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Abrir y cerrar apps</h3>
+            <p class="cardSub">Decís su nombre y el verbo para abrir o cerrar una app o un grupo. La palabra clave es la que configurás en Aplicaciones o Grupos.</p>
+          </div>
+          <ul class="commandList">
+            <li><span class="commandKey">"{nombre} abre [app]"</span><span class="commandVal">Abre una aplicación que tengas agregada (ej: su palabra clave).</span></li>
+            <li><span class="commandKey">"{nombre} abre [grupo]"</span><span class="commandVal">Abre todas las apps de un grupo de trabajo.</span></li>
+            <li><span class="commandKey">"{nombre} cierra [app]"</span><span class="commandVal">Cierra una aplicación que tengas agregada.</span></li>
+            <li><span class="commandKey">"{nombre} cierra [grupo]"</span><span class="commandVal">Cierra todas las apps de un grupo de trabajo.</span></li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Estado y presencia</h3>
+            <p class="cardSub">Controlás si Noxis escucha o dónde se muestra.</p>
+          </div>
+          <ul class="commandList">
+            <li><span class="commandKey">"{nombre} desactívate"</span><span class="commandVal">Noxis deja de escuchar (entra en modo dormida). Vuelve con su nombre.</span></li>
+            <li><span class="commandKey">"{nombre} vuelve a escuchar"</span><span class="commandVal">Reanuda la escucha después de dormirse.</span></li>
+            <li><span class="commandKey">"{nombre} descansa"</span><span class="commandVal">Se oculta en la bandeja del sistema pero sigue escuchando. Vuelve a aparecer al decir su nombre.</span></li>
+            <li><span class="commandKey">"{nombre} muévete a [esquina]"</span><span class="commandVal">Mueve la ventana de Noxis (ej: arriba a la derecha, abajo a la izquierda, al centro).</span></li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Sistema</h3>
+            <p class="cardSub">Comandos que controlan tu PC.</p>
+          </div>
+          <ul class="commandList">
+            <li><span class="commandKey">"{nombre} sube / baja el volumen"</span><span class="commandVal">Sube o baja el volumen del sistema.</span></li>
+            <li><span class="commandKey">"{nombre} volumen [número]"</span><span class="commandVal">Deja el volumen en un valor de 0 a 100.</span></li>
+            <li><span class="commandKey">"{nombre} silencia el audio"</span><span class="commandVal">Silencia o reactiva el sonido.</span></li>
+            <li><span class="commandKey">"{nombre} bloquea pantalla"</span><span class="commandVal">Bloquea la pantalla del equipo.</span></li>
+            <li><span class="commandKey">"{nombre} apaga la pc"</span><span class="commandVal">Apaga el equipo (te pregunta para confirmar).</span></li>
+            <li><span class="commandKey">"{nombre} reinicia la pc"</span><span class="commandVal">Reinicia el equipo (te pregunta para confirmar).</span></li>
+            <li><span class="commandKey">"{nombre} crea una carpeta [nombre]"</span><span class="commandVal">Crea una carpeta en el escritorio.</span></li>
+            <li><span class="commandKey">"{nombre} crea una nota [contenido]"</span><span class="commandVal">Abre el Bloc de notas con lo que escribas.</span></li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Conversación normal</h3>
+            <p class="cardSub">Para charlar no hace falta decir su nombre: Noxis te responde natural.</p>
+          </div>
+          <ul class="commandList">
+            <li><span class="commandKey">"hola", "¿cómo estás?", "adiós"</span><span class="commandVal">Saludos y despedidas.</span></li>
+            <li><span class="commandKey">Cualquier otro comentario</span><span class="commandVal">Conversación básica sin necesidad de comandos.</span></li>
+          </ul>
         </div>
       </section>
 
@@ -437,7 +503,7 @@
           <div class="aboutHero">
             <img src="../../assets/noxis.png" alt="Noxis" class="aboutLogo" draggable="false" />
             <div class="aboutText">
-              <h3>Noxis <span class="aboutVersion">v0.1.0</span></h3>
+              <h3>Noxis <span class="aboutVersion">V.1.1.0</span></h3>
               <p>Reconocimiento de voz <b>100% offline</b> con Vosk. Tus comandos y apps nunca salen de tu PC.</p>
             </div>
           </div>
@@ -449,7 +515,10 @@
             <p class="cardSub">Hecho con cariño y software libre.</p>
           </div>
           <ul class="creditsList">
-            <li><span class="creditIcon" data-icon-credit="code"></span><span><b>Noxis</b> — desarrollado por <b>Norvyz</b></span></li>
+            <li><span class="creditIcon" data-icon-credit="code"></span><span><b>Noxis</b> — desarrollado por</span></li>
+            <li><span class="creditIcon" data-icon-credit="info"></span><span><b>Rizuz</b> — desarrollo</span></li>
+            <li><span class="creditIcon" data-icon-credit="info"></span><span><b>BryanMG</b> — desarrollo</span></li>
+            <li><span class="creditIcon" data-icon-credit="info"></span><span><b>Norvy</b> — desarrollo</span></li>
             <li><span class="creditIcon" data-icon-credit="mic"></span><span><b>Vosk</b> — reconocimiento de voz offline</span></li>
             <li><span class="creditIcon" data-icon-credit="shield"></span><span><b>Electron</b> — aplicación de escritorio</span></li>
           </ul>

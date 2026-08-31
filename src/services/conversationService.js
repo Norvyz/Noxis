@@ -97,7 +97,7 @@ function stripWakeWord(input, config) {
 const DEACTIVATE_VERBS = [
   "desactivar", "desactiva", "desactivarme", "desactivame", "desactivate",
   "apagar", "apaga", "apagame", "dormir", "duerme", "duermete",
-  "detente", "descansa", "calla", "callate"
+  "detente", "calla", "callate"
 ];
 
 function isDeactivateCommand(input, config) {
@@ -105,20 +105,32 @@ function isDeactivateCommand(input, config) {
   const rest = normalize(stripWakeWord(input, config));
   if (!rest) return false;
 
-  // Excluir comandos del sistema: "apaga el pc", "apaga la computadora", etc.
+  // Excluir comandos del sistema: "apaga el pc", "apaga la computadora", "apaga pc", "apaga ps"...
   // Estos NO son desactivaciones, sino comandos de apagado del sistema.
-  const SYSTEM_CONTEXT_WORDS = ["pc", "computadora", "equipo", "ordenador", "computer"];
+  const SYSTEM_CONTEXT_WORDS = ["pc", "ps", "computadora", "equipo", "ordenador", "computer"];
   const tokens = rest.split(/\s+/);
   const hasSystemContext = tokens.some((w) => SYSTEM_CONTEXT_WORDS.includes(w));
-  if (hasSystemContext) return false;
 
-  if (/^(desactiv|duerm|dormir|detente|descansa|callat|callar)/.test(rest)) return true;
+  // "apaga <algo>" (más texto tras "apaga" que no sea solo te/me/lo) = apagar algo
+  // concreto, NUNCA el modo dormida (ahí msivamos por si Vosk reconoce "ps" en vez de "pc").
+  const isApagarAlgo =
+    /^apaga\b/.test(rest) &&
+    !/^apaga\s*(te|me|lo)?\s*$/.test(rest) &&
+    !/^apagame\b/.test(rest);
+
+  if (hasSystemContext || isApagarAlgo) return false;
+
+  if (/^(desactiv|duerm|dormir|detente|callat|callar)/.test(rest)) return true;
   if (/^apaga\s*(te|me|lo)?$/.test(rest)) return true;
   if (/^apagame$/.test(rest)) return true;
   if (/^(off|standby)\b/.test(rest)) return true;
   if (/(para de escuchar|dejar de escuchar|deja de escuchar|parar de escuchar|deja de funcionar)/.test(rest)) return true;
   const threshold = typeof config.voiceSimilarityThreshold === "number" ? config.voiceSimilarityThreshold : undefined;
-  return tokens.some((w) => DEACTIVATE_VERBS.some((v) => w === v || fuzzyClose(w, v, threshold)));
+  // Solo matchear verbos de desactivación SI la frase NO empieza por "apaga algo".
+  return tokens.some((w) => {
+    if (/^apaga/.test(w)) return false;
+    return DEACTIVATE_VERBS.some((v) => w === v || fuzzyClose(w, v, threshold));
+  });
 }
 
 // ¿El texto (tras quitar el nombre) pide "despertar"/"vuelve"? Se usa para
@@ -242,13 +254,24 @@ function getConversationalResponse(rawText, config) {
 }
 
 const FALLBACK_NAMED = [
-  "Eso no lo tengo en mi cerebro de mascota aún 🧠",
-  "No entiendo ese comando, pero puedo abrir apps si me dices 'abre' + el nombre 🦎",
-  "Mmm... no sé hacer eso. Prueba 'abre' seguido de una aplicación."
+  "Mmm... todavía no supe hacer eso 🦎",
+  "No encontré esa app o comando, pero puedo abrir y cerrar apps y grupos. ¡Segui probando!",
+  "Eso no lo tengo en mi cerebro de mascota aún 🧠"
 ];
 
 function getNamedFallback() {
   return pick(FALLBACK_NAMED);
+}
+
+const FALLBACK_GENERIC = [
+  "No te entendí del todo 🤔 Podés escribirme por el chat si te quedan dudas.",
+  "Mmm... no sé qué quisiste decir 🙈 Contame de nuevo.",
+  "¿Cómo sería? No lo capté bien 😅"
+];
+
+// Fallback natural cuando alguien habla sin nombre y no calza con nada.
+function getGenericFallback() {
+  return pick(FALLBACK_GENERIC);
 }
 
 module.exports = {
