@@ -317,6 +317,61 @@
             <li><span class="commandKey">"hola", "¿cómo estás?", "adiós"</span><span class="commandVal">Conversación básica</span></li>
           </ul>
         </div>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Aprendizaje de archivos</h3>
+            <p class="cardSub">Noxis puede leer archivos de texto (.txt, .docx, .pdf, .xlsx) de una carpeta para ampliar su vocabulario de reconocimiento de voz. Sin IA: solo extrae y cuenta palabras frecuentes.</p>
+          </div>
+
+          <label class="field">
+            <span>Carpeta a analizar</span>
+            <div class="pathRow">
+              <input id="learnFolderPath" type="text" readonly placeholder="Ninguna carpeta seleccionada..." class="placeholder" />
+              <button id="learnChooseFolderBtn" class="secondaryBtn" type="button"><span class="btnIcon" data-icon="folder"></span> Examinar</button>
+            </div>
+          </label>
+
+          <label class="field">
+            <span>Frecuencia mínima de palabra: <b id="learnMinFreqValue">3</b></span>
+            <input id="learnMinFreqRange" type="range" min="2" max="10" step="1" value="3" />
+            <span class="rangeHint">Cuántas veces debe aparecer una palabra en los archivos para ser incluida.</span>
+          </label>
+
+          <div class="switchRow">
+            <div class="switchLabel">
+              <span class="switchTitle">Incluir subcarpetas</span>
+              <span class="switchSub">Analizar también los archivos dentro de subcarpetas</span>
+            </div>
+            <label class="switch">
+              <input id="learnSubfoldersCheck" type="checkbox" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 14px;">
+            <button id="learnAnalyzeBtn" class="primaryBtn" type="button">Analizar carpeta</button>
+            <button id="learnClearBtn" class="dangerBtn" type="button">Olvidar todo</button>
+          </div>
+
+          <div id="learnProgress" style="display: none; margin-top: 14px;">
+            <span class="switchSub" id="learnProgressText">Analizando archivos...</span>
+            <div style="background: var(--panel-2); border-radius: 6px; height: 8px; margin-top: 8px; overflow: hidden;">
+              <div id="learnProgressBar" style="background: var(--accent); height: 100%; width: 0%; transition: width 0.3s;"></div>
+            </div>
+          </div>
+
+          <div id="learnStats" style="display: none; margin-top: 14px;">
+            <span class="switchSub" id="learnStatsText"></span>
+          </div>
+
+          <div id="learnWordsSection" style="display: none; margin-top: 16px;">
+            <label class="field">
+              <span>Palabras aprendidas (<b id="learnWordCount">0</b>)</span>
+              <div id="learnWordsList" style="max-height: 200px; overflow-y: auto; background: var(--panel-2); border: 1px solid var(--border); border-radius: 11px; padding: 10px; display: flex; flex-wrap: wrap; gap: 6px;"></div>
+            </label>
+          </div>
+        </div>
       </section>
 
       <!-- TAB APPS -->

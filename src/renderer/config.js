@@ -75,6 +75,23 @@ const editPackAppConfirmBtn = document.getElementById("editPackAppConfirmBtn");
 const editPackAppCancelBtn = document.getElementById("editPackAppCancelBtn");
 
 const saveStatus = document.getElementById("saveStatus");
+
+// Aprendizaje de archivos
+const learnFolderPath = document.getElementById("learnFolderPath");
+const learnChooseFolderBtn = document.getElementById("learnChooseFolderBtn");
+const learnMinFreqRange = document.getElementById("learnMinFreqRange");
+const learnMinFreqValue = document.getElementById("learnMinFreqValue");
+const learnSubfoldersCheck = document.getElementById("learnSubfoldersCheck");
+const learnAnalyzeBtn = document.getElementById("learnAnalyzeBtn");
+const learnClearBtn = document.getElementById("learnClearBtn");
+const learnProgress = document.getElementById("learnProgress");
+const learnProgressText = document.getElementById("learnProgressText");
+const learnProgressBar = document.getElementById("learnProgressBar");
+const learnStats = document.getElementById("learnStats");
+const learnStatsText = document.getElementById("learnStatsText");
+const learnWordsSection = document.getElementById("learnWordsSection");
+const learnWordCount = document.getElementById("learnWordCount");
+const learnWordsList = document.getElementById("learnWordsList");
 const modelCards = document.getElementById("modelCards");
 const modelProgressWrap = document.getElementById("modelProgressWrap");
 const modelProgressLabel = document.getElementById("modelProgressLabel");
@@ -366,6 +383,18 @@ async function loadConfig() {
   loadModelSection();
   renderApps();
   renderPacks();
+
+  // Aprendizaje de archivos
+  learnFolderPath.value = config.learnFolderPath || "";
+  if (config.learnFolderPath) {
+    learnFolderPath.classList.remove("placeholder");
+  } else {
+    learnFolderPath.classList.add("placeholder");
+  }
+  learnMinFreqRange.value = config.learnMinFrequency || 3;
+  learnMinFreqValue.textContent = config.learnMinFrequency || 3;
+  learnSubfoldersCheck.checked = !!config.learnIncludeSubfolders;
+  renderLearnedWords();
 }
 
 // ---------------------------------------------------------------
@@ -998,6 +1027,11 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
   config.commandSoundEnabled = commandSoundCheck.checked;
   config.voiceSimilarityThreshold = parseFloat(similarityRange.value);
 
+  // Aprendizaje de archivos
+  config.learnFolderPath = config.learnFolderPath || null;
+  config.learnMinFrequency = parseInt(learnMinFreqRange.value, 10) || 3;
+  config.learnIncludeSubfolders = learnSubfoldersCheck.checked;
+
   const ok = await window.configAPI.saveConfig(config);
   if (ok) {
     showSaveStatus("Guardado correctamente");
@@ -1025,6 +1059,103 @@ document.getElementById("resetBtn").addEventListener("click", () => {
           loadConfig();
         }, 300);
       }
+    }
+  );
+});
+
+// ---------------------------------------------------------------
+// Aprendizaje de archivos
+// ---------------------------------------------------------------
+
+// Mostrar valor del range de frecuencia
+learnMinFreqRange.addEventListener("input", () => {
+  learnMinFreqValue.textContent = learnMinFreqRange.value;
+});
+
+// Seleccionar carpeta
+learnChooseFolderBtn.addEventListener("click", async () => {
+  const folder = await window.configAPI.chooseFolder();
+  if (folder) {
+    config.learnFolderPath = folder;
+    learnFolderPath.value = folder;
+    learnFolderPath.classList.remove("placeholder");
+  }
+});
+
+// Renderizar lista de palabras aprendidas
+async function renderLearnedWords() {
+  const words = await window.configAPI.getLearnedWords();
+  learnWordCount.textContent = words.length;
+  learnWordsList.innerHTML = "";
+  if (words.length === 0) {
+    learnWordsSection.style.display = "none";
+    return;
+  }
+  learnWordsSection.style.display = "";
+  for (const word of words) {
+    const tag = document.createElement("span");
+    tag.style.cssText = "display: inline-flex; align-items: center; gap: 4px; background: var(--accent-soft); color: var(--accent); padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 500;";
+    tag.textContent = word;
+    const removeBtn = document.createElement("button");
+    removeBtn.textContent = "x";
+    removeBtn.style.cssText = "background: none; border: none; color: inherit; cursor: pointer; font-size: 11px; padding: 0 2px; opacity: 0.7;";
+    removeBtn.addEventListener("click", async () => {
+      await window.configAPI.removeLearnedWord(word);
+      renderLearnedWords();
+    });
+    tag.appendChild(removeBtn);
+    learnWordsList.appendChild(tag);
+  }
+}
+
+// Analizar carpeta
+learnAnalyzeBtn.addEventListener("click", async () => {
+  if (!config.learnFolderPath) {
+    showToast("Seleccioná una carpeta primero", "error");
+    return;
+  }
+  learnAnalyzeBtn.disabled = true;
+  learnProgress.style.display = "";
+  learnProgressBar.style.width = "0%";
+  learnProgressText.textContent = "Analizando archivos...";
+  learnStats.style.display = "none";
+
+  const result = await window.configAPI.analyzeFolder(config.learnFolderPath, {
+    includeSubfolders: learnSubfoldersCheck.checked,
+    minFrequency: parseInt(learnMinFreqRange.value, 10)
+  });
+
+  learnAnalyzeBtn.disabled = false;
+  learnProgress.style.display = "none";
+
+  if (result.stats.error) {
+    showToast("Error: " + result.stats.error, "error");
+    return;
+  }
+
+  const s = result.stats;
+  learnStats.style.display = "";
+  learnStatsText.textContent = `Archivos: ${s.filesProcessed}/${s.totalFiles} | Palabras totales: ${s.totalWords} | Únicas: ${s.uniqueWords} | Aprendidas: ${s.learnedWords} | Nombres propios: ${s.properNounsFound}`;
+  showToast(`${s.learnedWords} palabras aprendidas`, "success");
+  renderLearnedWords();
+});
+
+// Recibir progreso del análisis
+window.configAPI.onLearnProgress((info) => {
+  const pct = Math.round((info.current / info.total) * 100);
+  learnProgressBar.style.width = pct + "%";
+  learnProgressText.textContent = `Analizando ${info.current}/${info.total}: ${info.fileName}`;
+});
+
+// Olvidar todo
+learnClearBtn.addEventListener("click", () => {
+  askInlineConfirm("¿Olvidar todo lo aprendido?",
+    "Se borrarán todas las palabras aprendidas de archivos. Los comandos base no se modifican.",
+    async () => {
+      await window.configAPI.clearLearnedWords();
+      learnStats.style.display = "none";
+      renderLearnedWords();
+      showToast("Vocabulario aprendido borrado", "success");
     }
   );
 });

@@ -17,16 +17,12 @@
 // Sin dependencias de IA: regex + fuzzy match (Levenshtein) sobre tokens.
 
 const systemService = require("./systemService");
-const { fuzzyClose, tokensOf, editDistance } = require("./conversationService");
+const voiceMatcher = require("./voiceMatcher");
 
-function normalize(text) {
-  return (text || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[.,!?¡¿]/g, "")
-    .trim();
-}
+// Re-exportar desde voiceMatcher para compatibilidad
+const normalize = voiceMatcher.normalize;
+const fuzzyClose = voiceMatcher.fuzzyClose;
+const tokensOf = voiceMatcher.tokensOf;
 
 // ---------------------------------------------------------------
 // Estado de confirmación (shutdown / restart)

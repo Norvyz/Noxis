@@ -28,5 +28,14 @@ contextBridge.exposeInMainWorld("configAPI", {
   onModelStatus: (callback) => {
     ipcRenderer.on("vosk-status", (event, info) => callback(info));
   },
-  openExternal: (url) => ipcRenderer.invoke("open-external", url)
+  openExternal: (url) => ipcRenderer.invoke("open-external", url),
+  // Aprendizaje de archivos
+  chooseFolder: () => ipcRenderer.invoke("learn:choose-folder"),
+  analyzeFolder: (folderPath, options) => ipcRenderer.invoke("learn:analyze", folderPath, options),
+  getLearnedWords: () => ipcRenderer.invoke("learn:get-words"),
+  removeLearnedWord: (word) => ipcRenderer.invoke("learn:remove-word", word),
+  clearLearnedWords: () => ipcRenderer.invoke("learn:clear-all"),
+  onLearnProgress: (callback) => {
+    ipcRenderer.on("learn:progress", (event, info) => callback(info));
+  }
 });

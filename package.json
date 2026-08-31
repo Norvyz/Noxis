@@ -64,7 +64,10 @@
   "dependencies": {
     "active-win": "^8.2.1",
     "extract-zip": "^2.0.1",
+    "mammoth": "^1.12.2",
+    "pdf-parse": "^2.4.5",
     "tar": "^7.5.22",
-    "vosk-browser": "^0.0.8"
+    "vosk-browser": "^0.0.8",
+    "xlsx": "^0.18.5"
   }
 }

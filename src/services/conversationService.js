@@ -17,14 +17,14 @@
 // Noxis escucha siempre; responde normal sin necesitar el nombre,
 // pero SOLO ejecuta apps si mencionan su nombre (o variantes de pronunciación).
 
-function normalize(text) {
-  return (text || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // quita tildes
-    .replace(/[.,!?¡¿]/g, "")
-    .trim();
-}
+const voiceMatcher = require("./voiceMatcher");
+
+// Re-exportar normalize, fuzzyClose, editDistance, tokensOf desde voiceMatcher
+// para compatibilidad con módulos que los importen de acá.
+const normalize = voiceMatcher.normalize;
+const fuzzyClose = voiceMatcher.fuzzyClose;
+const editDistance = voiceMatcher.editDistance;
+const tokensOf = voiceMatcher.tokensOf;
 
 function getWakeWord(config) {
   return normalize(config.name || "noxis");
@@ -32,48 +32,6 @@ function getWakeWord(config) {
 
 // Interjecciones iniciales que suelen preceder al nombre en voz
 const LEADING_FILLERS = ["hey", "ey", "oye", "eh", "ej"];
-
-// ---------------------------------------------------------------
-// Fuzzy matching (distancia de Levenshtein tolerante a errores del modelo)
-// ---------------------------------------------------------------
-function editDistance(a, b) {
-  const m = a.length;
-  const n = b.length;
-  if (m === 0) return n;
-  if (n === 0) return m;
-  let prev = new Array(n + 1);
-  let curr = new Array(n + 1);
-  for (let j = 0; j <= n; j++) prev[j] = j;
-  for (let i = 1; i <= m; i++) {
-    curr[0] = i;
-    for (let j = 1; j <= n; j++) {
-      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
-    }
-    [prev, curr] = [curr, prev];
-  }
-  return prev[n];
-}
-
-// ¿"token" es aproximadamente igual a "target"?
-// El umbral crece con la longitud normalizando la distancia de Levenshtein.
-// Si se pasa un `threshold` explícito (0-1, similitud mínima requerida,
-// p. ej. 0.72 = se permite hasta ~28% de diferencia de caracteres), se usa
-// ese en vez del valor derivado de la longitud.
-function fuzzyClose(token, target, threshold) {
-  const maxLen = Math.max(token.length, target.length);
-  if (maxLen <= 3) return token === target;
-  const distance = editDistance(token, target);
-  if (typeof threshold === "number") {
-    const maxDistance = Math.floor(maxLen * (1 - Math.max(0, Math.min(1, threshold))));
-    return distance <= maxDistance;
-  }
-  return distance <= Math.floor(maxLen / 4);
-}
-
-function tokensOf(text) {
-  return (text || "").toLowerCase().split(/\s+/).filter(Boolean);
-}
 
 // ---------------------------------------------------------------
 // Variantes de pronunciación del nombre
@@ -193,62 +151,20 @@ function getWakeResponse(config) {
 
 // ---------------------------------------------------------------
 // Vocabulario (gramática) para el recognizer de Vosk
-// Restringe la salida del modelo a palabras útiles: sube muchísimo la
-// precisión de comandos como "abre trabajo" o "desactívame".
-// Las palabras que el modelo no conoce simplemente se ignoran (no rompen).
+// Ahora se genera automáticamente desde dictionary.json via voiceMatcher.buildGrammarFromDictionary().
+// Para agregar palabras, editá src/services/dictionary.json en vez de tocar este archivo.
 // ---------------------------------------------------------------
-const GRAMMAR_BASE = [
-  // saludos / despedidas
-  "hola", "buenas", "buenos", "dias", "tardes", "noches", "chao", "adios",
-  "gracias", "hasta", "luego", "pronto", "vemos", "nos",
-  // conversación
-  "como", "estas", "andas", "vas", "que", "cuentas", "todo", "bien", "quien",
-  "eres", "sos", "sois", "puedes", "puedo", "hacer", "haces", "ayuda",
-  "ayudame", "funcionas", "nombre", "mascota", "soy", "dime", "necesitas",
-  "escucho", "aqui", "estoy", "cuando", "quieras", "nada", "de", "va", "muy",
-  "te", "yo", "si", "claro", "vale", "perfecto", "cual", "eso", "otra",
-  // abrir
-  "abre", "abrir", "abri", "abreme", "abrieme", "abrirme", "aplicaciones",
-  "apps", "un", "una", "el", "la", "y",
-  // desactivar / dormir
-  "desactivar", "desactiva", "desactivame", "desactivate", "apagar", "apaga",
-  "apagate", "dormir", "duerme", "duermete", "detente", "descansa", "deja",
-  "escuchar", "vuelve", "despierta", "hablar", "oye", "espera", "apaga",
-  // mover ventana
-  "muevete", "muévete", "movete", "colocate", "posicionate", "andan", "andate",
-  "vete", "esquina", "rincon", "superior", "inferior", "izquierda", "derecha",
-  "arriba", "abajo", "centro", "lado", "parte",
-  // cerrar apps
-  "cierra", "cerrar", "cierrame", "cierrale", "mate", "mata", "matar",
-  "programa", "aplicacion",
-  // crear carpeta / nota
-  "crea", "crear", "genera", "generar", "carpeta", "directorio", "llamada",
-  "llamado", "nombre", "nota", "bloc", "notas", "block", "texto", "archivo",
-  // volumen
-  "volumen", "audio", "sonido", "sube", "subir", "baja", "bajar", "aumenta",
-  "reduce", "silencia", "silenciar", "mutear", "mute", "silencio",
-  "quita", "desilencia", "pon", "poner", "ajusta", "por", "ciento",
-  // bloquear
-  "bloquea", "bloquear", "bloqueate", "pantalla", "lock",
-  // apagar / reiniciar
-  "apagar", "reinicia", "reiniciar", "reboot", "restart", "computadora",
-  "pc", "equipo",
-  // confirmar / cancelar
-  "confirmar", "confirmalo", "dale", "hazlo", "ejecuta", "cancela", "cancelar",
-  "cancelalo", "no",
-  // conectores
-  "a", "con", "para", "por", "en", "se", "lo", "al", "del", "e", "o", "u"
-];
 
 function buildGrammar(config) {
-  const words = new Set(GRAMMAR_BASE);
+  // Base: todas las palabras del diccionario (comandos, apps, números, etc.)
+  const words = new Set(voiceMatcher.buildGrammarFromDictionary());
 
-  // Variantes del nombre (el modelo no las conoce → las ignora, sin daño)
+  // Variantes del nombre (wake word)
   for (const v of wakeWordVariants(config)) {
     for (const w of v.split(/\s+/)) words.add(w);
   }
 
-  // Keywords de apps y grupos: se dividen en palabras individuales
+  // Keywords de apps y grupos del usuario: se dividen en palabras individuales
   const addKeywords = (list) => {
     for (const item of list || []) {
       for (const kw of [item.keyword, item.name]) {
@@ -348,5 +264,6 @@ module.exports = {
   buildGrammar,
   editDistance,
   fuzzyClose,
-  tokensOf
+  tokensOf,
+  normalize
 };

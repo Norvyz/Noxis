@@ -17,7 +17,12 @@
 
 const launcherService = require("./launcherService");
 const soundService = require("./soundService");
-const { fuzzyClose, tokensOf } = require("./conversationService");
+const voiceMatcher = require("./voiceMatcher");
+
+// Re-exportar desde voiceMatcher para compatibilidad
+const fuzzyClose = voiceMatcher.fuzzyClose;
+const tokensOf = voiceMatcher.tokensOf;
+const normalize = voiceMatcher.normalize;
 
 const OPEN_VERBS = ["abre", "abrir", "abri", "abreme", "abrieme", "abrirme"];
 
@@ -41,7 +46,7 @@ function phraseMatches(text, phrase) {
  * a la ventana (equivalente a ShowMessage()).
  */
 async function handleCommand(input, config, onMessage) {
-  const text = input.toLowerCase();
+  const text = normalize(input);
 
   if (!hasOpenVerb(text)) {
     return null;
@@ -49,11 +54,11 @@ async function handleCommand(input, config, onMessage) {
 
   // 1) intenta un pack primero (igual que en la version WPF)
   const pack = config.packs.find(
-    (p) => text.includes(p.keyword) || phraseMatches(text, p.keyword)
+    (p) => text.includes(normalize(p.keyword)) || phraseMatches(text, p.keyword)
   );
   if (pack) {
     if (pack.apps.length === 0) {
-      return `El grupo ${pack.name} no tiene aplicaciones aún 🦎`;
+      return `El grupo ${pack.name} no tiene aplicaciones aun 🦎`;
     }
 
     soundService.playCommandSound(config);
@@ -66,23 +71,23 @@ async function handleCommand(input, config, onMessage) {
       await launcherService.delay(pack.delaySeconds);
     }
 
-    return `Listo 😎 Ya ejecuté el grupo ${pack.name}`;
+    return `Listo 😎 Ya ejecute el grupo ${pack.name}`;
   }
 
   // 2) si no es un pack, busca una app suelta
   const app = config.apps.find(
-    (a) => text.includes(a.keyword) || phraseMatches(text, a.keyword)
+    (a) => text.includes(normalize(a.keyword)) || phraseMatches(text, a.keyword)
   );
   if (app) {
     soundService.playCommandSound(config);
 
     const ok = launcherService.openApp(app.executablePath);
     return ok
-      ? `${config.name} abrió ${app.keyword} 🚀`
-      : `Ups… no pude abrir ${app.keyword} 😕`;
+      ? `${config.name} abrio ${app.keyword} 🚀`
+      : `Ups... no pude abrir ${app.keyword} 😕`;
   }
 
-  return "No conozco esa aplicación aún 🦎";
+  return "No conozco esa aplicacion aun 🦎";
 }
 
 module.exports = { handleCommand };

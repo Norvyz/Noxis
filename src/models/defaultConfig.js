@@ -40,7 +40,11 @@ function createDefaultConfig() {
     companionEnabled: true,
     companionCooldownMinutes: 15,
     companionHydrationMinutes: 90,
-    companionSpeakProbability: 0.3
+    companionSpeakProbability: 0.3,
+    // Aprendizaje de archivos (ampliar vocabulario desde archivos del usuario)
+    learnFolderPath: null,
+    learnMinFrequency: 3,
+    learnIncludeSubfolders: false
   };
 }
 

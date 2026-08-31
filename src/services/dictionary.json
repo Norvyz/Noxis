@@ -1,0 +1,803 @@
+{
+  "_comment": "Diccionario de Noxis. Editá este archivo para agregar variantes de comandos, nombres de apps, etc. Se usa tanto para la gramática de Vosk como para el matching difuso.",
+  "commands": {
+    "open": {
+      "canonical": "abrir",
+      "variants": [
+        "abre",
+        "abrir",
+        "abri",
+        "abreme",
+        "abrieme",
+        "abrirme",
+        "lanza",
+        "lanzar",
+        "lanzalo",
+        "ejecuta",
+        "ejecutar",
+        "inicia",
+        "iniciar",
+        "initialize",
+        "corre",
+        "correr",
+        "start",
+        "run"
+      ]
+    },
+    "close": {
+      "canonical": "cerrar",
+      "variants": [
+        "cierra",
+        "cerrar",
+        "cierrame",
+        "cierrale",
+        "cierralo",
+        "mate",
+        "mata",
+        "matar",
+        "matame",
+        "matelo",
+        "salir",
+        "sale",
+        "sal",
+        "salde",
+        "stop",
+        "quit",
+        "exit"
+      ]
+    },
+    "move": {
+      "canonical": "mover",
+      "variants": [
+        "muevete",
+        "muévete",
+        "movete",
+        "andan",
+        "andate",
+        "colocate",
+        "posicionate",
+        "ve",
+        "vete",
+        "andar"
+      ]
+    },
+    "corner": {
+      "canonical": "esquina",
+      "variants": [
+        "esquina",
+        "rincon",
+        "rincón",
+        "lado",
+        "parte",
+        "arriba",
+        "superior",
+        "abajo",
+        "inferior",
+        "izquierda",
+        "izq",
+        "izqda",
+        "der",
+        "dcha",
+        "derecha",
+        "centro",
+        "medio",
+        "mitad"
+      ]
+    },
+    "create": {
+      "canonical": "crear",
+      "variants": [
+        "crea",
+        "crear",
+        "crealo",
+        "genera",
+        "generar",
+        "haz",
+        "hacer",
+        "hazme",
+        "armar",
+        "arma",
+        "make",
+        "create"
+      ]
+    },
+    "folder": {
+      "canonical": "carpeta",
+      "variants": [
+        "carpeta",
+        "carpetas",
+        "directorio",
+        "directorio",
+        "folder",
+        "directory"
+      ]
+    },
+    "note": {
+      "canonical": "nota",
+      "variants": [
+        "nota",
+        "notas",
+        "bloc",
+        "block",
+        "blocdenotas",
+        "archivo",
+        "texto",
+        "text",
+        "note",
+        "file"
+      ]
+    },
+    "volume": {
+      "canonical": "volumen",
+      "variants": [
+        "volumen",
+        "audio",
+        "sonido",
+        "volume",
+        "sound"
+      ]
+    },
+    "volumeUp": {
+      "canonical": "subir",
+      "variants": [
+        "sube",
+        "subir",
+        "subilo",
+        "aumenta",
+        "aumentar",
+        "mas",
+        "amplia",
+        "ampliar",
+        "up"
+      ]
+    },
+    "volumeDown": {
+      "canonical": "bajar",
+      "variants": [
+        "baja",
+        "bajar",
+        "bajalo",
+        "reduce",
+        "reducir",
+        "menos",
+        "bajar",
+        "down"
+      ]
+    },
+    "mute": {
+      "canonical": "silenciar",
+      "variants": [
+        "silencia",
+        "silenciar",
+        "mutear",
+        "mute",
+        "mudo",
+        "silencio",
+        "calla",
+        "callar",
+        "callalo"
+      ]
+    },
+    "unmute": {
+      "canonical": "desilenciar",
+      "variants": [
+        "quita",
+        "quitale",
+        "desilencia",
+        "desmutear",
+        "desmutea",
+        "unmute",
+        "restaura"
+      ]
+    },
+    "setVolume": {
+      "canonical": "poner",
+      "variants": [
+        "pon",
+        "poner",
+        "ponlo",
+        "ajusta",
+        "ajustar",
+        "deja",
+        "dejar",
+        "coloca",
+        "colocar",
+        "set"
+      ]
+    },
+    "getVolume": {
+      "canonical": "consultar",
+      "variants": [
+        "cuanto",
+        "cuánto",
+        "cual",
+        "cuál",
+        "dime",
+        "consultar",
+        "consulta",
+        "que",
+        "how",
+        "what"
+      ]
+    },
+    "lock": {
+      "canonical": "bloquear",
+      "variants": [
+        "bloquea",
+        "bloquear",
+        "bloqueate",
+        "bloquealo",
+        "lock",
+        "bloquea"
+      ]
+    },
+    "shutdown": {
+      "canonical": "apagar",
+      "variants": [
+        "apaga",
+        "apagar",
+        "apagate",
+        "apagado",
+        "shutdown",
+        "turnoff",
+        "turn off"
+      ]
+    },
+    "restart": {
+      "canonical": "reiniciar",
+      "variants": [
+        "reinicia",
+        "reiniciar",
+        "reinicialo",
+        "reboot",
+        "restart",
+        "reset"
+      ]
+    },
+    "confirm": {
+      "canonical": "confirmar",
+      "variants": [
+        "confirmar",
+        "confirmalo",
+        "si",
+        "dale",
+        "ok",
+        "vale",
+        "acepto",
+        "hazlo",
+        "ejecuta",
+        "yes"
+      ]
+    },
+    "cancel": {
+      "canonical": "cancelar",
+      "variants": [
+        "cancela",
+        "cancelar",
+        "cancelalo",
+        "no",
+        "para",
+        "detente",
+        "cancel"
+      ]
+    },
+    "deactivate": {
+      "canonical": "desactivar",
+      "variants": [
+        "desactivar",
+        "desactiva",
+        "desactivarme",
+        "desactivame",
+        "desactivate",
+        "dormir",
+        "duerme",
+        "duermete",
+        "detente",
+        "descansa",
+        "calla",
+        "callate",
+        "off",
+        "standby",
+        "apagate"
+      ]
+    },
+    "wake": {
+      "canonical": "despertar",
+      "variants": [
+        "vuelve",
+        "despierta",
+        "despertate",
+        "despertar",
+        "hablar",
+        "habla",
+        "escucha",
+        "activa",
+        "activar",
+        "ready",
+        "presente",
+        "aqui"
+      ]
+    }
+  },
+  "locations": {
+    "desktop": {
+      "canonical": "escritorio",
+      "variants": [
+        "escritorio",
+        "desktop",
+        "mesa",
+        "pantalla"
+      ]
+    },
+    "documents": {
+      "canonical": "documentos",
+      "variants": [
+        "documentos",
+        "documento",
+        "documents",
+        "document",
+        "misdocumentos",
+        "mis documentos",
+        "docs"
+      ]
+    },
+    "downloads": {
+      "canonical": "descargas",
+      "variants": [
+        "descargas",
+        "descarga",
+        "downloads",
+        "download",
+        "bajadas"
+      ]
+    },
+    "pictures": {
+      "canonical": "imagenes",
+      "variants": [
+        "imagenes",
+        "imagen",
+        "fotos",
+        "foto",
+        "pictures",
+        "picture",
+        "fotografias"
+      ]
+    },
+    "music": {
+      "canonical": "musica",
+      "variants": [
+        "musica",
+        "música",
+        "music",
+        "canciones"
+      ]
+    },
+    "videos": {
+      "canonical": "videos",
+      "variants": [
+        "videos",
+        "video",
+        "peliculas"
+      ]
+    }
+  },
+  "apps": {
+    "chrome.exe": {
+      "canonical": "chrome",
+      "variants": [
+        "chrome",
+        "crome",
+        "crom",
+        "google",
+        "googlechrome",
+        "navegador",
+        "browser"
+      ]
+    },
+    "firefox.exe": {
+      "canonical": "firefox",
+      "variants": [
+        "firefox",
+        "fire fox",
+        "foxfire",
+        "zorro",
+        "navegador",
+        "browser"
+      ]
+    },
+    "msedge.exe": {
+      "canonical": "edge",
+      "variants": [
+        "edge",
+        "microsoft edge",
+        "mSEDge",
+        "navegador",
+        "browser"
+      ]
+    },
+    "discord.exe": {
+      "canonical": "discord",
+      "variants": [
+        "discord",
+        "discor",
+        "diskort",
+        "discod",
+        "discurd",
+        "the cord",
+        "discort"
+      ]
+    },
+    "slack.exe": {
+      "canonical": "slack",
+      "variants": [
+        "slack",
+        "eslack",
+        "eslaq",
+        "slaq",
+        "slak"
+      ]
+    },
+    "code.exe": {
+      "canonical": "visual studio code",
+      "variants": [
+        "code",
+        "vscode",
+        "vs code",
+        "visual studio code",
+        "visual",
+        "codigo",
+        "codes"
+      ]
+    },
+    "visual studio.exe": {
+      "canonical": "visual studio",
+      "variants": [
+        "visual studio",
+        "visual",
+        "studio",
+        "vistual"
+      ]
+    },
+    "sublime_text.exe": {
+      "canonical": "sublime",
+      "variants": [
+        "sublime",
+        "sublime text",
+        "sublim"
+      ]
+    },
+    "notepad++.exe": {
+      "canonical": "notepad++",
+      "variants": [
+        "notepad",
+        "notepad++",
+        "notepad plus",
+        "bloque de notas"
+      ]
+    },
+    "spotify.exe": {
+      "canonical": "spotify",
+      "variants": [
+        "spotify",
+        "spotify",
+        "spoti",
+        "spolay",
+        "spotifai",
+        "musica"
+      ]
+    },
+    "steam.exe": {
+      "canonical": "steam",
+      "variants": [
+        "steam",
+        "esteam",
+        "stima",
+        "steim",
+        "juegos",
+        "gaming"
+      ]
+    },
+    "photoshop.exe": {
+      "canonical": "photoshop",
+      "variants": [
+        "photoshop",
+        "photo shop",
+        "fotoshop",
+        "ps",
+        "adobe"
+      ]
+    },
+    "figma.exe": {
+      "canonical": "figma",
+      "variants": [
+        "figma",
+        "figma",
+        "figna",
+        "figma"
+      ]
+    },
+    "zoom.exe": {
+      "canonical": "zoom",
+      "variants": [
+        "zoom",
+        "zum",
+        "sum",
+        "videollamada",
+        "reunion",
+        "meet"
+      ]
+    },
+    "teams.exe": {
+      "canonical": "teams",
+      "variants": [
+        "teams",
+        "tims",
+        "tems",
+        "microsoft teams",
+        "reunion"
+      ]
+    },
+    "winword.exe": {
+      "canonical": "word",
+      "variants": [
+        "word",
+        "microsoft word",
+        "documento",
+        "wodr"
+      ]
+    },
+    "excel.exe": {
+      "canonical": "excel",
+      "variants": [
+        "excel",
+        "exel",
+        "microsoft excel",
+        "hoja de calculo",
+        "calculadora"
+      ]
+    },
+    "explorer.exe": {
+      "canonical": "explorador",
+      "variants": [
+        "explorador",
+        "explorer",
+        "archivos",
+        "carpetas",
+        "file explorer",
+        "windows explorer"
+      ]
+    },
+    "windowsterminal.exe": {
+      "canonical": "terminal",
+      "variants": [
+        "terminal",
+        "cmd",
+        "powershell",
+        "consola",
+        "command",
+        "linea de comandos"
+      ]
+    },
+    "powershell.exe": {
+      "canonical": "powershell",
+      "variants": [
+        "powershell",
+        "power shell",
+        "powerShell"
+      ]
+    }
+  },
+  "numbers": {
+    "0": [
+      "cero",
+      "zero"
+    ],
+    "1": [
+      "uno",
+      "una",
+      "un",
+      "one"
+    ],
+    "2": [
+      "dos",
+      "two"
+    ],
+    "3": [
+      "tres",
+      "three"
+    ],
+    "4": [
+      "cuatro",
+      "four"
+    ],
+    "5": [
+      "cinco",
+      "five"
+    ],
+    "6": [
+      "seis",
+      "six"
+    ],
+    "7": [
+      "siete",
+      "seven"
+    ],
+    "8": [
+      "ocho",
+      "eight"
+    ],
+    "9": [
+      "nueve",
+      "nine"
+    ],
+    "10": [
+      "diez",
+      "ten"
+    ],
+    "15": [
+      "quince",
+      "fifteen"
+    ],
+    "20": [
+      "veinte",
+      "twenty"
+    ],
+    "25": [
+      "veinticinco"
+    ],
+    "30": [
+      "treinta",
+      "thirty"
+    ],
+    "40": [
+      "cuarenta",
+      "forty"
+    ],
+    "50": [
+      "cincuenta",
+      "fifty"
+    ],
+    "60": [
+      "sesenta",
+      "sixty"
+    ],
+    "70": [
+      "setenta",
+      "seventy"
+    ],
+    "80": [
+      "ochenta",
+      "eighty"
+    ],
+    "90": [
+      "noventa",
+      "ninety"
+    ],
+    "100": [
+      "cien",
+      "ciento",
+      "hundred"
+    ]
+  },
+  "fillers": [
+    "hey",
+    "ey",
+    "oye",
+    "eh",
+    "ej",
+    "a",
+    "ya",
+    "por favor",
+    "porfa",
+    "dale",
+    "bueno",
+    "bueno pues",
+    "oye noxis",
+    "escucha",
+    "mira"
+  ],
+  "greetings": [
+    "hola",
+    "buenas",
+    "buenos dias",
+    "buenas tardes",
+    "buenas noches",
+    "que tal",
+    "como estas",
+    "hey",
+    "saludos",
+    "que onda"
+  ],
+  "grammar": {
+    "_comment": "Palabras adicionales para la gramática de Vosk que no están en otros listados",
+    "extra": [
+      "el",
+      "la",
+      "los",
+      "las",
+      "un",
+      "una",
+      "unos",
+      "unas",
+      "de",
+      "del",
+      "al",
+      "a",
+      "en",
+      "con",
+      "por",
+      "para",
+      "y",
+      "o",
+      "u",
+      "e",
+      "que",
+      "se",
+      "lo",
+      "le",
+      "me",
+      "te",
+      "nos",
+      "os",
+      "mi",
+      "tu",
+      "su",
+      "este",
+      "esta",
+      "esto",
+      "ese",
+      "esa",
+      "eso",
+      "aqui",
+      "ahi",
+      "alla",
+      "donde",
+      "cuando",
+      "como",
+      "que",
+      "cuanto",
+      "cual",
+      "quien",
+      "si",
+      "no",
+      "tal",
+      "vez",
+      "muy",
+      "mas",
+      "poco",
+      "mucho",
+      "todo",
+      "nada",
+      "algo",
+      "bien",
+      "mal",
+      "mejor",
+      "peor",
+      "ahora",
+      "luego",
+      "despues",
+      "antes",
+      "rapido",
+      "despacio",
+      "facil",
+      "dificil",
+      "nuevo",
+      "viejo",
+      "grande",
+      "pequeño",
+      "bueno",
+      "malo",
+      "bonito",
+      "feo"
+    ]
+  },
+  "learned": [
+    "chrome",
+    "discord",
+    "este",
+    "noxis",
+    "puede",
+    "spotify",
+    "tambien"
+  ]
+}

@@ -209,6 +209,95 @@ Todas las frases están en `src/services/phrases.json`. Puedes editarlas directa
 
 <div align="center">
 
+<h1><a id="dictionary"></a>Voice Dictionary</h1>
+
+<h3>Noxis entiende mejor lo que le decís: diccionario editable de comandos y variantes.</h3>
+
+El archivo `src/services/dictionary.json` contiene todas las variantes de comandos, nombres de apps (incluidas formas mal transcritas por Vosk), números y ubicaciones. Se usa para:
+
+1. **Gramática de Vosk**: genera la lista de palabras que el reconocedor prioriza
+2. **Matching difuso**: si Vosk transcribe "discor" en vez de "discord", fuzzy match lo resuelve
+3. **Normalización**: todo se compara en minúsculas, sin tildes, sin puntuación
+
+#### Cómo editar el diccionario
+
+```json
+{
+  "commands": {
+    "open": {
+      "canonical": "abrir",
+      "variants": ["abre", "abrir", "lanza", "ejecuta", "run", "start"]
+    }
+  },
+  "apps": {
+    "discord.exe": {
+      "canonical": "discord",
+      "variants": ["discord", "discor", "diskort", "the cord"]
+    }
+  },
+  "numbers": {
+    "50": ["cincuenta", "fifty"]
+  }
+}
+```
+
+- **`canonical`**: la forma "correcta" de la palabra
+- **`variants`**: todas las formas que Vosk podría transcribir (incluidas las erróneas)
+
+Para agregar una nueva app, agregá una entrada en `apps` con el nombre del `.exe` como clave.
+Para agregar variantes de un comando, editá la lista `variants` del comando correspondiente.
+
+#### Matching difuso (voiceMatcher.js)
+
+| Constante | Default | Descripción |
+|---|---|---|
+| `FUZZY_THRESHOLD` | 0.7 | Similitud mínima para comandos (0-1) |
+| `APP_FUZZY_THRESHOLD` | 0.6 | Similitud mínima para nombres de apps (más tolerante) |
+| `MIN_FUZZY_LENGTH` | 3 | Palabras de 1-2 caracteres siempre requieren match exacto |
+
+</div>
+
+---
+
+<div align="center">
+
+<h1><a id="file-learning"></a>File Learning</h1>
+
+<h3>Noxis puede aprender vocabulario de tus archivos para entenderte mejor.</h3>
+
+En Configuración > Voz > "Aprendizaje de archivos", seleccioná una carpeta con documentos y Noxis extraerá las palabras más frecuentes para ampliar su diccionario de reconocimiento de voz.
+
+**Formatos soportados:** `.txt`, `.docx`, `.pdf`, `.xlsx`/`.xls`
+
+**Cómo funciona (sin IA):**
+1. Lee el texto de cada archivo usando librerías ligeras (`mammoth`, `pdf-parse`, `xlsx`)
+2. Tokeniza y normaliza (minúsculas, sin tildes)
+3. Cuenta frecuencia de cada palabra
+4. Filtra stopwords en español (~150 palabras comunes que no aportan)
+5. Se queda con palabras que se repiten N veces (configurable) y nombres propios
+6. Guarda las palabras en `dictionary.json` sección `"learned"`
+7. Se suman automáticamente a la gramática de Vosk
+
+**Opciones configurables:**
+- **Carpeta**: selector de carpetas nativo de Electron
+- **Frecuencia mínima** (2-10): cuántas veces debe aparecer una palabra
+- **Incluir subcarpetas**: analizar también subdirectorios
+- **Olvidar todo**: borra solo lo aprendido, los comandos base quedan intactos
+- **Eliminar individual**: podés quitar palabras que no sirvan
+
+**Librerías usadas:**
+| Librería | Formato | Tamaño | Licencia |
+|----------|---------|--------|----------|
+| `mammoth` | .docx | ~300 KB | BSD-2 |
+| `pdf-parse` | .pdf | ~50 KB | MIT |
+| `xlsx` | .xlsx/.xls | ~400 KB | Apache-2 |
+
+</div>
+
+---
+
+<div align="center">
+
 <h1><a id="screenshots"></a>Screenshots</h1>
 
 <br/>

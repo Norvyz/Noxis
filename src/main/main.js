@@ -26,6 +26,7 @@ const packService = require("../services/packService");
 const conversationService = require("../services/conversationService");
 const systemCommandHandler = require("../services/systemCommandHandler");
 const companionService = require("../services/companionService");
+const fileLearningService = require("../services/fileLearningService");
 const voskService = require("../services/voskService");
 
 app.commandLine.appendSwitch("enable-features", "SpeechRecognition");
@@ -338,4 +339,53 @@ ipcMain.handle("open-external", (event, url) => {
   if (!/^https?:\/\//i.test(url)) return false;
   shell.openExternal(url);
   return true;
+});
+
+// ---------------------------------------------------------------
+// IPC: Aprendizaje de archivos
+// ---------------------------------------------------------------
+
+// Seleccionar carpeta para aprendizaje
+ipcMain.handle("learn:choose-folder", async () => {
+  const win = windows.getConfigWindow();
+  const result = await dialog.showOpenDialog(win, {
+    properties: ["openDirectory"],
+    title: "Seleccionar carpeta para aprender vocabulario"
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return result.filePaths[0];
+});
+
+// Analizar carpeta y extraer palabras
+ipcMain.handle("learn:analyze", async (event, folderPath, options) => {
+  const win = windows.getConfigWindow();
+  const result = await fileLearningService.analyzeFolder(folderPath, {
+    includeSubfolders: options?.includeSubfolders || false,
+    minFrequency: options?.minFrequency || 3,
+    onProgress: (current, total, fileName) => {
+      if (win && !win.isDestroyed()) {
+        win.webContents.send("learn:progress", { current, total, fileName });
+      }
+    }
+  });
+  // Guardar palabras aprendidas en dictionary.json
+  if (result.words.length > 0) {
+    fileLearningService.saveLearnedWords(result.words);
+  }
+  return result;
+});
+
+// Obtener palabras aprendidas
+ipcMain.handle("learn:get-words", () => {
+  return fileLearningService.getLearnedWords();
+});
+
+// Eliminar una palabra aprendida
+ipcMain.handle("learn:remove-word", (event, word) => {
+  return fileLearningService.removeLearnedWord(word);
+});
+
+// Borrar todas las palabras aprendidas
+ipcMain.handle("learn:clear-all", () => {
+  return fileLearningService.clearLearnedWords();
 });
