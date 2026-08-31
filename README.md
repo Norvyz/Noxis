@@ -204,15 +204,31 @@
 
 <h3>Este proyecto existe gracias a quienes creen en él.</h3>
 
-<a href="https://github.com/Norvyz" style="text-decoration: none;">
-  <img src="https://github.com/Norvyz.png?size=100" alt="Norvyz" width="100" style="border-radius: 50%;" />
-</a>
-<a href="https://github.com/Bryanmgomez" style="text-decoration: none;">
-  <img src="https://github.com/Bryanmgomez.png?size=100" alt="Bryanmgomez" width="100" style="border-radius: 50%;" />
-</a>
-<a href="https://github.com/1Rizuz" style="text-decoration: none;">
-  <img src="https://github.com/1Rizuz.png?size=100" alt="1Rizuz" width="100" style="border-radius: 50%;" />
-</a>
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/Norvyz">
+        <img src="https://images.weserv.nl/?url=github.com/Norvyz.png&w=100&h=100&fit=cover&mask=circle" width="100" alt="Norvyz"/>
+        <br/>
+        <sub><b>Norvyz</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/Bryanmgomez">
+        <img src="https://images.weserv.nl/?url=github.com/Bryanmgomez.png&w=100&h=100&fit=cover&mask=circle" width="100" alt="Bryanmgomez"/>
+        <br/>
+        <sub><b>Bryanmgomez</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/1Rizuz">
+        <img src="https://images.weserv.nl/?url=github.com/1Rizuz.png&w=100&h=100&fit=cover&mask=circle" width="100" alt="1Rizuz"/>
+        <br/>
+        <sub><b>1Rizuz</b></sub>
+      </a>
+    </td>
+  </tr>
+</table>
 
 </div>
 
@@ -230,6 +246,10 @@ Este proyecto es **software libre** bajo la licencia **GPL-3.0**. Toda marca, se
 
 <div align="center">
 
-<sub>Hecho con 💚 por <a href="https://github.com/Norvyz">Norvyz, Bryan y Rizuz</a></sub>
+<sub>Hecho con 💚 por <a href="https://github.com/Norvyz">Norvyz</a></sub>
+<sub>Hecho con 💚 por <a href="https://github.com/1Rizuz">Rizuz</a></sub>
+<sub>Hecho con 💚 por <a href="https://github.com/bryanmg83">BryanMG</a></sub>
+
+
 
 </div>
