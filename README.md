@@ -204,14 +204,14 @@
 
 <h3>Este proyecto existe gracias a quienes creen en él.</h3>
 
-<a href="https://github.com/Norvyz">
-  <img src="https://github.com/Norvyz.png?size=100" alt="Norvyz" width="100" />
+<a href="https://github.com/Norvyz" style="text-decoration: none;">
+  <img src="https://github.com/Norvyz.png?size=100" alt="Norvyz" width="100" style="border-radius: 50%;" />
 </a>
-<a href="https://github.com/Bryanmgomez">
-  <img src="https://github.com/Bryanmgomez.png?size=100" alt="Bryanmgomez" width="100" />
+<a href="https://github.com/Bryanmgomez" style="text-decoration: none;">
+  <img src="https://github.com/Bryanmgomez.png?size=100" alt="Bryanmgomez" width="100" style="border-radius: 50%;" />
 </a>
-<a href="https://github.com/1Rizuz">
-  <img src="https://github.com/1Rizuz.png?size=100" alt="1Rizuz" width="100" />
+<a href="https://github.com/1Rizuz" style="text-decoration: none;">
+  <img src="https://github.com/1Rizuz.png?size=100" alt="1Rizuz" width="100" style="border-radius: 50%;" />
 </a>
 
 </div>
