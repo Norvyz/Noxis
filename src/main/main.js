@@ -24,6 +24,7 @@ const { createTray } = require("./tray");
 const configService = require("../services/configService");
 const packService = require("../services/packService");
 const conversationService = require("../services/conversationService");
+const systemCommandHandler = require("../services/systemCommandHandler");
 const voskService = require("../services/voskService");
 
 app.commandLine.appendSwitch("enable-features", "SpeechRecognition");
@@ -121,6 +122,19 @@ ipcMain.handle("get-response", async (event, rawText) => {
   const win = windows.getMainWindow();
   console.log("[MAIN] get-response:", rawText, "| estado:", voiceState);
 
+  // 0) Si hay confirmación o volumen pendiente, procesar SIN requerir wake word
+  if (systemCommandHandler.hasPending() || systemCommandHandler.hasPendingVolume()) {
+    const sysResponse = await systemCommandHandler.handleCommand(
+      rawText, config,
+      (msg) => win?.webContents.send("show-message", msg),
+      win
+    );
+    if (sysResponse !== null) {
+      console.log("[MAIN] Respuesta pendiente (sin wake):", sysResponse);
+      return sysResponse;
+    }
+  }
+
   const hasWake = conversationService.isWakeWordDetected(rawText, config);
 
   // 1) "Noxis desactívate" (o similar) → modo dormida
@@ -164,14 +178,27 @@ ipcMain.handle("get-response", async (event, rawText) => {
     }
   }
 
-  // 5) Conversación normal (con o sin nombre)
+  // 5) Comandos del sistema SOLO si se mencionó el nombre
+  if (hasWake) {
+    const sysResponse = await systemCommandHandler.handleCommand(
+      text, config,
+      (msg) => win?.webContents.send("show-message", msg),
+      win
+    );
+    if (sysResponse !== null) {
+      console.log("[MAIN] Respuesta del sistema:", sysResponse);
+      return sysResponse;
+    }
+  }
+
+  // 6) Conversación normal (con o sin nombre)
   const response = conversationService.getConversationalResponse(text, config);
   if (response) {
     console.log("[MAIN] Respuesta conversacional:", response);
     return response;
   }
 
-  // 6) Sin patrón: si la llamaron por nombre hay feedback; si no, silencio
+  // 7) Sin patrón: si la llamaron por nombre hay feedback; si no, silencio
   if (hasWake) {
     return conversationService.getNamedFallback();
   }

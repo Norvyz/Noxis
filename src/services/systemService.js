@@ -298,12 +298,14 @@ function openFolder(target) {
   return openExplorer(resolved).then((r) => (r.ok ? { ok: true, path: resolved } : { ok: false, reason: "open-error" }));
 }
 
-function createFolder(name) {
+function createFolder(name, location) {
   if (!isWin32()) return Promise.resolve(notSupported());
   const clean = sanitizeName(name, "Nueva carpeta");
-  const dir = path.join(app.getPath("desktop"), clean);
+  const folderKey = KNOWN_FOLDERS[(location || "").toLowerCase().trim()];
+  const basePath = folderKey ? app.getPath(folderKey) : app.getPath("desktop");
+  const dir = path.join(basePath, clean);
   try {
-    fs.mkdirSync(dir, { recursive: false });
+    fs.mkdirSync(dir, { recursive: true });
     return Promise.resolve({ ok: true, path: dir, name: clean });
   } catch (err) {
     if (fs.existsSync(dir)) {
@@ -380,11 +382,164 @@ function readTextFile(target) {
   }
 }
 
+// =========================================================
+// Volumen: leer nivel actual
+// =========================================================
+
+function getVolume() {
+  if (!isWin32()) return Promise.resolve(notSupported());
+  const script = `
+$ErrorActionPreference = 'Stop'
+Add-Type -Namespace CoreAudio -Name VolumeWrapper -MemberDefinition @"
+using System;
+using System.Runtime.InteropServices;
+[Guid("5CDF2C82-841E-4546-9722-0CF74078229A"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+interface IAudioEndpointVolume {
+  int RegisterControlChangeNotify(IntPtr pNotifications);
+  int UnregisterControlChangeNotify(IntPtr pNotifications);
+  int GetChannelCount(out int pnChannelCount);
+  int SetMasterVolumeLevelScalar(float fLevel, Guid pguidEventContext);
+  int GetMasterVolumeLevelScalar(out float pfLevel);
+  int SetMasterVolumeLevel(float fLevelDB, Guid pguidEventContext);
+  int GetMasterVolumeLevel(out float pfLevelDB);
+  int SetChannelVolumeLevelScalar(uint nChannel, float fLevel, Guid pguidEventContext);
+  int GetChannelVolumeLevelScalar(uint nChannel, out float pfLevel);
+  int SetChannelVolumeLevel(uint nChannel, float fLevelDB, Guid pguidEventContext);
+  int GetChannelVolumeLevel(uint nChannel, out float pfLevelDB);
+  int SetMute(bool bMute, Guid pguidEventContext);
+  int GetMute(out bool pbMute);
+}
+[Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
+class MMDeviceEnumeratorComObject { }
+
+[Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+interface IMMDeviceEnumerator {
+  int EnumAudioEndpoints(int dataFlow, int dwStateMask, out IMMDevice ppDevices);
+  int GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice ppEndpoint);
+  int GetDevice(string pwstrId, out IMMDevice ppDevice);
+  int RegisterEndpointNotificationCallback(IntPtr pClient);
+  int UnregisterEndpointNotificationCallback(IntPtr pClient);
+}
+[Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+interface IMMDevice {
+  int Activate(ref Guid iid, int dwClsCtx, IntPtr pActivationParams, out IAudioEndpointVolume ppInterface);
+  int OpenPropertyStore(int stgmAccess, IntPtr ppProperties);
+  int GetId(out string ppstrId);
+  int GetState(out int pdwState);
+}
+public class VolumeGet {
+  public static float Get() {
+    var devEnum = (IMMDeviceEnumerator)(new MMDeviceEnumeratorComObject());
+    IMMDevice dev;
+    devEnum.GetDefaultAudioEndpoint(0, 1, out dev);
+    IAudioEndpointVolume epv;
+    Guid iid = typeof(IAudioEndpointVolume).GUID;
+    dev.Activate(ref iid, 1, IntPtr.Zero, out epv);
+    float level;
+    epv.GetMasterVolumeLevelScalar(out level);
+    Marshal.ReleaseComObject(epv);
+    return level;
+  }
+}
+"@
+[Math]::Round([CoreAudio.VolumeWrapper.VolumeGet]::Get() * 100)
+`;
+  return new Promise((resolve) => {
+    execFile(
+      systemExe("WindowsPowerShell\\v1.0\\powershell.exe"),
+      ["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", script],
+      { windowsHide: true, timeout: 10000 },
+      (err, stdout) => {
+        if (err) {
+          console.error("[systemService] getVolume fallo:", err.message);
+          resolve({ ok: false, reason: "exec-error" });
+          return;
+        }
+        const pct = parseInt((stdout || "").trim(), 10);
+        if (isNaN(pct)) {
+          resolve({ ok: false, reason: "parse-error" });
+          return;
+        }
+        resolve({ ok: true, volume: Math.max(0, Math.min(100, pct)) });
+      }
+    );
+  });
+}
+
+// =========================================================
+// Mover ventana de Noxis a esquinas / centro
+// =========================================================
+
+function moveWindowToCorner(win, corner) {
+  if (!win) return { ok: false, reason: "no-window" };
+  const { width: screenW, height: screenH } = require("electron").screen.getPrimaryDisplay().workAreaSize;
+  const [winW, winH] = win.getSize();
+  const margin = 40;
+  let x, y;
+
+  switch (corner) {
+    case "top-left":
+      x = margin;
+      y = margin;
+      break;
+    case "top-right":
+      x = screenW - winW - margin;
+      y = margin;
+      break;
+    case "bottom-left":
+      x = margin;
+      y = screenH - winH - margin;
+      break;
+    case "bottom-right":
+      x = screenW - winW - margin;
+      y = screenH - winH - margin;
+      break;
+    case "center":
+      x = Math.round((screenW - winW) / 2);
+      y = Math.round((screenH - winH) / 2);
+      break;
+    default:
+      return { ok: false, reason: "unknown-corner" };
+  }
+
+  win.setPosition(x, y);
+  return { ok: true, corner };
+}
+
+// =========================================================
+// Cerrar aplicaciones por nombre de proceso
+// =========================================================
+
+function closeApp(processName) {
+  if (!isWin32()) return Promise.resolve(notSupported());
+  let exe = processName || "";
+  if (!exe) return Promise.resolve({ ok: false, reason: "no-name" });
+  exe = exe.replace(/[<>|"]/g, "").trim();
+  if (!exe.toLowerCase().endsWith(".exe")) exe += ".exe";
+
+  return new Promise((resolve) => {
+    execFile(
+      systemExe("taskkill.exe"),
+      ["/IM", exe, "/F"],
+      { windowsHide: true, timeout: 10000 },
+      (err) => {
+        if (err) {
+          // taskkill returns exit code != 0 if process not found
+          resolve({ ok: false, reason: "not-found", process: exe });
+          return;
+        }
+        resolve({ ok: true, process: exe });
+      }
+    );
+  });
+}
+
 module.exports = {
   setVolume,
   volumeUp,
   volumeDown,
   muteToggle,
+  getVolume,
   lockScreen,
   openTaskManager,
   openExplorer,
@@ -395,5 +550,7 @@ module.exports = {
   openFolder,
   createFolder,
   createTextFile,
-  readTextFile
+  readTextFile,
+  moveWindowToCorner,
+  closeApp
 };

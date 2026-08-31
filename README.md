@@ -87,17 +87,47 @@
   <tr>
     <td width="50%" valign="top">
 
+#### Básicos
 - **"Noxis"** — la despiertas
 - **"Noxis abre Discord"** — abre una app
 - **"Noxis abre trabajo"** — lanza un grupo de apps
 - **"Noxis desactívate"** — la duermes 💤
+- **"Hola"**, **"¿Cómo estás?"** — conversación
+- **"Gracias"**, **"Adiós"** — responde
+- **"¿Quién eres?"**, **"Ayuda"** — para saber qué hace
 
 </td>
     <td width="50%" valign="top">
 
-- **"Hola"**, **"¿Cómo estás?"** — conversación
-- **"Gracias"**, **"Adiós"** — responde
-- **"¿Quién eres?"**, **"Ayuda"** — para saber qué hace
+#### Control de PC
+- **"Noxis muévete a la esquina superior izquierda"** — mueve la ventana
+- **"Noxis vuelve al centro"** — centra la ventana
+- **"Noxis cierra Discord"** — cierra una app
+- **"Noxis crea una carpeta llamada Proyectos"** — crea carpeta en el escritorio
+- **"Noxis crea una carpeta llamada Fotos en Documentos"** — carpeta en una ubicación específica
+- **"Noxis crea un bloc de notas"** — crea y abre una nota
+- **"Noxis crea una nota llamada Ideas"** — crea una nota con nombre
+
+</td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+
+#### Volumen
+- **"Noxis sube el volumen"** — sube el volumen
+- **"Noxis baja el volumen"** — baja el volumen
+- **"Noxis pon el volumen al 50 por ciento"** — ajusta a un porcentaje
+- **"Noxis silencia"** / **"Noxis quita el silencio"** — mute
+- **"Noxis ¿cuánto volumen tengo?"** — consulta el nivel actual
+
+</td>
+    <td width="50%" valign="top">
+
+#### Sistema
+- **"Noxis bloquea la pantalla"** — bloquea el PC 🔒
+- **"Noxis apaga el PC"** — apaga con confirmación previa
+- **"Noxis reinicia el PC"** — reinicia con confirmación previa
+- Para apagar/reiniciar, confirma con **"confirmar"** o cancela con **"cancela"** (10 s)
 
 </td>
   </tr>

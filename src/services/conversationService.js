@@ -146,12 +146,21 @@ function isDeactivateCommand(input, config) {
   if (!isWakeWordDetected(input, config)) return false;
   const rest = normalize(stripWakeWord(input, config));
   if (!rest) return false;
-  if (/^(desactiv|apag|duerm|dormir|detente|descansa|callat|callar)/.test(rest)) return true;
+
+  // Excluir comandos del sistema: "apaga el pc", "apaga la computadora", etc.
+  // Estos NO son desactivaciones, sino comandos de apagado del sistema.
+  const SYSTEM_CONTEXT_WORDS = ["pc", "computadora", "equipo", "ordenador", "computer"];
+  const tokens = rest.split(/\s+/);
+  const hasSystemContext = tokens.some((w) => SYSTEM_CONTEXT_WORDS.includes(w));
+  if (hasSystemContext) return false;
+
+  if (/^(desactiv|duerm|dormir|detente|descansa|callat|callar)/.test(rest)) return true;
+  if (/^apaga\s*(te|me|lo)?$/.test(rest)) return true;
+  if (/^apagame$/.test(rest)) return true;
   if (/^(off|standby)\b/.test(rest)) return true;
   if (/(para de escuchar|dejar de escuchar|deja de escuchar|parar de escuchar|deja de funcionar)/.test(rest)) return true;
-  const words = rest.split(/\s+/);
   const threshold = typeof config.voiceSimilarityThreshold === "number" ? config.voiceSimilarityThreshold : undefined;
-  return words.some((w) => DEACTIVATE_VERBS.some((v) => w === v || fuzzyClose(w, v, threshold)));
+  return tokens.some((w) => DEACTIVATE_VERBS.some((v) => w === v || fuzzyClose(w, v, threshold)));
 }
 
 // ¿El texto (tras quitar el nombre) pide "despertar"/"vuelve"? Se usa para
@@ -205,6 +214,28 @@ const GRAMMAR_BASE = [
   "desactivar", "desactiva", "desactivame", "desactivate", "apagar", "apaga",
   "apagate", "dormir", "duerme", "duermete", "detente", "descansa", "deja",
   "escuchar", "vuelve", "despierta", "hablar", "oye", "espera", "apaga",
+  // mover ventana
+  "muevete", "muévete", "movete", "colocate", "posicionate", "andan", "andate",
+  "vete", "esquina", "rincon", "superior", "inferior", "izquierda", "derecha",
+  "arriba", "abajo", "centro", "lado", "parte",
+  // cerrar apps
+  "cierra", "cerrar", "cierrame", "cierrale", "mate", "mata", "matar",
+  "programa", "aplicacion",
+  // crear carpeta / nota
+  "crea", "crear", "genera", "generar", "carpeta", "directorio", "llamada",
+  "llamado", "nombre", "nota", "bloc", "notas", "block", "texto", "archivo",
+  // volumen
+  "volumen", "audio", "sonido", "sube", "subir", "baja", "bajar", "aumenta",
+  "reduce", "silencia", "silenciar", "mutear", "mute", "silencio",
+  "quita", "desilencia", "pon", "poner", "ajusta", "por", "ciento",
+  // bloquear
+  "bloquea", "bloquear", "bloqueate", "pantalla", "lock",
+  // apagar / reiniciar
+  "apagar", "reinicia", "reiniciar", "reboot", "restart", "computadora",
+  "pc", "equipo",
+  // confirmar / cancelar
+  "confirmar", "confirmalo", "dale", "hazlo", "ejecuta", "cancela", "cancelar",
+  "cancelalo", "no",
   // conectores
   "a", "con", "para", "por", "en", "se", "lo", "al", "del", "e", "o", "u"
 ];
