@@ -1,8 +1,3 @@
-/* src/renderer/config.css */
-
-/* =========================================================
-   Temas
-   ========================================================= */
 :root {
   --bg: #EEF1F6;
   --sidebar: #141824;
@@ -394,6 +389,56 @@ html, body {
   margin: 0 auto;
 }
 .tab.active { display: block; }
+
+/* ---------- Reflow horizontal en ventanas grandes ----------
+   Por defecto cada tab es una sola columna centrada (max-width: 640px),
+   por eso se ve bien en el tamaño por defecto de la ventana. El problema
+   es que al maximizar/agrandar la ventana esa columna se queda igual de
+   angosta y todo el espacio extra a los lados queda vacío en vez de
+   organizar las tarjetas (.card) en varias columnas.
+
+   Con "columns" el navegador reparte automáticamente las tarjetas en 2 o
+   más columnas según el ancho disponible (sin tocar el HTML), y
+   "column-span: all" hace que el encabezado de cada tab siga ocupando
+   todo el ancho arriba, en vez de meterse dentro de una columna. Se
+   activa solo cuando el ÁREA DE CONTENIDO (ventana - sidebar 216px -
+   padding) alcanza ~760px, que es aprox. lo que ocupan 2 columnas de
+   360px + separación. */
+@media (min-width: 1050px) {
+  .tab.active {
+    max-width: 1180px;
+    column-width: 360px;
+    column-gap: 18px;
+  }
+
+  /* Por defecto TODO hijo directo del tab ocupa el ancho completo (no entra
+     en columnas). Esto es a propósito: antes solo excluíamos .pageHeader,
+     y cualquier otro contenido de nivel superior que no fuera una .card
+     (la lista de apps #appsList, el layout de grupos .packsLayout, etc.)
+     quedaba suelto dentro del "columns" y el navegador lo partía a la
+     mitad entre columna 1 y columna 2 -> por eso se veía "mocho". */
+  .tab.active > * {
+    column-span: all;
+  }
+
+  /* Solo las tarjetas (.card) entran al acomodo en varias columnas. */
+  .tab.active > .card {
+    column-span: none;
+    display: inline-block;
+    width: 100%;
+    vertical-align: top;
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+  }
+
+  /* Tarjetas que por su contenido conviene que ocupen todo el ancho
+     (ej. selector de temas o la ficha "Sobre Noxis"): agrégales la
+     clase "card--full" en el HTML si quieres que no se pongan en
+     columna junto a otra tarjeta angosta. */
+  .tab.active > .card.card--full {
+    column-span: all;
+  }
+}
 
 @keyframes tabFadeIn {
   from { opacity: 0; transform: translateY(8px); }

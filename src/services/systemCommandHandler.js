@@ -248,20 +248,71 @@ function extractNoteName(text) {
   return { name: cleanName || null, isGeneric: false };
 }
 
+// Mapa de números en letras (normalizados sin tildes) → valor numérico.
+const NUM_WORDS = {
+  // 0 - 15
+  cero: 0, un: 1, uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5,
+  seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10, once: 11, doce: 12,
+  trece: 13, catorce: 14, quince: 15,
+  // 16 - 29, en una sola palabra
+  dieciseis: 16, diecisiete: 17, dieciocho: 18, diecinueve: 19,
+  veintiuno: 21, veintidos: 22, veintitres: 23, veinticuatro: 24,
+  veinticinco: 25, veintiseis: 26, veintisiete: 27, veintiocho: 28, veintinueve: 29,
+  // decenas (compuestas con "y")
+  veinte: 20, treinta: 30, cuarenta: 40, cincuenta: 50, sesenta: 60,
+  setenta: 70, ochenta: 80, noventa: 90,
+  // 100
+  cien: 100, ciento: 100
+};
+
+// Decenas que pueden formar compuestos tipo "cincuenta y cinco"
+const COMPOUND_TENS = ["veinte", "treinta", "cuarenta", "cincuenta", "sesenta", "setenta", "ochenta", "noventa"];
+
+// Convierte una secuencia de tokens que empieza en `i` en un número 0-100,
+// o devuelve null si no es interpretable como número.
+function evalNumberSequence(tokens, i) {
+  const first = tokens[i];
+  const v = NUM_WORDS[first];
+  if (v === undefined) return null;
+  // Decena compuesta: "cincuenta y cinco" → 55
+  if (COMPOUND_TENS.includes(first)) {
+    if (i + 2 < tokens.length && tokens[i + 1] === "y") {
+      const unit = NUM_WORDS[tokens[i + 2]];
+      if (unit !== undefined && unit > 0 && unit < 10) {
+        return v + unit;
+      }
+    }
+    return v;
+  }
+  return v;
+}
+
+// Busca en el texto un número expresado en letras (0-100).
+function wordsToNumber(text) {
+  const tokens = tokensOf(text);
+  for (let i = 0; i < tokens.length; i++) {
+    if (NUM_WORDS[tokens[i]] !== undefined) {
+      const val = evalNumberSequence(tokens, i);
+      if (val !== null) return val;
+    }
+  }
+  return null;
+}
+
 function extractVolumePercent(text) {
   const t = normalize(text);
-  // Buscar número antes de "por ciento" o solo un número
-  const match = t.match(/(\d{1,3})\s*(?:por\s*ciento|%)/);
-  if (match) {
-    const val = parseInt(match[1], 10);
+
+  // 1) Número en dígitos (opcionalmente tras "por ciento" / "%" / "al")
+  const digitMatch = t.match(/(\d{1,3})\s*(?:por\s*ciento|%)?/);
+  if (digitMatch) {
+    const val = parseInt(digitMatch[1], 10);
     if (val >= 0 && val <= 100) return val;
   }
-  // Solo número
-  const numMatch = t.match(/\b(\d{1,3})\b/);
-  if (numMatch) {
-    const val = parseInt(numMatch[1], 10);
-    if (val >= 0 && val <= 100) return val;
-  }
+
+  // 2) Número en letras ("cincuenta", "setenta y cinco", "veintiuno"...)
+  const word = wordsToNumber(t);
+  if (word !== null && word >= 0 && word <= 100) return word;
+
   return null;
 }
 
@@ -422,14 +473,24 @@ async function handleCommand(text, config, onMessage, mainWindow) {
     return "Silencio desactivado 🔊";
   }
 
-  // --- 7) Subir volumen → preguntar número ---
+  // --- 7) Subir volumen → fijar al porcentaje dicho (o preguntar el nivel) ---
   if (hasAnyToken(t, VOLUME_UP_VERBS) && hasAnyToken(t, VOLUME_WORDS)) {
+    const pct = extractVolumePercent(t);
+    if (pct !== null) {
+      await systemService.setVolume(pct);
+      return `Volumen ajustado a ${pct}% 🔊`;
+    }
     setPendingVolume();
     return "¿A qué nivel? Dime un número del 0 al 100.";
   }
 
-  // --- 8) Bajar volumen → preguntar número ---
+  // --- 8) Bajar volumen → fijar al porcentaje dicho (o preguntar el nivel) ---
   if (hasAnyToken(t, VOLUME_DOWN_VERBS) && hasAnyToken(t, VOLUME_WORDS)) {
+    const pct = extractVolumePercent(t);
+    if (pct !== null) {
+      await systemService.setVolume(pct);
+      return `Volumen ajustado a ${pct}% 🔊`;
+    }
     setPendingVolume();
     return "¿A qué nivel? Dime un número del 0 al 100.";
   }

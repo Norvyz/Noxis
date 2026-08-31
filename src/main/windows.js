@@ -1,17 +1,3 @@
-// Noxis
-// Copyright (C) 2026 Norvyz
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-// You should have received a copy of the GNU General Public License
-// along with this program. If not, see <https://www.gnu.org/licenses/>.
-
 const path = require("path");
 const { BrowserWindow, screen, globalShortcut, nativeImage } = require("electron");
 
@@ -60,8 +46,8 @@ function setWindowIcon() {
 function createMainWindow(config) {
   config = config || {};
   const { width: screenW, height: screenH } = screen.getPrimaryDisplay().workAreaSize;
-  const winW = 320;
-  const winH = 340;
+  const winW = 380; // antes 320: más ancho para que la burbuja pueda crecer horizontal en vez de hacer scroll
+  const winH = 740; // antes 340/430: deja espacio arriba (burbuja) Y abajo de la mascota (chat), ver style.css
   const margin = 40;
 
   let x = screenW - winW - margin;
@@ -77,6 +63,8 @@ function createMainWindow(config) {
     x = margin;
     y = margin;
   }
+
+  y = Math.max(margin, y);
 
   mainWindow = new BrowserWindow({
     width: winW,
