@@ -143,13 +143,6 @@
 
 <h1><a id="screenshots"></a>Screenshots</h1>
 
-<br/>
-<br/>
-
-<div align="center">
-
-<h1><a id="screenshots"></a>Screenshots</h1>
-
 <table>
   <tr>
     <td align="center">
