@@ -579,11 +579,13 @@ async function initVosk() {
 // ---------------------------------------------------------------
 const FLUSH_DELAY = 1500;
 
-const OPEN_WORDS = ["abre", "abrir", "abri", "abreme", "abrieme", "abrirme"];
+// Palabras de apertura y desactivación cargadas del diccionario.
+// Se mantienen como arrays locales para rendimiento en el loop de audio.
+const OPEN_WORDS = ["abre", "abrir", "abri", "abreme", "abrieme", "abrirme", "lanza", "lanzar", "ejecuta", "inicia", "corre"];
 const DEACT_WORDS = [
   "desactivar", "desactiva", "desactivame", "desactivate", "apaga", "apagate",
-  "apagar", "duerme", "duermete", "dormir", "detente", "callate",
-  "off", "standby"
+  "apagar", "duerme", "duermete", "dormir", "detente", "callate", "calla",
+  "off", "standby", "descansa", "parate"
 ];
 
 let utteranceBuffer = "";

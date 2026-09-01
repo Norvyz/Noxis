@@ -4,9 +4,35 @@
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data:; connect-src 'self' https: wss: ws:; media-src 'self' https:; font-src 'self' data:;" />
   <title>Configuración - Noxis</title>
+  <link rel="stylesheet" href="tokens.css" />
   <link rel="stylesheet" href="config.css" />
 </head>
 <body>
+  <!-- Barra de título custom (frameless window) -->
+  <div class="titlebar" id="titlebar">
+    <div class="titlebar-drag">
+      <span class="titlebar-title">Configuración - Noxis</span>
+    </div>
+    <div class="titlebar-actions">
+      <button class="titlebar-btn titlebar-minimize" id="titlebarMinimize" aria-label="Minimizar">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <line x1="2" y1="6" x2="10" y2="6"/>
+        </svg>
+      </button>
+      <button class="titlebar-btn titlebar-maximize" id="titlebarMaximize" aria-label="Maximizar">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="2" width="8" height="8" rx="1.5"/>
+        </svg>
+      </button>
+      <button class="titlebar-btn titlebar-close" id="titlebarClose" aria-label="Cerrar">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <line x1="2" y1="2" x2="10" y2="10"/>
+          <line x1="10" y1="2" x2="2" y2="10"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
   <div class="appShell">
 
     <!-- ============ SIDEBAR ============ -->
@@ -202,6 +228,41 @@
                 <svg class="themeCheck" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
               </span>
               <span class="themeName">Océano</span>
+            </button>
+            <button type="button" class="themeCard" data-theme="lavender" aria-pressed="false">
+              <span class="themePreview">
+                <span class="themePreviewThumb thumb-lavender"></span>
+                <svg class="themeCheck" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+              </span>
+              <span class="themeName">Lavanda</span>
+            </button>
+            <button type="button" class="themeCard" data-theme="cherry" aria-pressed="false">
+              <span class="themePreview">
+                <span class="themePreviewThumb thumb-cherry"></span>
+                <svg class="themeCheck" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+              </span>
+              <span class="themeName">Cereza</span>
+            </button>
+            <button type="button" class="themeCard" data-theme="aurora" aria-pressed="false">
+              <span class="themePreview">
+                <span class="themePreviewThumb thumb-aurora"></span>
+                <svg class="themeCheck" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+              </span>
+              <span class="themeName">Aurora</span>
+            </button>
+            <button type="button" class="themeCard" data-theme="arctic" aria-pressed="false">
+              <span class="themePreview">
+                <span class="themePreviewThumb thumb-arctic"></span>
+                <svg class="themeCheck" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+              </span>
+              <span class="themeName">Ártico</span>
+            </button>
+            <button type="button" class="themeCard" data-theme="mocha" aria-pressed="false">
+              <span class="themePreview">
+                <span class="themePreviewThumb thumb-mocha"></span>
+                <svg class="themeCheck" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+              </span>
+              <span class="themeName">Mocha</span>
             </button>
           </div>
         </div>
@@ -454,6 +515,36 @@
           </div>
         </header>
         <ul id="appsList" class="itemList cardList"></ul>
+
+        <!-- Sección de apps escaneadas automáticamente -->
+        <div id="scannedAppsSection" class="scan-section" style="display:none;">
+          <div class="sectionHeader">
+            <h3>Apps detectadas automáticamente</h3>
+            <div class="sectionActions">
+              <button id="rescanAppsBtn" class="secondaryBtn">
+                <span class="btnIcon" data-icon="refresh"></span> Reescanear
+              </button>
+              <button id="addAllScannedBtn" class="primaryBtn" style="display:none;">
+                <span class="btnIcon" data-icon="plus"></span> Agregar todas
+              </button>
+            </div>
+          </div>
+          <p class="sectionHint">
+            Noxis detecta apps instaladas en tu PC. Puedes agregarlas a tu lista manual para personalizar su palabra clave.
+          </p>
+          <div id="scanProgress" class="scan-progress" style="display:none;">
+            <span id="scanProgressText">Escaneando...</span>
+            <div class="scan-progress-bar"><div id="scanProgressBar"></div></div>
+          </div>
+          <div class="scanSearchRow">
+            <div class="scanSearchInputWrap">
+              <svg class="scanSearchIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input id="scanSearchInput" type="text" class="scanSearchInput" placeholder="Buscar apps..." autocomplete="off" />
+            </div>
+            <span id="scanCount" class="scanCount"></span>
+          </div>
+          <ul id="scannedAppsList" class="itemList cardList scanned-apps-list"></ul>
+        </div>
       </section>
 
       <!-- TAB PACKS -->
@@ -577,9 +668,10 @@
       <label class="field">
         <span>Ruta del ejecutable</span>
         <div class="pathRow">
-          <input id="addAppPathInput" type="text" readonly class="placeholder" />
+          <input id="addAppPathInput" type="text" placeholder="Escribe la ruta o examina..." autocomplete="off" />
           <button id="addAppBrowseBtn" class="secondaryBtn"><span class="btnIcon" data-icon="folder"></span> Examinar</button>
         </div>
+        <span class="fieldHint">Puedes escribir la ruta directamente (ej: C:\Program Files\App\app.exe)</span>
       </label>
       <div class="modalActions">
         <button id="addAppCancelBtn" class="secondaryBtn">Cancelar</button>
@@ -599,9 +691,10 @@
       <label class="field">
         <span>Ruta del ejecutable</span>
         <div class="pathRow">
-          <input id="editAppPathInput" type="text" readonly />
+          <input id="editAppPathInput" type="text" placeholder="Escribe la ruta o examina..." autocomplete="off" />
           <button id="editAppBrowseBtn" class="secondaryBtn"><span class="btnIcon" data-icon="folder"></span> Examinar</button>
         </div>
+        <span class="fieldHint">Puedes escribir la ruta directamente (ej: C:\Program Files\App\app.exe)</span>
       </label>
       <div class="modalActions">
         <button id="editAppCancelBtn" class="secondaryBtn">Cancelar</button>

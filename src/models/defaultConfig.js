@@ -48,7 +48,9 @@ function createDefaultConfig() {
     // Aprendizaje de archivos (ampliar vocabulario desde archivos del usuario)
     learnFolderPath: null,
     learnMinFrequency: 3,
-    learnIncludeSubfolders: false
+    learnIncludeSubfolders: false,
+    // Escaneo automático de apps
+    lastAppScanDate: null
   };
 }
 

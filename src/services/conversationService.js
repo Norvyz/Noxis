@@ -38,9 +38,18 @@ const LEADING_FILLERS = ["hey", "ey", "oye", "eh", "ej"];
 // El modelo transcribe "Noxis" como "nosis", "noquis", "nokis", etc.
 // Generamos todas las posibles interpretaciones de las letras difíciles.
 // ---------------------------------------------------------------
+
+let _wakeVariantsCache = null;
+let _wakeVariantsName = "";
+
 function wakeWordVariants(config) {
   const base = getWakeWord(config);
   if (!base) return [];
+
+  // Cachear si el nombre no cambió
+  if (_wakeVariantsCache && _wakeVariantsName === base) {
+    return _wakeVariantsCache;
+  }
 
   const set = new Set([base]);
 
@@ -61,7 +70,9 @@ function wakeWordVariants(config) {
     }
   }
 
-  return [...set].sort((a, b) => b.length - a.length);
+  _wakeVariantsCache = [...set].sort((a, b) => b.length - a.length);
+  _wakeVariantsName = base;
+  return _wakeVariantsCache;
 }
 
 // Busca el nombre (o una variante fuzzy) en CUALQUIER posición del texto.
@@ -163,12 +174,14 @@ function getWakeResponse(config) {
 
 // ---------------------------------------------------------------
 // Vocabulario (gramática) para el recognizer de Vosk
-// Ahora se genera automáticamente desde dictionary.json via voiceMatcher.buildGrammarFromDictionary().
-// Para agregar palabras, editá src/services/dictionary.json en vez de tocar este archivo.
+// Se genera automáticamente desde dictionary.json via voiceMatcher.
+// Para agregar palabras, editá src/services/dictionary.json en vez
+// de tocar este archivo. El diccionario se recarga automáticamente
+// al detectar cambios (file watching en voiceMatcher).
 // ---------------------------------------------------------------
 
 function buildGrammar(config) {
-  // Base: todas las palabras del diccionario (comandos, apps, números, etc.)
+  const dict = voiceMatcher.getDictionary();
   const words = new Set(voiceMatcher.buildGrammarFromDictionary());
 
   // Variantes del nombre (wake word)
@@ -176,7 +189,7 @@ function buildGrammar(config) {
     for (const w of v.split(/\s+/)) words.add(w);
   }
 
-  // Keywords de apps y grupos del usuario: se dividen en palabras individuales
+  // Keywords de apps y grupos del usuario
   const addKeywords = (list) => {
     for (const item of list || []) {
       for (const kw of [item.keyword, item.name]) {
@@ -189,6 +202,18 @@ function buildGrammar(config) {
   };
   addKeywords(config.apps);
   addKeywords(config.packs);
+
+  // Stopwords: incluir artículos, preposiciones, etc. que Vosk necesita
+  // para reconocer frases completas como "abre discord" o "crea carpeta en escritorio"
+  const STOPWORDS_FOR_GRAMMAR = [
+    "el", "la", "los", "las", "un", "una", "unos", "unas",
+    "de", "del", "al", "a", "en", "con", "por", "para",
+    "y", "o", "que", "se", "lo", "le", "me", "te",
+    "mi", "tu", "su", "este", "esta", "ese", "esa",
+    "mas", "poco", "muy", "todo", "nada", "algo",
+    "no", "si", "bien", "ahora", "luego", "despues"
+  ];
+  for (const w of STOPWORDS_FOR_GRAMMAR) words.add(w);
 
   return [...words].filter(Boolean);
 }

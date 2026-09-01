@@ -38,5 +38,20 @@ contextBridge.exposeInMainWorld("configAPI", {
   onLearnProgress: (callback) => {
     ipcRenderer.on("learn:progress", (event, info) => callback(info));
   },
-  listAudioOutputs: () => ipcRenderer.invoke("audio:list-outputs")
+  listAudioOutputs: () => ipcRenderer.invoke("audio:list-outputs"),
+  // Escaneo de apps instaladas
+  rescanApps: () => ipcRenderer.invoke("app-scan:rescan"),
+  getAppIndex: () => ipcRenderer.invoke("app-scan:get-index"),
+  shouldRescanApps: () => ipcRenderer.invoke("app-scan:should-rescan"),
+  onAppScanProgress: (callback) => {
+    ipcRenderer.on("app-scan:progress", (event, msg) => callback(msg));
+  },
+  // Control de ventana (frameless)
+  minimizeWindow: () => ipcRenderer.invoke("config-window:minimize"),
+  closeWindow: () => ipcRenderer.invoke("config-window:close"),
+  isMaximized: () => ipcRenderer.invoke("config-window:is-maximized"),
+  toggleMaximize: () => ipcRenderer.invoke("config-window:toggle-maximize"),
+  onWindowMaximize: (callback) => {
+    ipcRenderer.on("config-window:maximize-changed", (event, isMaximized) => callback(isMaximized));
+  }
 });

@@ -113,11 +113,16 @@ function createConfigWindow() {
   }
 
   configWindow = new BrowserWindow({
-    width: 960,
-    height: 640,
-    minWidth: 960,
-    minHeight: 500,
+    width: 1100,
+    height: 720,
+    minWidth: 900,
+    minHeight: 560,
+    frame: false,
+    titleBarStyle: "hidden",
+    backgroundColor: "#1a1f2e",
+    transparent: false,
     resizable: true,
+    roundedCorners: true,
     title: "Configuración - Noxis",
     icon: getIconPath(),
     webPreferences: {
@@ -135,6 +140,19 @@ function createConfigWindow() {
   // Consola/DevTools deshabilitadas para el usuario final
   configWindow.webContents.on("devtools-opened", () => {
     configWindow.webContents.closeDevTools();
+  });
+
+  // Notificar al renderer cuando se maximiza/unmaximize
+  configWindow.on("maximize", () => {
+    if (configWindow && !configWindow.isDestroyed()) {
+      configWindow.webContents.send("config-window:maximize-changed", true);
+    }
+  });
+
+  configWindow.on("unmaximize", () => {
+    if (configWindow && !configWindow.isDestroyed()) {
+      configWindow.webContents.send("config-window:maximize-changed", false);
+    }
   });
 
   configWindow.on("closed", () => {

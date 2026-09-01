@@ -24,11 +24,13 @@ const { createTray } = require("./tray");
 const configService = require("../services/configService");
 const packService = require("../services/packService");
 const conversationService = require("../services/conversationService");
+const voiceMatcher = require("../services/voiceMatcher");
 const systemCommandHandler = require("../services/systemCommandHandler");
 const companionService = require("../services/companionService");
 const fileLearningService = require("../services/fileLearningService");
 const voskService = require("../services/voskService");
 const systemService = require("../services/systemService");
+const appScanner = require("./appScanner");
 
 app.commandLine.appendSwitch("enable-features", "SpeechRecognition");
 app.commandLine.appendSwitch("no-sandbox");
@@ -111,6 +113,21 @@ app.whenReady().then(() => {
         if (w) w.webContents.send("show-message", msg);
       }, config);
     }
+
+    // Escaneo automático de apps instaladas (background, 5s después del inicio)
+    setTimeout(async () => {
+      try {
+        if (appScanner.shouldRescan()) {
+          console.log("[MAIN] Iniciando escaneo automático de apps...");
+          const index = await appScanner.rescanApps();
+          console.log(`[MAIN] Escaneo completado: ${index.apps.length} apps detectadas`);
+        } else {
+          console.log("[MAIN] Índice de apps reciente, saltando escaneo");
+        }
+      } catch (err) {
+        console.error("[MAIN] Error en escaneo de apps:", err.message);
+      }
+    }, 5000);
   }, 900);
 
   app.on("activate", () => {
@@ -196,6 +213,139 @@ ipcMain.handle("get-response", async (event, rawText) => {
     win?.hide();
     console.log("[MAIN] → oculta en la bandeja, sigo escuchando");
     return "Ok, me escondo en la bandeja 🙂 Sigo escuchándote, decime mi nombre y aparezco de nuevo.";
+  }
+
+  // 3.6) Matching de comandos con el nuevo sistema (cascada exacto→fuzzy).
+  // Solo aplica si se mencionó el nombre de Noxis.
+  if (hasWake) {
+    const identified = voiceMatcher.identifyCommand(text, config);
+    if (identified) {
+      console.log("[MAIN] Comando identificado:", identified.command, "| operando:", identified.operand, "| confianza:", identified.confidence);
+
+      // Abrir/cerrar app: cruzar operando con diccionario de apps
+      if ((identified.command === "open" || identified.command === "close") && identified.operand) {
+        const appMatch = voiceMatcher.identifyApp(identified.operand);
+        if (appMatch) {
+          // 1) Buscar en config manual (prioridad)
+          const exePath = (config.apps || []).find(
+            (a) => a.keyword && voiceMatcher.normalize(a.keyword) === voiceMatcher.normalize(appMatch.canonical)
+          );
+          if (identified.command === "open") {
+            if (exePath && exePath.executablePath) {
+              const { exec } = require("child_process");
+              exec(`"${exePath.executablePath}"`, (err) => {
+                if (err) console.error("[MAIN] Error abriendo app:", err.message);
+              });
+              return `Abriendo ${appMatch.canonical} 🚀`;
+            }
+            // 2) Fallback: buscar en índice automático de apps instaladas
+            const autoMatch = appScanner.findInIndex(appMatch.canonical);
+            if (autoMatch) {
+              if (autoMatch.exePath) {
+                const { exec } = require("child_process");
+                exec(`"${autoMatch.exePath}"`, (err) => {
+                  if (err) console.error("[MAIN] Error abriendo app (auto):", err.message);
+                });
+                return `Abriendo ${autoMatch.name} 🚀`;
+              }
+              if (autoMatch.appId) {
+                const { exec } = require("child_process");
+                exec(`Start-Process "shell:AppsFolder\\${autoMatch.appId}"`, (err) => {
+                  if (err) console.error("[MAIN] Error abriendo app UWP:", err.message);
+                });
+                return `Abriendo ${autoMatch.name} 🚀`;
+              }
+            }
+            return `No encontré "${appMatch.canonical}". Agregala en Configuración → Apps para poder abrirla.`;
+          }
+          if (identified.command === "close") {
+            const result = await systemService.closeApp(appMatch.exeName);
+            if (result.ok) return `Cerré ${appMatch.canonical} ✅`;
+            if (result.reason === "not-found") return `No encontré ${appMatch.canonical} abierto 😕`;
+            return `No pude cerrar ${appMatch.canonical} 😕`;
+          }
+        }
+      }
+
+      // Crear carpeta con ubicación
+      if (identified.command === "create" && identified.operand) {
+        const locMatch = voiceMatcher.identifyLocation(identified.operand);
+        if (locMatch) {
+          const folderName = identified.operand
+            .replace(new RegExp(voiceMatcher.normalize(locMatch.canonical), "g"), "")
+            .replace(/\ben\b|\bsobre\b|\bal\b/g, "")
+            .trim();
+          if (folderName) {
+            const result = await systemService.createFolder(folderName, locMatch.canonical);
+            if (result.ok) {
+              const locLabel = locMatch.canonical || "escritorio";
+              if (result.exists) return `Ya existe una carpeta "${result.name}" en ${locLabel} 📁`;
+              return `Carpeta "${result.name}" creada en ${locLabel} 📁`;
+            }
+            return `No pude crear la carpeta 😕 ${result.reason || ""}`;
+          }
+        }
+      }
+
+      // Volumen: extraer número
+      if (["volumeUp", "volumeDown", "setVolume"].includes(identified.command)) {
+        const num = voiceMatcher.extractNumber(text);
+        if (num !== null) {
+          if (identified.command === "setVolume") {
+            const result = await systemService.setVolume(num);
+            if (result && result.ok) return `Volumen ajustado a ${num}% 🔊`;
+            return "No pude ajustar el volumen 😕";
+          }
+          if (identified.command === "volumeUp") {
+            const result = await systemService.setVolume(num, "up");
+            if (result && result.ok) return `Volumen subido a ${num}% 🔊`;
+            return "No pude subir el volumen 😕";
+          }
+          if (identified.command === "volumeDown") {
+            const result = await systemService.setVolume(num, "down");
+            if (result && result.ok) return `Volumen bajado a ${num}% 🔊`;
+            return "No pude bajar el volumen 😕";
+          }
+        }
+      }
+
+      // Mover ventana
+      if (identified.command === "move" || identified.command === "corner") {
+        const CORNER_MAP = {
+          "arriba": "top", "superior": "top", "abajo": "bottom", "inferior": "bottom",
+          "izquierda": "left", "izq": "left", "izqda": "left",
+          "derecha": "right", "der": "right", "dcha": "right",
+          "centro": "center", "medio": "center", "mitad": "center"
+        };
+        const operandTokens = voiceMatcher.tokensOf(identified.operand || text);
+        let vertical = null, horizontal = null;
+        for (const t of operandTokens) {
+          if (["arriba", "superior"].includes(t)) vertical = "top";
+          if (["abajo", "inferior"].includes(t)) vertical = "bottom";
+          if (["izquierda", "izq", "izqda"].includes(t)) horizontal = "left";
+          if (["derecha", "der", "dcha"].includes(t)) horizontal = "right";
+          if (["centro", "medio", "mitad"].includes(t)) { vertical = "center"; horizontal = "center"; }
+        }
+        let corner = null;
+        if (vertical === "center" && horizontal === "center") corner = "center";
+        else if (vertical && horizontal) corner = `${vertical}-${horizontal}`;
+        else if (vertical) corner = `${vertical}-center`;
+        else if (horizontal) corner = `center-${horizontal}`;
+
+        if (corner) {
+          const result = systemService.moveWindowToCorner(win, corner);
+          if (result.ok) {
+            const labels = {
+              "top-left": "esquina superior izquierda", "top-right": "esquina superior derecha",
+              "bottom-left": "esquina inferior izquierda", "bottom-right": "esquina inferior derecha",
+              "center": "el centro"
+            };
+            return `Me moví a ${labels[corner]} 📍`;
+          }
+          return "No pude moverme 😕";
+        }
+      }
+    }
   }
 
   // 4) Comandos de apps/grupos SOLO si se mencionó el nombre
@@ -418,4 +568,57 @@ ipcMain.handle("learn:remove-word", (event, word) => {
 // Borrar todas las palabras aprendidas
 ipcMain.handle("learn:clear-all", () => {
   return fileLearningService.clearLearnedWords();
+});
+
+// ---------------------------------------------------------------
+// IPC: Escaneo automático de apps
+// ---------------------------------------------------------------
+
+ipcMain.handle("app-scan:rescan", async (event) => {
+  const win = windows.getConfigWindow();
+  try {
+    const index = await appScanner.rescanApps((msg) => {
+      if (win && !win.isDestroyed()) {
+        win.webContents.send("app-scan:progress", msg);
+      }
+    });
+    return index;
+  } catch (err) {
+    console.error("[MAIN] Error reescaneando apps:", err.message);
+    return { lastScan: null, apps: [] };
+  }
+});
+
+ipcMain.handle("app-scan:get-index", () => {
+  return appScanner.loadIndex();
+});
+
+ipcMain.handle("app-scan:should-rescan", () => {
+  return appScanner.shouldRescan();
+});
+
+// ---------------------------------------------------------------
+// IPC: Control de ventana de configuración (frameless)
+// ---------------------------------------------------------------
+
+ipcMain.handle("config-window:minimize", () => {
+  const win = windows.getConfigWindow();
+  if (win && !win.isDestroyed()) win.minimize();
+});
+
+ipcMain.handle("config-window:close", () => {
+  const win = windows.getConfigWindow();
+  if (win && !win.isDestroyed()) win.close();
+});
+
+ipcMain.handle("config-window:is-maximized", () => {
+  const win = windows.getConfigWindow();
+  return win ? win.isMaximized() : false;
+});
+
+ipcMain.handle("config-window:toggle-maximize", () => {
+  const win = windows.getConfigWindow();
+  if (!win || win.isDestroyed()) return;
+  if (win.isMaximized()) win.unmaximize();
+  else win.maximize();
 });

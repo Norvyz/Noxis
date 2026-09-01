@@ -18,6 +18,7 @@
 const launcherService = require("./launcherService");
 const soundService = require("./soundService");
 const voiceMatcher = require("./voiceMatcher");
+const appScanner = require("../main/appScanner");
 
 // Re-exportar desde voiceMatcher para compatibilidad
 const fuzzyClose = voiceMatcher.fuzzyClose;
@@ -147,6 +148,23 @@ async function handleCommand(input, config, onMessage) {
     return ok
       ? `${config.name} abrio ${app.keyword} 🚀`
       : `Ups... no pude abrir ${app.keyword} 😕`;
+  }
+
+  // 3) fallback: buscar en índice automático de apps instaladas
+  const autoMatch = appScanner.findInIndex(text);
+  if (autoMatch && (autoMatch.exePath || autoMatch.appId)) {
+    soundService.playCommandSound(config);
+    const { exec } = require("child_process");
+    if (autoMatch.exePath) {
+      exec(`"${autoMatch.exePath}"`, (err) => {
+        if (err) console.error("[packService] Error abriendo app (auto):", err.message);
+      });
+    } else if (autoMatch.appId) {
+      exec(`Start-Process "shell:AppsFolder\\${autoMatch.appId}"`, (err) => {
+        if (err) console.error("[packService] Error abriendo app UWP:", err.message);
+      });
+    }
+    return `Abriendo ${autoMatch.name} 🚀`;
   }
 
   return "No conozco esa aplicacion aun 🦎";

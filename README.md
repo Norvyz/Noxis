@@ -18,7 +18,7 @@
 
 <br/>
 
-[**Features**](#features) · [**Voice Commands**](#voice-commands) · [**Screenshots**](#screenshots) · [**Support**](#support-the-project)
+[**Features**](#features) · [**Diccionario de voz**](#diccionario-de-voz) · [**Voice Commands**](#voice-commands) · [**Screenshots**](#screenshots) · [**Support**](#support-the-project)
 
 </div>
 
@@ -72,6 +72,64 @@
 </td>
   </tr>
 </table>
+
+</div>
+
+---
+
+<div align="center">
+
+<h1><a id="diccionario-de-voz"></a>Diccionario de Voz</h1>
+
+<h3>Todo el reconocimiento de voz se basa en un diccionario centralizado: `src/services/dictionary.json`</h3>
+
+No usa ningún tipo de inteligencia artificial. El sistema funciona así:
+
+1. **Gramática cerrada**: Vosk solo reconoce las palabras y frases que están en el diccionario
+2. **Matching en cascada**: Primero busca coincidencia exacta, luego fuzzy matching (tolerante a errores)
+3. **Auto-recarga**: Si editás `dictionary.json`, el cambio se detecta automáticamente (sin reiniciar)
+
+#### Estructura del diccionario
+
+| Sección | Descripción |
+|---|---|
+| `commands` | Comandos con sus variantes (abrir, cerrar, mover, volumen, etc.) |
+| `apps` | Nombres de apps con variantes de transcripción (discord, chrome, etc.) |
+| `locations` | Carpetas especiales (escritorio, documentos, descargas, etc.) |
+| `numbers` | Números en palabras y dígitos (0-100) |
+| `fillers` | Interjecciones y muletillas (hey, oye, por favor, etc.) |
+| `greetings` | Saludos (hola, buenas, que tal, etc.) |
+| `grammar.extra` | Palabras adicionales para mejorar el reconocimiento |
+| `learned` | Palabras aprendidas automáticamente de tus archivos |
+| `stopwords` | Palabras que se filtran en el aprendizaje de vocabulario |
+
+#### ¿Cómo agregar palabras nuevas?
+
+Editá `src/services/dictionary.json` directamente. Por ejemplo, para agregar una nueva variante de "abrir":
+
+```json
+"open": {
+  "canonical": "abrir",
+  "variants": ["abre", "abrir", "abri", "...", "tu_nueva_variante"]
+}
+```
+
+Los cambios se aplican automáticamente cuando Vosk regenera la gramática (al detectar el cambio en el archivo).
+
+#### Aprendizaje de vocabulario
+
+Noxis puede aprender palabras de tus archivos (.txt, .docx, .pdf, .xlsx). Las palabras aprendidas se guardan en `dictionary.learned` y se usan para mejorar el reconocimiento. Las stopwords del diccionario se aplican automáticamente para filtrar palabras muy comunes.
+
+#### Escaneo automático de apps
+
+Noxis detecta automáticamente las apps instaladas en tu PC usando:
+- Registro de Windows (desinstaladores)
+- Accesos directos del Menú Inicio
+- Microsoft Store (Get-StartApps)
+
+El escaneo ocurre en background al iniciar y se actualiza semanalmente. Las apps detectadas aparecen en Configuración → Apps con la opción de agregarlas a tu lista manual para personalizar su palabra clave.
+
+**Prioridad:** Si tienes una app configurada manualmente, Noxis usa esa configuración. Si no la encuentra manualmente, busca en el índice automático. Si no la encuentra ahí, te indica que la agregues.
 
 </div>
 

@@ -13,48 +13,79 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 // src/services/voiceMatcher.js
-// Normalización de texto, matching difuso (Levenshtein) y generación de
-// gramática para Vosk. Todo es comparación de texto, sin IA.
+// Normalización de texto, matching difuso (Levenshtein), detección de
+// comandos y generación de gramática para Vosk. Todo es comparación de
+// texto, sin IA.
 
-const dictionary = require("./dictionary.json");
+const fs = require("fs");
+const path = require("path");
 
 // ---------------------------------------------------------------
 // CONSTANTES CONFIGURABLES
 // ---------------------------------------------------------------
 
-// Umbral de similitud para fuzzy matching (0-1).
-// 0.7 = se acepta hasta ~30% de diferencia entre caracteres.
-// Más alto = más estricto. Más bajo = más tolerante.
 const FUZZY_THRESHOLD = 0.7;
-
-// Umbral para nombres de apps (más tolerante porque Vosk los transcribe mal).
 const APP_FUZZY_THRESHOLD = 0.6;
-
-// Longitud mínima para aplicar fuzzy matching.
-// Palabras de 1-2 caracteres siempre deben coincidir exactamente.
 const MIN_FUZZY_LENGTH = 3;
+
+// ---------------------------------------------------------------
+// DICCIONARIO: CARGA CON FILE WATCHING
+// ---------------------------------------------------------------
+
+const DICTIONARY_PATH = path.join(__dirname, "dictionary.json");
+
+let _dictCache = null;
+let _dictMtime = 0;
+let _dictLastCheck = 0;
+const DICT_CHECK_INTERVAL_MS = 5000; // Revisar archivo cada 5 segundos como máximo
+
+function loadDictionary() {
+  const now = Date.now();
+  // Si tenemos caché y no ha pasado el intervalo, retornar caché directamente
+  if (_dictCache && (now - _dictLastCheck) < DICT_CHECK_INTERVAL_MS) {
+    return _dictCache;
+  }
+  _dictLastCheck = now;
+
+  try {
+    const stat = fs.statSync(DICTIONARY_PATH);
+    if (stat.mtimeMs !== _dictMtime) {
+      _dictCache = JSON.parse(fs.readFileSync(DICTIONARY_PATH, "utf8"));
+      _dictMtime = stat.mtimeMs;
+    }
+  } catch {
+    if (!_dictCache) {
+      _dictCache = { commands: {}, apps: {}, locations: {}, numbers: {}, fillers: [], greetings: [], grammar: { extra: [] }, learned: [] };
+    }
+  }
+  return _dictCache;
+}
+
+function getDictionary() {
+  return loadDictionary();
+}
+
+// Alias para compatibilidad con código existente
+const dictionary = new Proxy({}, {
+  get(_, prop) {
+    return getDictionary()[prop];
+  }
+});
 
 // ---------------------------------------------------------------
 // NORMALIZACIÓN DE TEXTO
 // ---------------------------------------------------------------
 
-/**
- * Normaliza texto: minúsculas, quita tildes, puntuación y espacios extra.
- * Esta es la función central de normalización. Úsala en vez de copy-paste.
- */
 function normalize(text) {
   return (text || "")
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")  // quita tildes/acentos
-    .replace(/[.,!?¡¿;:()]/g, "")     // quita puntuación
-    .replace(/\s+/g, " ")              // colapsa espacios múltiples
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[.,!?¡¿;:()"\u201C\u201D]/g, "")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
-/**
- * Tokeniza texto en palabras (tokens), ya normalizado.
- */
 function tokensOf(text) {
   return normalize(text).split(/\s+/).filter(Boolean);
 }
@@ -82,15 +113,8 @@ function editDistance(a, b) {
   return prev[n];
 }
 
-/**
- * ¿"token" es aproximadamente igual a "target"?
- * @param {string} token - Palabra a comparar
- * @param {string} target - Palabra de referencia
- * @param {number} [threshold] - Similitud mínima (0-1). Default: FUZZY_THRESHOLD.
- */
 function fuzzyClose(token, target, threshold) {
   const maxLen = Math.max(token.length, target.length);
-  if (maxLen <= 2) return token === target; // palabras muy cortas: exacto
   if (maxLen <= MIN_FUZZY_LENGTH) return token === target;
   const distance = editDistance(token, target);
   const thr = typeof threshold === "number" ? threshold : FUZZY_THRESHOLD;
@@ -98,9 +122,6 @@ function fuzzyClose(token, target, threshold) {
   return distance <= maxDistance;
 }
 
-/**
- * Calcula el nivel de similitud (0-1) entre dos strings.
- */
 function similarity(a, b) {
   const maxLen = Math.max(a.length, b.length);
   if (maxLen === 0) return 1;
@@ -109,26 +130,13 @@ function similarity(a, b) {
 }
 
 // ---------------------------------------------------------------
-// MATCHING DE COMANDOS
+// MATCHING BÁSICO
 // ---------------------------------------------------------------
 
-/**
- * Busca una coincidencia exacta de un token contra una lista de variantes.
- * @param {string} token - Palabra normalizada
- * @param {string[]} variants - Lista de variantes normalizadas
- * @returns {boolean}
- */
 function exactMatch(token, variants) {
   return variants.some((v) => token === v);
 }
 
-/**
- * Busca la mejor coincidencia fuzzy de un token contra una lista de variantes.
- * @param {string} token - Palabra normalizada
- * @param {string[]} variants - Lista de variantes normalizadas
- * @param {number} [threshold] - Umbral de similitud
- * @returns {{ match: string, score: number } | null}
- */
 function bestFuzzyMatch(token, variants, threshold) {
   const thr = typeof threshold === "number" ? threshold : FUZZY_THRESHOLD;
   let best = null;
@@ -143,69 +151,39 @@ function bestFuzzyMatch(token, variants, threshold) {
   return best ? { match: best, score: bestScore } : null;
 }
 
-/**
- * Verifica si un token coincide (exacta o fuzzy) con alguna variante de un comando.
- * @param {string} token - Palabra normalizada
- * @param {string[]} variants - Lista de variantes normalizadas
- * @param {number} [threshold] - Umbral de similitud
- * @returns {boolean}
- */
 function matchesAny(token, variants, threshold) {
   if (exactMatch(token, variants)) return true;
   if (token.length < MIN_FUZZY_LENGTH) return false;
   return bestFuzzyMatch(token, variants, threshold) !== null;
 }
 
-/**
- * Verifica si el texto contiene algún token que matchee con las variantes.
- * @param {string} text - Texto normalizado
- * @param {string[]} variants - Lista de variantes normalizadas
- * @param {number} [threshold] - Umbral de similitud
- * @returns {boolean}
- */
 function textContainsMatch(text, variants, threshold) {
   const tokens = tokensOf(text);
   return tokens.some((t) => matchesAny(t, variants, threshold));
 }
 
-/**
- * Extrae el valor/argumento de un comando del texto.
- * Por ejemplo, de "al 50 por ciento" extrae "50".
- * @param {string} text - Texto normalizado
- * @param {RegExp} pattern - Patrón con un grupo de captura
- * @returns {string | null}
- */
 function extractFromText(text, pattern) {
   const match = normalize(text).match(pattern);
   return match ? match[1] : null;
 }
 
 // ---------------------------------------------------------------
-// DICCIONARIO: ACCESO
+// ACCESO AL DICCIONARIO
 // ---------------------------------------------------------------
 
-/**
- * Obtiene las variantes de un comando del diccionario.
- * @param {string} commandKey - Clave del comando (ej: "open", "close")
- * @returns {string[]} Variantes normalizadas
- */
 function getCommandVariants(commandKey) {
-  const cmd = dictionary.commands[commandKey];
+  const dict = getDictionary();
+  const cmd = dict.commands[commandKey];
   if (!cmd) return [];
   const canonical = normalize(cmd.canonical);
   const variants = (cmd.variants || []).map(normalize);
-  // Asegurar que el canónico esté incluido
   if (!variants.includes(canonical)) variants.unshift(canonical);
   return variants;
 }
 
-/**
- * Obtiene las variantes de una app del diccionario.
- * @param {string} exeName - Nombre del .exe (ej: "discord.exe")
- * @returns {string[]} Variantes normalizadas
- */
 function getAppVariants(exeName) {
-  const app = dictionary.apps[exeName];
+  const dict = getDictionary();
+  const app = dict.apps[exeName];
   if (!app) return [normalize(exeName.replace(".exe", ""))];
   const canonical = normalize(app.canonical);
   const variants = (app.variants || []).map(normalize);
@@ -213,41 +191,26 @@ function getAppVariants(exeName) {
   return variants;
 }
 
-/**
- * Obtiene todas las variantes de un valor de ubicación.
- * @param {string} locationKey - Clave (ej: "desktop", "documents")
- * @returns {string[]} Variantes normalizadas
- */
 function getLocationVariants(locationKey) {
-  const loc = dictionary.locations[locationKey];
+  const dict = getDictionary();
+  const loc = dict.locations[locationKey];
   if (!loc) return [normalize(locationKey)];
   return [normalize(loc.canonical), ...(loc.variants || []).map(normalize)];
 }
 
-/**
- * Obtiene todas las variantes de un número.
- * @param {string|number} num - Número (ej: "50")
- * @returns {string[]} Variantes normalizadas (incluye el dígito)
- */
 function getNumberVariants(num) {
+  const dict = getDictionary();
   const key = String(num);
-  const numData = dictionary.numbers[key];
+  const numData = dict.numbers[key];
   if (!numData) return [key];
   return [key, ...numData.map(normalize)];
 }
 
-/**
- * Verifica si un token es un número (dígito o palabra).
- * @param {string} token - Palabra normalizada
- * @returns {number | null} El número o null
- */
 function parseNumber(token) {
-  // Dígito directo
+  const dict = getDictionary();
   const num = parseInt(token, 10);
   if (!isNaN(num) && num >= 0 && num <= 100) return num;
-
-  // Buscar en el diccionario de números
-  for (const [digit, words] of Object.entries(dictionary.numbers)) {
+  for (const [digit, words] of Object.entries(dict.numbers)) {
     if (token === digit || words.some((w) => normalize(w) === token)) {
       return parseInt(digit, 10);
     }
@@ -256,20 +219,255 @@ function parseNumber(token) {
 }
 
 // ---------------------------------------------------------------
-// GENERACIÓN DE GRAMÁTICA PARA VOSK
+// MATCHING DE COMANDOS (CASCADA: EXACTO → FUZZY)
 // ---------------------------------------------------------------
 
 /**
- * Genera la lista de palabras para la gramática de Vosk a partir del diccionario.
- * Incluye: variantes de comandos, nombres de apps, números, saludos, fillers,
- * y palabras adicionales del diccionario.
- * @returns {string[]} Array de palabras únicas para Vosk
+ * Coincidencia exacta a nivel de frase contra las variantes del diccionario.
+ * @param {string} text - Texto normalizado
+ * @param {object} dict - Diccionario
+ * @returns {{ command: string, operand: string|null, variant: string }|null}
  */
+function matchExact(text, dict) {
+  if (!text) return null;
+
+  // Buscar cada variante de cada comando
+  for (const [key, cmd] of Object.entries(dict.commands || {})) {
+    const allVariants = [cmd.canonical, ...(cmd.variants || [])].map(normalize);
+    for (const v of allVariants) {
+      if (text === v) {
+        return { command: key, operand: null, variant: v };
+      }
+      if (text.startsWith(v + " ")) {
+        return { command: key, operand: text.slice(v.length + 1).trim(), variant: v };
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Matching fuzzy a nivel de frase: busca la variante más parecida.
+ * @param {string} text - Texto normalizado
+ * @param {object} dict - Diccionario
+ * @param {number} threshold - Umbral mínimo (0-1)
+ * @returns {{ command: string, operand: string|null, score: number }|null}
+ */
+function matchFuzzy(text, dict, threshold) {
+  if (!text) return null;
+  const thr = typeof threshold === "number" ? threshold : FUZZY_THRESHOLD;
+  let best = null;
+  let bestScore = 0;
+
+  for (const [key, cmd] of Object.entries(dict.commands || {})) {
+    const allVariants = [cmd.canonical, ...(cmd.variants || [])].map(normalize);
+    for (const v of allVariants) {
+      // Similitud directa de frase completa
+      const score = similarity(text, v);
+      if (score > bestScore && score >= thr) {
+        bestScore = score;
+        best = { command: key, operand: null, score };
+      }
+
+      // Si la variante es parte del texto (ej: "abre discord" contiene "abre")
+      if (v.length >= 3 && text.includes(v)) {
+        const operand = text.replace(v, "").trim();
+        const scoreContains = v.length / text.length;
+        if (scoreContains > bestScore && scoreContains >= thr) {
+          bestScore = scoreContains;
+          best = { command: key, operand: operand || null, score: scoreContains };
+        }
+      }
+
+      // Matching por tokens
+      const textTokens = tokensOf(text);
+      const variantTokens = tokensOf(v);
+      if (variantTokens.length >= 2) {
+        const matched = variantTokens.filter(vt =>
+          textTokens.some(tt => fuzzyClose(tt, vt, thr))
+        );
+        if (matched.length === variantTokens.length) {
+          const tokenScore = matched.length / Math.max(textTokens.length, variantTokens.length);
+          if (tokenScore > bestScore && tokenScore >= thr) {
+            bestScore = tokenScore;
+            best = { command: key, operand: null, score: tokenScore };
+          }
+        }
+      }
+    }
+  }
+
+  return best;
+}
+
+/**
+ * Identifica qué comando se dijo (cascada: exacto → fuzzy).
+ * @param {string} rawText - Texto original de Vosk
+ * @param {object} [config] - Config (para umbral)
+ * @returns {{ command: string, operand: string|null, confidence: "exact"|"fuzzy" }|null}
+ */
+function identifyCommand(rawText, config) {
+  const text = normalize(rawText);
+  if (!text) return null;
+  const dict = getDictionary();
+
+  // 1) Coincidencia exacta
+  const exact = matchExact(text, dict);
+  if (exact) return { ...exact, confidence: "exact" };
+
+  // 2) Coincidencia fuzzy
+  const threshold = config?.voiceSimilarityThreshold || FUZZY_THRESHOLD;
+  const fuzzy = matchFuzzy(text, dict, threshold);
+  if (fuzzy) return { ...fuzzy, confidence: "fuzzy" };
+
+  return null;
+}
+
+// ---------------------------------------------------------------
+// MATCHING DE APPS Y CARPETAS
+// ---------------------------------------------------------------
+
+/**
+ * Identifica qué app se mencionó en el texto.
+ * @param {string} text - Texto (normalizado o no)
+ * @returns {{ exeName: string, canonical: string }|null}
+ */
+function identifyApp(text) {
+  const norm = normalize(text);
+  if (!norm) return null;
+  const dict = getDictionary();
+  for (const [exeName, app] of Object.entries(dict.apps || {})) {
+    const allVariants = [app.canonical, ...(app.variants || [])].map(normalize);
+    for (const v of allVariants) {
+      if (v.length < 2) continue;
+      if (norm === v || norm.includes(v)) {
+        return { exeName, canonical: app.canonical };
+      }
+      if (fuzzyClose(norm, v, APP_FUZZY_THRESHOLD)) {
+        return { exeName, canonical: app.canonical };
+      }
+      // Token-level fuzzy: verificar si algún token del texto matchea
+      const normTokens = tokensOf(norm);
+      if (normTokens.some(t => fuzzyClose(t, v, APP_FUZZY_THRESHOLD))) {
+        return { exeName, canonical: app.canonical };
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Identifica qué ubicación especial se mencionó.
+ * @param {string} text - Texto (normalizado o no)
+ * @returns {{ key: string, canonical: string }|null}
+ */
+function identifyLocation(text) {
+  const norm = normalize(text);
+  if (!norm) return null;
+  const dict = getDictionary();
+  for (const [key, loc] of Object.entries(dict.locations || {})) {
+    const allVariants = [loc.canonical, ...(loc.variants || [])].map(normalize);
+    for (const v of allVariants) {
+      if (v.length < 2) continue;
+      if (norm.includes(v)) {
+        return { key, canonical: loc.canonical };
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Extrae un número del texto (dígitos o palabras del diccionario).
+ * @param {string} text - Texto (normalizado o no)
+ * @returns {number|null}
+ */
+function extractNumber(text) {
+  const norm = normalize(text);
+  if (!norm) return null;
+  const dict = getDictionary();
+
+  // 1) Dígitos directos
+  const digitMatch = norm.match(/\d{1,3}/);
+  if (digitMatch) {
+    const val = parseInt(digitMatch[0], 10);
+    if (val >= 0 && val <= 100) return val;
+  }
+
+  // 2) Palabras del diccionario de números
+  const tokens = tokensOf(norm);
+  for (const token of tokens) {
+    for (const [numStr, words] of Object.entries(dict.numbers || {})) {
+      if (token === numStr || words.some(w => normalize(w) === token)) {
+        return parseInt(numStr, 10);
+      }
+    }
+  }
+
+  // 3) Números compuestos en español ("cincuenta y cinco" = 55)
+  const COMPOUND_MAP = {
+    "dieciseis": 16, "diecisiete": 17, "dieciocho": 18, "diecinueve": 19,
+    "veintiuno": 21, "veintidos": 22, "veintitres": 23, "veinticuatro": 24,
+    "veinticinco": 25, "veintiseis": 26, "veintisiete": 27, "veintiocho": 28, "veintinueve": 29,
+    "treinta": 30, "cuarenta": 40, "cincuenta": 50, "sesenta": 60,
+    "setenta": 70, "ochenta": 80, "noventa": 90
+  };
+  const UNITS = {
+    "uno": 1, "una": 1, "dos": 2, "tres": 3, "cuatro": 4, "cinco": 5,
+    "seis": 6, "siete": 7, "ocho": 8, "nueve": 9
+  };
+  for (let i = 0; i < tokens.length; i++) {
+    const tens = COMPOUND_MAP[tokens[i]];
+    if (tens !== undefined) {
+      const nextIdx = (tokens[i + 1] === "y") ? i + 2 : i + 1;
+      if (nextIdx < tokens.length) {
+        const unit = UNITS[tokens[nextIdx]];
+        if (unit !== undefined) return tens + unit;
+      }
+      return tens;
+    }
+    const unitVal = UNITS[tokens[i]];
+    if (unitVal !== undefined) return unitVal;
+  }
+
+  return null;
+}
+
+// ---------------------------------------------------------------
+// MATCHING DE APPS INSTALADAS (ÍNDICE AUTOMÁTICO)
+// ---------------------------------------------------------------
+
+let _appScanner = null;
+function getAppScanner() {
+  if (!_appScanner) {
+    try { _appScanner = require("../main/appScanner"); } catch { return null; }
+  }
+  return _appScanner;
+}
+
+/**
+ * Identifica una app del índice automático de apps instaladas.
+ * @param {string} text - Texto a buscar (nombre hablado)
+ * @param {object} [config] - Config para umbral
+ * @returns {object|null} App encontrada con matchType y score, o null
+ */
+function identifyInstalledApp(text, config) {
+  const scanner = getAppScanner();
+  if (!scanner) return null;
+  const threshold = config?.voiceSimilarityThreshold || APP_FUZZY_THRESHOLD;
+  return scanner.findInIndex(text, threshold);
+}
+
+// ---------------------------------------------------------------
+// GRAMÁTICA PARA VOSK (PALABRAS INDIVIDUALES)
+// ---------------------------------------------------------------
+
 function buildGrammarFromDictionary() {
+  const dict = getDictionary();
   const words = new Set();
 
-  // 1) Variantes de comandos → dividir en palabras individuales
-  for (const [, cmd] of Object.entries(dictionary.commands)) {
+  // 1) Comandos
+  for (const [, cmd] of Object.entries(dict.commands || {})) {
     for (const v of [cmd.canonical, ...(cmd.variants || [])]) {
       for (const w of normalize(v).split(/\s+/)) {
         if (w.length >= 2) words.add(w);
@@ -277,8 +475,8 @@ function buildGrammarFromDictionary() {
     }
   }
 
-  // 2) Variantes de ubicaciones
-  for (const [, loc] of Object.entries(dictionary.locations)) {
+  // 2) Ubicaciones
+  for (const [, loc] of Object.entries(dict.locations || {})) {
     for (const v of [loc.canonical, ...(loc.variants || [])]) {
       for (const w of normalize(v).split(/\s+/)) {
         if (w.length >= 2) words.add(w);
@@ -286,8 +484,8 @@ function buildGrammarFromDictionary() {
     }
   }
 
-  // 3) Nombres de apps (palabras individuales)
-  for (const [, app] of Object.entries(dictionary.apps)) {
+  // 3) Apps
+  for (const [, app] of Object.entries(dict.apps || {})) {
     for (const v of [app.canonical, ...(app.variants || [])]) {
       for (const w of normalize(v).split(/\s+/)) {
         if (w.length >= 2) words.add(w);
@@ -295,8 +493,8 @@ function buildGrammarFromDictionary() {
     }
   }
 
-  // 4) Números como dígitos y palabras
-  for (const [digit, wordForms] of Object.entries(dictionary.numbers)) {
+  // 4) Números
+  for (const [digit, wordForms] of Object.entries(dict.numbers || {})) {
     words.add(digit);
     for (const w of wordForms) {
       const norm = normalize(w);
@@ -305,32 +503,46 @@ function buildGrammarFromDictionary() {
   }
 
   // 5) Fillers
-  for (const f of dictionary.fillers || []) {
+  for (const f of dict.fillers || []) {
     for (const w of normalize(f).split(/\s+/)) {
       if (w.length >= 2) words.add(w);
     }
   }
 
   // 6) Saludos
-  for (const g of dictionary.greetings || []) {
+  for (const g of dict.greetings || []) {
     for (const w of normalize(g).split(/\s+/)) {
       if (w.length >= 2) words.add(w);
     }
   }
 
-  // 7) Palabras adicionales del grammar.extra
-  for (const w of dictionary.grammar?.extra || []) {
+  // 7) Grammar extra
+  for (const w of dict.grammar?.extra || []) {
     const norm = normalize(w);
     if (norm.length >= 1) words.add(norm);
   }
 
-  // 8) Palabras aprendidas de archivos del usuario
-  for (const w of dictionary.learned || []) {
+  // 8) Palabras aprendidas
+  for (const w of dict.learned || []) {
     const norm = normalize(w);
     if (norm.length >= 2) words.add(norm);
   }
 
   return [...words].filter(Boolean);
+}
+
+// ---------------------------------------------------------------
+// STOPWORDS
+// ---------------------------------------------------------------
+
+function getStopwords() {
+  const dict = getDictionary();
+  if (dict.stopwords && Array.isArray(dict.stopwords)) {
+    return dict.stopwords;
+  }
+  // Fallback básico
+  return ["de", "la", "el", "en", "que", "los", "del", "las", "un", "por", "con",
+    "una", "su", "para", "es", "al", "lo", "como", "mas", "o", "le", "ya"];
 }
 
 // ---------------------------------------------------------------
@@ -352,7 +564,7 @@ module.exports = {
   fuzzyClose,
   similarity,
 
-  // Matching
+  // Matching básico
   exactMatch,
   bestFuzzyMatch,
   matchesAny,
@@ -365,10 +577,19 @@ module.exports = {
   getLocationVariants,
   getNumberVariants,
   parseNumber,
+  getDictionary,
+
+  // Matching de comandos (nuevo)
+  identifyCommand,
+  identifyApp,
+  identifyLocation,
+  extractNumber,
+  identifyInstalledApp,
 
   // Gramática
   buildGrammarFromDictionary,
+  getStopwords,
 
-  // Acceso al diccionario crudo (para compatibilidad)
+  // Compatibilidad
   dictionary
 };

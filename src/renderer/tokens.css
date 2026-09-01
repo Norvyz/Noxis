@@ -1,0 +1,740 @@
+/* src/renderer/tokens.css
+   =========================================================
+   Noxis — Design Tokens
+   Archivo centralizado con todos los valores de diseño.
+   Importar en style.css y config.css para mantener coherencia.
+   ========================================================= */
+
+:root {
+  /* ----------------------------------------------------------
+     Espaciado (base 4px)
+     ---------------------------------------------------------- */
+  --sp-0: 0;
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+
+  /* ----------------------------------------------------------
+     Border-radius
+     ---------------------------------------------------------- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-full: 9999px;
+
+  /* ----------------------------------------------------------
+     Transiciones
+     ---------------------------------------------------------- */
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.3, 0.44, 1);
+  --dur-fast: 150ms;
+  --dur-normal: 220ms;
+  --dur-slow: 320ms;
+
+  /* ----------------------------------------------------------
+     Tipografía
+     ---------------------------------------------------------- */
+  --text-xs: 11px;
+  --text-sm: 12.5px;
+  --text-base: 14px;
+  --text-md: 15px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+
+  /* ----------------------------------------------------------
+     Iconos (tamaños comunes)
+     ---------------------------------------------------------- */
+  --icon-sm: 14px;
+  --icon-md: 16px;
+  --icon-lg: 18px;
+}
+
+/* ===========================================================
+   TEMA CLARO (default)
+   =========================================================== */
+:root, body.theme-light {
+  /* Acento */
+  --accent: #5B8DEF;
+  --accent-dark: #4A78D9;
+  --accent-soft: rgba(91, 141, 239, 0.12);
+  --accent-muted: rgba(91, 141, 239, 0.45);
+
+  /* Fondos */
+  --bg-base: #F4F6FA;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #F8F9FC;
+  --bg-input: rgba(0, 0, 0, 0.04);
+  --bg-hover: rgba(0, 0, 0, 0.04);
+
+  /* Textos */
+  --text-primary: #1C2030;
+  --text-secondary: #6B7280;
+  --text-muted: #9CA3AF;
+
+  /* Bordes */
+  --border-subtle: rgba(0, 0, 0, 0.07);
+  --border-default: rgba(0, 0, 0, 0.12);
+
+  /* Sombras */
+  --shadow-sm: 0 1px 3px rgba(20, 27, 45, 0.06);
+  --shadow-md: 0 4px 12px rgba(20, 27, 45, 0.08);
+  --shadow-lg: 0 8px 28px rgba(20, 27, 45, 0.12);
+
+  /* Stacks (sidebar, etc.) */
+  --bg-sidebar: #141824;
+  --text-sidebar: #C6CDDA;
+  --text-sidebar-brand: #FFFFFF;
+
+  /* Botones */
+  --btn-bg: #EEF0F5;
+  --btn-hover: #E3E6ED;
+  --btn-text: #FFFFFF;
+
+  /* Estados */
+  --danger: #E05B5B;
+  --ok: #1EA97C;
+  --warn: #D9822B;
+  --online: #22c55e;
+
+  /* Bubble / card heredados del widget */
+  --bubble-bg: rgba(255, 255, 255, 0.93);
+  --bubble-text: #1C2030;
+  --card-bg: rgba(255, 255, 255, 0.93);
+  --card-text: #1C2030;
+  --card-border: rgba(0, 0, 0, 0.07);
+  --hover-bg: rgba(0, 0, 0, 0.04);
+  --placeholder: #9CA3AF;
+
+  /* Legacy (compatibilidad temporal con widget) */
+  --noxis-accent: var(--accent);
+  --noxis-accent-dark: var(--accent-dark);
+  --noxis-accent-soft: var(--accent-soft);
+  --shadow-soft: var(--shadow-lg);
+}
+
+/* ===========================================================
+   TEMA OSCURO
+   =========================================================== */
+body.theme-dark {
+  --accent: #6FA3FF;
+  --accent-dark: #85B5FF;
+  --accent-soft: rgba(111, 163, 255, 0.14);
+  --accent-muted: rgba(111, 163, 255, 0.45);
+
+  --bg-base: #12141A;
+  --bg-surface: #1A1D26;
+  --bg-elevated: #22262F;
+  --bg-input: rgba(255, 255, 255, 0.06);
+  --bg-hover: rgba(255, 255, 255, 0.06);
+
+  --text-primary: #E8ECF2;
+  --text-secondary: #9CA3B0;
+  --text-muted: #6B7280;
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-default: rgba(255, 255, 255, 0.12);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+  --bg-sidebar: #171B27;
+  --text-sidebar: #9AA4B5;
+  --text-sidebar-brand: #FFFFFF;
+
+  --btn-bg: #272C37;
+  --btn-hover: #333B4B;
+  --btn-text: #0c131f;
+
+  --danger: #F06A6A;
+  --ok: #3FBF9F;
+  --warn: #E8A23D;
+  --online: #4ade80;
+
+  --bubble-bg: rgba(26, 29, 38, 0.93);
+  --bubble-text: #E8ECF2;
+  --card-bg: rgba(26, 29, 38, 0.93);
+  --card-text: #E8ECF2;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --hover-bg: rgba(255, 255, 255, 0.06);
+  --placeholder: #6B7280;
+
+  --noxis-accent: var(--accent);
+  --noxis-accent-dark: var(--accent-dark);
+  --noxis-accent-soft: var(--accent-soft);
+  --shadow-soft: var(--shadow-lg);
+}
+
+/* ===========================================================
+   TEMA OBSIDIANA
+   =========================================================== */
+body.theme-obsidian {
+  --accent: #A78BFA;
+  --accent-dark: #C4B5FD;
+  --accent-soft: rgba(167, 139, 250, 0.14);
+  --accent-muted: rgba(167, 139, 250, 0.45);
+
+  --bg-base: #0E0E14;
+  --bg-surface: #17171F;
+  --bg-elevated: #1E1E28;
+  --bg-input: rgba(255, 255, 255, 0.06);
+  --bg-hover: rgba(255, 255, 255, 0.06);
+
+  --text-primary: #EFEEF6;
+  --text-secondary: #9C9BAE;
+  --text-muted: #6B6A7A;
+
+  --border-subtle: rgba(167, 139, 250, 0.10);
+  --border-default: rgba(167, 139, 250, 0.18);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+
+  --bg-sidebar: #111118;
+  --text-sidebar: #9897A8;
+  --text-sidebar-brand: #F5F4FA;
+
+  --btn-bg: #23232E;
+  --btn-hover: #2E2E3B;
+  --btn-text: #0c131f;
+
+  --danger: #F87171;
+  --ok: #34D399;
+  --warn: #FBBF24;
+  --online: #34D399;
+
+  --bubble-bg: rgba(23, 23, 31, 0.93);
+  --bubble-text: #EFEEF6;
+  --card-bg: rgba(23, 23, 31, 0.93);
+  --card-text: #EFEEF6;
+  --card-border: rgba(167, 139, 250, 0.15);
+  --hover-bg: rgba(255, 255, 255, 0.06);
+  --placeholder: #6B6A7A;
+
+  --noxis-accent: var(--accent);
+  --noxis-accent-dark: var(--accent-dark);
+  --noxis-accent-soft: var(--accent-soft);
+  --shadow-soft: var(--shadow-lg);
+}
+
+/* ===========================================================
+   TEMA MEDIANOCHE
+   =========================================================== */
+body.theme-midnight {
+  --accent: #22D3EE;
+  --accent-dark: #67E8F9;
+  --accent-soft: rgba(34, 211, 238, 0.14);
+  --accent-muted: rgba(34, 211, 238, 0.45);
+
+  --bg-base: #080E17;
+  --bg-surface: #101E2E;
+  --bg-elevated: #16273A;
+  --bg-input: rgba(255, 255, 255, 0.06);
+  --bg-hover: rgba(255, 255, 255, 0.06);
+
+  --text-primary: #E4F0FA;
+  --text-secondary: #8AA3B8;
+  --text-muted: #5A7A96;
+
+  --border-subtle: rgba(34, 211, 238, 0.10);
+  --border-default: rgba(34, 211, 238, 0.18);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+
+  --bg-sidebar: #0B1A28;
+  --text-sidebar: #7E96AC;
+  --text-sidebar-brand: #EAF3FB;
+
+  --btn-bg: #16283C;
+  --btn-hover: #1E3550;
+  --btn-text: #04121b;
+
+  --danger: #F87171;
+  --ok: #34D399;
+  --warn: #FBBF24;
+  --online: #34D399;
+
+  --bubble-bg: rgba(16, 30, 46, 0.93);
+  --bubble-text: #E4F0FA;
+  --card-bg: rgba(16, 30, 46, 0.93);
+  --card-text: #E4F0FA;
+  --card-border: rgba(34, 211, 238, 0.16);
+  --hover-bg: rgba(255, 255, 255, 0.06);
+  --placeholder: #5A7A96;
+
+  --noxis-accent: var(--accent);
+  --noxis-accent-dark: var(--accent-dark);
+  --noxis-accent-soft: var(--accent-soft);
+  --shadow-soft: var(--shadow-lg);
+}
+
+/* ===========================================================
+   TEMA BOSQUE
+   =========================================================== */
+body.theme-forest {
+  --accent: #34D399;
+  --accent-dark: #6EE7B7;
+  --accent-soft: rgba(52, 211, 153, 0.14);
+  --accent-muted: rgba(52, 211, 153, 0.45);
+
+  --bg-base: #0C1310;
+  --bg-surface: #15251A;
+  --bg-elevated: #1B2F21;
+  --bg-input: rgba(255, 255, 255, 0.06);
+  --bg-hover: rgba(255, 255, 255, 0.06);
+
+  --text-primary: #EAF3EC;
+  --text-secondary: #93A99A;
+  --text-muted: #5A7A64;
+
+  --border-subtle: rgba(52, 211, 153, 0.10);
+  --border-default: rgba(52, 211, 153, 0.18);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+
+  --bg-sidebar: #122016;
+  --text-sidebar: #8BA892;
+  --text-sidebar-brand: #EFF6F0;
+
+  --btn-bg: #1E3625;
+  --btn-hover: #2A4A34;
+  --btn-text: #04130b;
+
+  --danger: #F87171;
+  --ok: #4ADE80;
+  --warn: #E8A23D;
+  --online: #4ADE80;
+
+  --bubble-bg: rgba(21, 37, 26, 0.93);
+  --bubble-text: #EAF3EC;
+  --card-bg: rgba(21, 37, 26, 0.93);
+  --card-text: #EAF3EC;
+  --card-border: rgba(52, 211, 153, 0.16);
+  --hover-bg: rgba(255, 255, 255, 0.06);
+  --placeholder: #5A7A64;
+
+  --noxis-accent: var(--accent);
+  --noxis-accent-dark: var(--accent-dark);
+  --noxis-accent-soft: var(--accent-soft);
+  --shadow-soft: var(--shadow-lg);
+}
+
+/* ===========================================================
+   TEMA ATARDER
+   =========================================================== */
+body.theme-sunset {
+  --accent: #FB8B60;
+  --accent-dark: #FCA16F;
+  --accent-soft: rgba(251, 139, 96, 0.14);
+  --accent-muted: rgba(251, 139, 96, 0.45);
+
+  --bg-base: #170E0C;
+  --bg-surface: #291915;
+  --bg-elevated: #33201A;
+  --bg-input: rgba(255, 255, 255, 0.06);
+  --bg-hover: rgba(255, 255, 255, 0.06);
+
+  --text-primary: #F7EEE9;
+  --text-secondary: #B29B8E;
+  --text-muted: #7A6558;
+
+  --border-subtle: rgba(251, 139, 96, 0.10);
+  --border-default: rgba(251, 139, 96, 0.18);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+
+  --bg-sidebar: #231611;
+  --text-sidebar: #B09486;
+  --text-sidebar-brand: #FBF3EF;
+
+  --btn-bg: #3A2620;
+  --btn-hover: #4C332B;
+  --btn-text: #1c0d08;
+
+  --danger: #F87171;
+  --ok: #4ADE80;
+  --warn: #FBBF24;
+  --online: #4ADE80;
+
+  --bubble-bg: rgba(41, 25, 21, 0.93);
+  --bubble-text: #F7EEE9;
+  --card-bg: rgba(41, 25, 21, 0.93);
+  --card-text: #F7EEE9;
+  --card-border: rgba(251, 139, 96, 0.16);
+  --hover-bg: rgba(255, 255, 255, 0.06);
+  --placeholder: #7A6558;
+
+  --noxis-accent: var(--accent);
+  --noxis-accent-dark: var(--accent-dark);
+  --noxis-accent-soft: var(--accent-soft);
+  --shadow-soft: var(--shadow-lg);
+}
+
+/* ===========================================================
+   TEMA ROSA
+   =========================================================== */
+body.theme-rose {
+  --accent: #D94693;
+  --accent-dark: #C0267D;
+  --accent-soft: rgba(217, 70, 147, 0.12);
+  --accent-muted: rgba(217, 70, 147, 0.45);
+
+  --bg-base: #FBF3F7;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #FDF5F9;
+  --bg-input: rgba(217, 70, 147, 0.05);
+  --bg-hover: rgba(217, 70, 147, 0.05);
+
+  --text-primary: #3A2232;
+  --text-secondary: #8E6B83;
+  --text-muted: #B89AAD;
+
+  --border-subtle: rgba(217, 70, 147, 0.08);
+  --border-default: rgba(217, 70, 147, 0.15);
+
+  --shadow-sm: 0 1px 3px rgba(58, 34, 50, 0.06);
+  --shadow-md: 0 4px 12px rgba(58, 34, 50, 0.08);
+  --shadow-lg: 0 8px 28px rgba(58, 34, 50, 0.14);
+
+  --bg-sidebar: #3B1230;
+  --text-sidebar: #D9B7CF;
+  --text-sidebar-brand: #FFF7FB;
+
+  --btn-bg: #F6E9F0;
+  --btn-hover: #EFD9E6;
+  --btn-text: #ffffff;
+
+  --danger: #E05B5B;
+  --ok: #1EA97C;
+  --warn: #D9822B;
+  --online: #22c55e;
+
+  --bubble-bg: rgba(255, 255, 255, 0.93);
+  --bubble-text: #3A2232;
+  --card-bg: rgba(255, 255, 255, 0.93);
+  --card-text: #3A2232;
+  --card-border: rgba(217, 70, 147, 0.12);
+  --hover-bg: rgba(217, 70, 147, 0.05);
+  --placeholder: #B89AAD;
+
+  --noxis-accent: var(--accent);
+  --noxis-accent-dark: var(--accent-dark);
+  --noxis-accent-soft: var(--accent-soft);
+  --shadow-soft: var(--shadow-lg);
+}
+
+/* ===========================================================
+   TEMA OCÉANO
+   =========================================================== */
+body.theme-ocean {
+  --accent: #1F75C4;
+  --accent-dark: #1A63A9;
+  --accent-soft: rgba(31, 117, 196, 0.12);
+  --accent-muted: rgba(31, 117, 196, 0.45);
+
+  --bg-base: #EDF3FA;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #F3F8FC;
+  --bg-input: rgba(31, 117, 196, 0.05);
+  --bg-hover: rgba(31, 117, 196, 0.05);
+
+  --text-primary: #14263B;
+  --text-secondary: #64788C;
+  --text-muted: #9FC0DC;
+
+  --border-subtle: rgba(31, 117, 196, 0.08);
+  --border-default: rgba(31, 117, 196, 0.15);
+
+  --shadow-sm: 0 1px 3px rgba(20, 38, 59, 0.06);
+  --shadow-md: 0 4px 12px rgba(20, 38, 59, 0.08);
+  --shadow-lg: 0 8px 28px rgba(20, 38, 59, 0.14);
+
+  --bg-sidebar: #0E2A47;
+  --text-sidebar: #9FC0DC;
+  --text-sidebar-brand: #F3F8FD;
+
+  --btn-bg: #EAF1F8;
+  --btn-hover: #DCE8F3;
+  --btn-text: #ffffff;
+
+  --danger: #E05B5B;
+  --ok: #1EA97C;
+  --warn: #D9822B;
+  --online: #22c55e;
+
+  --bubble-bg: rgba(255, 255, 255, 0.93);
+  --bubble-text: #14263B;
+  --card-bg: rgba(255, 255, 255, 0.93);
+  --card-text: #14263B;
+  --card-border: rgba(31, 117, 196, 0.12);
+  --hover-bg: rgba(31, 117, 196, 0.05);
+  --placeholder: #9FC0DC;
+
+  --noxis-accent: var(--accent);
+  --noxis-accent-dark: var(--accent-dark);
+  --noxis-accent-soft: var(--accent-soft);
+  --shadow-soft: var(--shadow-lg);
+}
+
+/* =========================================================
+   TEMA LAVANDA
+   ========================================================= */
+
+[data-theme="lavender"] {
+  --accent: #8B6FD4;
+  --accent-dark: #7A5EC3;
+  --accent-soft: rgba(139, 111, 212, 0.14);
+
+  --bg-base: #F4F1F9;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #FAF8FD;
+
+  --text-primary: #1E1A2E;
+  --text-secondary: #6B6188;
+  --text-muted: #9D95B0;
+
+  --border-subtle: rgba(139, 111, 212, 0.08);
+  --border-default: rgba(139, 111, 212, 0.16);
+
+  --shadow-sm: 0 1px 3px rgba(30, 26, 46, 0.04);
+  --shadow-md: 0 4px 12px rgba(30, 26, 46, 0.07);
+  --shadow-lg: 0 8px 28px rgba(30, 26, 46, 0.12);
+
+  --bg-sidebar: #2D2240;
+  --text-sidebar: #B8ADCC;
+  --text-sidebar-brand: #F5F2FA;
+
+  --btn-bg: #8B6FD4;
+  --btn-hover: #7A5EC3;
+  --btn-text: #ffffff;
+
+  --danger: #D94F4F;
+  --ok: #2DB87A;
+  --warn: #D9922B;
+
+  --bubble-bg: rgba(255, 255, 255, 0.93);
+  --bubble-text: #1E1A2E;
+  --card-bg: rgba(255, 255, 255, 0.93);
+  --card-text: #1E1A2E;
+  --card-border: rgba(139, 111, 212, 0.12);
+  --hover-bg: rgba(139, 111, 212, 0.06);
+  --placeholder: #9D95B0;
+
+  --noxis-accent: var(--accent);
+  --noxis-accent-dark: var(--accent-dark);
+  --noxis-accent-soft: var(--accent-soft);
+  --shadow-soft: var(--shadow-lg);
+}
+
+/* =========================================================
+   TEMA CEREZA
+   ========================================================= */
+
+[data-theme="cherry"] {
+  --accent: #C74B6F;
+  --accent-dark: #B43A5E;
+  --accent-soft: rgba(199, 75, 111, 0.12);
+
+  --bg-base: #FBF2F5;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #FDF7F9;
+
+  --text-primary: #2A1520;
+  --text-secondary: #8C5A6E;
+  --text-muted: #B8899A;
+
+  --border-subtle: rgba(199, 75, 111, 0.08);
+  --border-default: rgba(199, 75, 111, 0.15);
+
+  --shadow-sm: 0 1px 3px rgba(42, 21, 32, 0.04);
+  --shadow-md: 0 4px 12px rgba(42, 21, 32, 0.07);
+  --shadow-lg: 0 8px 28px rgba(42, 21, 32, 0.12);
+
+  --bg-sidebar: #3D1525;
+  --text-sidebar: #C99AAD;
+  --text-sidebar-brand: #FBF2F5;
+
+  --btn-bg: #C74B6F;
+  --btn-hover: #B43A5E;
+  --btn-text: #ffffff;
+
+  --danger: #D94F4F;
+  --ok: #2DB87A;
+  --warn: #D9922B;
+
+  --bubble-bg: rgba(255, 255, 255, 0.93);
+  --bubble-text: #2A1520;
+  --card-bg: rgba(255, 255, 255, 0.93);
+  --card-text: #2A1520;
+  --card-border: rgba(199, 75, 111, 0.12);
+  --hover-bg: rgba(199, 75, 111, 0.06);
+  --placeholder: #B8899A;
+
+  --noxis-accent: var(--accent);
+  --noxis-accent-dark: var(--accent-dark);
+  --noxis-accent-soft: var(--accent-soft);
+  --shadow-soft: var(--shadow-lg);
+}
+
+/* =========================================================
+   TEMA AURORA
+   ========================================================= */
+
+[data-theme="aurora"] {
+  --accent: #2EA88F;
+  --accent-dark: #23977E;
+  --accent-soft: rgba(46, 168, 143, 0.12);
+
+  --bg-base: #F0F8F6;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #F6FBF9;
+
+  --text-primary: #0F2420;
+  --text-secondary: #4A7A6E;
+  --text-muted: #7DAA9E;
+
+  --border-subtle: rgba(46, 168, 143, 0.08);
+  --border-default: rgba(46, 168, 143, 0.15);
+
+  --shadow-sm: 0 1px 3px rgba(15, 36, 32, 0.04);
+  --shadow-md: 0 4px 12px rgba(15, 36, 32, 0.07);
+  --shadow-lg: 0 8px 28px rgba(15, 36, 32, 0.12);
+
+  --bg-sidebar: #0E2E28;
+  --text-sidebar: #7DAA9E;
+  --text-sidebar-brand: #F0F8F6;
+
+  --btn-bg: #2EA88F;
+  --btn-hover: #23977E;
+  --btn-text: #ffffff;
+
+  --danger: #D94F4F;
+  --ok: #2DB87A;
+  --warn: #D9922B;
+
+  --bubble-bg: rgba(255, 255, 255, 0.93);
+  --bubble-text: #0F2420;
+  --card-bg: rgba(255, 255, 255, 0.93);
+  --card-text: #0F2420;
+  --card-border: rgba(46, 168, 143, 0.12);
+  --hover-bg: rgba(46, 168, 143, 0.06);
+  --placeholder: #7DAA9E;
+
+  --noxis-accent: var(--accent);
+  --noxis-accent-dark: var(--accent-dark);
+  --noxis-accent-soft: var(--accent-soft);
+  --shadow-soft: var(--shadow-lg);
+}
+
+/* =========================================================
+   TEMA ÁRTICO
+   ========================================================= */
+
+[data-theme="arctic"] {
+  --accent: #5B9BD5;
+  --accent-dark: #4A8AC4;
+  --accent-soft: rgba(91, 155, 213, 0.12);
+
+  --bg-base: #F2F6FB;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #F8FAFD;
+
+  --text-primary: #132035;
+  --text-secondary: #5A7290;
+  --text-muted: #8DA2B8;
+
+  --border-subtle: rgba(91, 155, 213, 0.08);
+  --border-default: rgba(91, 155, 213, 0.15);
+
+  --shadow-sm: 0 1px 3px rgba(19, 32, 53, 0.04);
+  --shadow-md: 0 4px 12px rgba(19, 32, 53, 0.07);
+  --shadow-lg: 0 8px 28px rgba(19, 32, 53, 0.12);
+
+  --bg-sidebar: #15283E;
+  --text-sidebar: #8DA2B8;
+  --text-sidebar-brand: #F2F6FB;
+
+  --btn-bg: #5B9BD5;
+  --btn-hover: #4A8AC4;
+  --btn-text: #ffffff;
+
+  --danger: #D94F4F;
+  --ok: #2DB87A;
+  --warn: #D9922B;
+
+  --bubble-bg: rgba(255, 255, 255, 0.93);
+  --bubble-text: #132035;
+  --card-bg: rgba(255, 255, 255, 0.93);
+  --card-text: #132035;
+  --card-border: rgba(91, 155, 213, 0.12);
+  --hover-bg: rgba(91, 155, 213, 0.06);
+  --placeholder: #8DA2B8;
+
+  --noxis-accent: var(--accent);
+  --noxis-accent-dark: var(--accent-dark);
+  --noxis-accent-soft: var(--accent-soft);
+  --shadow-soft: var(--shadow-lg);
+}
+
+/* =========================================================
+   TEMA MOCHA
+   ========================================================= */
+
+[data-theme="mocha"] {
+  --accent: #A67C52;
+  --accent-dark: #956B41;
+  --accent-soft: rgba(166, 124, 82, 0.12);
+
+  --bg-base: #F8F3EE;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #FCF9F5;
+
+  --text-primary: #2C1E12;
+  --text-secondary: #7A6350;
+  --text-muted: #A8957F;
+
+  --border-subtle: rgba(166, 124, 82, 0.08);
+  --border-default: rgba(166, 124, 82, 0.15);
+
+  --shadow-sm: 0 1px 3px rgba(44, 30, 18, 0.04);
+  --shadow-md: 0 4px 12px rgba(44, 30, 18, 0.07);
+  --shadow-lg: 0 8px 28px rgba(44, 30, 18, 0.12);
+
+  --bg-sidebar: #3D2A1A;
+  --text-sidebar: #A8957F;
+  --text-sidebar-brand: #F8F3EE;
+
+  --btn-bg: #A67C52;
+  --btn-hover: #956B41;
+  --btn-text: #ffffff;
+
+  --danger: #D94F4F;
+  --ok: #2DB87A;
+  --warn: #D9922B;
+
+  --bubble-bg: rgba(255, 255, 255, 0.93);
+  --bubble-text: #2C1E12;
+  --card-bg: rgba(255, 255, 255, 0.93);
+  --card-text: #2C1E12;
+  --card-border: rgba(166, 124, 82, 0.12);
+  --hover-bg: rgba(166, 124, 82, 0.06);
+  --placeholder: #A8957F;
+
+  --noxis-accent: var(--accent);
+  --noxis-accent-dark: var(--accent-dark);
+  --noxis-accent-soft: var(--accent-soft);
+  --shadow-soft: var(--shadow-lg);
+}

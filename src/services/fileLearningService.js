@@ -27,38 +27,30 @@ const path = require("path");
 // Formatos soportados
 const SUPPORTED_EXTENSIONS = new Set([".txt", ".docx", ".doc", ".pdf", ".xlsx", ".xls"]);
 
-// Stopwords en español (palabras muy comunes que no aportan al vocabulario)
-const SPANISH_STOPWORDS = new Set([
-  // Artículos
+// ---------------------------------------------------------------
+// STOPWORDS: se cargan desde dictionary.json si existe la sección,
+// con fallback a la lista hardcodeada.
+// ---------------------------------------------------------------
+
+const DEFAULT_STOPWORDS = new Set([
   "el", "la", "los", "las", "un", "una", "unos", "unas",
-  // Preposiciones
   "de", "del", "al", "a", "en", "con", "por", "para", "sin", "sobre",
   "entre", "hasta", "desde", "hacia", "tras", "ante", "bajo", "contra",
-  // Conjunciones
   "y", "o", "u", "e", "ni", "que", "si", "pero", "mas", "sino",
-  "aunque", "porque", "pues", "como", "cuando", "donde", "si",
-  // Pronombres
+  "aunque", "porque", "pues", "como", "cuando", "donde",
   "yo", "tu", "el", "ella", "nosotros", "vosotros", "ellos", "ellas",
   "me", "te", "le", "nos", "os", "lo", "la", "les", "se",
   "mi", "tu", "su", "mis", "tus", "sus", "nuestro", "vuestra",
   "esto", "esta", "ese", "esa", "aquel", "aquella",
-  // Verbos comunes (auxiliares, copulativos)
   "es", "son", "fue", "ser", "estar", "hay", "ha", "han", "he", "has",
-  "hoy", "muy", "ya", "no", "si", "tambien", "asimismo",
-  // Adverbios comunes
+  "hoy", "muy", "ya", "no", "tambien", "asimismo",
   "tan", "tanto", "mas", "menos", "bien", "mal", "aqui", "ahi", "alla",
   "todo", "nada", "algo", "alguien", "nadie", "cada", "otro", "otra",
   "mismo", "misma", "propio", "propia",
-  // Números (como palabras)
   "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez",
-  // Signos y artefactos
   "etc", "vs", "sr", "sra", "dr", "dra",
-  // Conectores
-  "por", "que", "como", "cuando", "donde", "porque", "para",
-  // Contracciones comunes
   "al", "del",
-  // Otras palabras muy frecuentes
-  "he", "has", "hemos", "han", "habia", "habia",
+  "he", "has", "hemos", "han", "habia",
   "era", "eras", "eran", "sido", "tiene", "tienen", "tener",
   "hacer", "puede", "pueden", "saber", "decir", "ir", "venir",
   "dar", "ver", "querer", "llegar", "poner", "parecer", "quedar",
@@ -66,9 +58,23 @@ const SPANISH_STOPWORDS = new Set([
   "llamar", "volver", "tomar", "conocer", "vivir", "sentir",
   "tratar", "mirar", "contar", "empezar", "esperar", "buscar",
   "existir", "entrar", "pasar", "realizar", "presentar",
-  "desarrollar", "realizar", "encontrar", "establecer", "participar",
-  "representar", "considerar", "continuar", "considerar"
+  "desarrollar", "establecer", "participar",
+  "representar", "considerar", "continuar"
 ]);
+
+/**
+ * Obtiene las stopwords: intenta desde dictionary.json, fallback a la lista default.
+ */
+function getStopwords() {
+  try {
+    const dict = loadDictionary();
+    if (dict.stopwords && Array.isArray(dict.stopwords) && dict.stopwords.length > 0) {
+      const normalizeLocal = (t) => (t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      return new Set(dict.stopwords.map((w) => normalizeLocal(w)));
+    }
+  } catch {}
+  return DEFAULT_STOPWORDS;
+}
 
 // ---------------------------------------------------------------
 // EXTRACCIÓN DE TEXTO POR FORMATO
@@ -226,6 +232,7 @@ function countWordFrequency(rawWords) {
  * @returns {string[]} Lista de palabras que pasan el filtro
  */
 function filterWords(wordFreq, minFrequency, properNouns) {
+  const stopwords = getStopwords();
   const result = [];
   for (const [word, count] of wordFreq) {
     // Siempre incluir nombres propios (si tienen al menos 2 caracteres)
@@ -234,7 +241,7 @@ function filterWords(wordFreq, minFrequency, properNouns) {
       continue;
     }
     // Para el resto: frecuencia mínima y no ser stopwords
-    if (count >= minFrequency && !SPANISH_STOPWORDS.has(word) && word.length >= 3) {
+    if (count >= minFrequency && !stopwords.has(word) && word.length >= 3) {
       result.push(word);
     }
   }

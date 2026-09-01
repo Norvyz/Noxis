@@ -403,6 +403,7 @@ async function loadConfig() {
   loadModelSection();
   renderApps();
   renderPacks();
+  loadScannedApps();
 
   // Aprendizaje de archivos
   learnFolderPath.value = config.learnFolderPath || "";
@@ -659,6 +660,204 @@ function renderApps() {
   });
 }
 
+// ---------------------------------------------------------------
+// Apps escaneadas automáticamente
+// ---------------------------------------------------------------
+const scannedAppsSection = document.getElementById("scannedAppsSection");
+const scannedAppsList = document.getElementById("scannedAppsList");
+const rescanAppsBtn = document.getElementById("rescanAppsBtn");
+const scanProgress = document.getElementById("scanProgress");
+const scanProgressText = document.getElementById("scanProgressText");
+const scanProgressBar = document.getElementById("scanProgressBar");
+const scanSearchInput = document.getElementById("scanSearchInput");
+const scanCount = document.getElementById("scanCount");
+const addAllScannedBtn = document.getElementById("addAllScannedBtn");
+
+let scannedAppsData = [];
+let scanSearchQuery = "";
+
+async function loadScannedApps() {
+  try {
+    const index = await window.configAPI.getAppIndex();
+    if (index && index.apps && index.apps.length > 0) {
+      scannedAppsData = index.apps;
+      renderScannedApps();
+      scannedAppsSection.style.display = "";
+    } else {
+      scannedAppsSection.style.display = "none";
+    }
+  } catch (err) {
+    console.error("Error cargando apps escaneadas:", err);
+    scannedAppsSection.style.display = "none";
+  }
+}
+
+function renderScannedApps() {
+  scannedAppsList.innerHTML = "";
+  // Filtrar apps que ya están en la lista manual por keyword O por ruta del ejecutable
+  const manualKeywords = config.apps.map(a => a.keyword.toLowerCase());
+  const manualPaths = config.apps.map(a => (a.executablePath || "").toLowerCase().replace(/\//g, "\\"));
+  let filtered = scannedAppsData.filter(app => {
+    const name = (app.name || "").toLowerCase();
+    const exePath = (app.exePath || "").toLowerCase().replace(/\//g, "\\");
+    // Filtrar por keyword
+    if (manualKeywords.some(kw => name.includes(kw) || kw.includes(name))) return false;
+    // Filtrar por ruta del ejecutable
+    if (exePath && manualPaths.some(p => p && exePath.includes(p))) return false;
+    return true;
+  });
+
+  // Aplicar búsqueda del usuario
+  if (scanSearchQuery) {
+    const q = scanSearchQuery.toLowerCase();
+    filtered = filtered.filter(app => {
+      const name = (app.name || "").toLowerCase();
+      const exeName = (app.exeName || "").toLowerCase();
+      const source = (app.source || "").toLowerCase();
+      return name.includes(q) || exeName.includes(q) || source.includes(q);
+    });
+  }
+
+  // Actualizar contador
+  if (scanCount) {
+    scanCount.textContent = filtered.length > 0 
+      ? `${filtered.length} app${filtered.length !== 1 ? 's' : ''}` 
+      : "";
+  }
+
+  // Mostrar/ocultar botón "Agregar todas"
+  if (addAllScannedBtn) {
+    addAllScannedBtn.style.display = filtered.length > 1 ? "" : "none";
+  }
+
+  if (filtered.length === 0) {
+    const noResultsMsg = scanSearchQuery 
+      ? `No se encontraron apps para "${scanSearchQuery}"`
+      : "No hay apps nuevas detectadas";
+    const noResultsSub = scanSearchQuery
+      ? "Intenta con otro término de búsqueda."
+      : "Todas las apps detectadas ya están en tu lista manual, o Noxis no encontró apps instaladas.";
+    scannedAppsList.innerHTML = `
+      <li class="emptyState">
+        <span class="emptyStateTitle">${noResultsMsg}</span>
+        <span class="emptyStateSub">${noResultsSub}</span>
+      </li>
+    `;
+    return;
+  }
+
+  // Mostrar todas las apps (el scroll del contenedor se encarga)
+  const displayApps = filtered;
+  for (const app of displayApps) {
+    const li = document.createElement("li");
+    li.className = "itemRow scanned-app-item";
+    const sourceLabel = app.source === "registry" ? "Registro" : 
+                       app.source === "shortcut" ? "Menú Inicio" : 
+                       app.source === "startapps" ? "Store" : 
+                       app.source === "desktop" ? "Escritorio" :
+                       app.source === "programfiles" ? "Archivos" : "Auto";
+    li.innerHTML = `
+      <div class="rowInfo">
+        <span class="rowKeyword">${app.name}</span>
+        <span class="rowPath" title="${app.exePath || app.appId || ''}">${sourceLabel}${app.exeName ? ' · ' + app.exeName : ''}</span>
+      </div>
+      <div class="rowActions">
+        <button class="primaryBtn btn-add-to-manual" title="Agregar a lista manual">Agregar</button>
+      </div>
+    `;
+    li.querySelector(".btn-add-to-manual").addEventListener("click", () => {
+      addScannedAppToManual(app);
+    });
+    scannedAppsList.appendChild(li);
+  }
+}
+
+function addScannedAppToManual(app) {
+  const keyword = app.name.toLowerCase().replace(/[^a-z0-9áéíóúñü]/g, "").slice(0, 30);
+  if (config.apps.some(a => a.keyword === keyword)) {
+    showToast(`"${keyword}" ya está en tu lista`, "warn");
+    return;
+  }
+  const exePath = app.exePath || "";
+  config.apps.push({ keyword, executablePath: exePath });
+  renderApps();
+  renderScannedApps();
+  showToast(`"${app.name}" agregada a tu lista`, "success");
+}
+
+rescanAppsBtn.addEventListener("click", async () => {
+  rescanAppsBtn.disabled = true;
+  scanProgress.style.display = "";
+  scanProgressText.textContent = "Iniciando escaneo...";
+  scanProgressBar.style.width = "0%";
+
+  window.configAPI.onAppScanProgress((msg) => {
+    scanProgressText.textContent = msg;
+    scanProgressBar.style.width = "50%";
+  });
+
+  try {
+    const index = await window.configAPI.rescanApps();
+    scannedAppsData = index.apps || [];
+    scanProgressBar.style.width = "100%";
+    scanProgressText.textContent = `Escaneo completado: ${scannedAppsData.length} apps detectadas`;
+    renderScannedApps();
+    setTimeout(() => { scanProgress.style.display = "none"; }, 2000);
+  } catch (err) {
+    scanProgressText.textContent = "Error durante el escaneo";
+    console.error("Error reescaneando apps:", err);
+    setTimeout(() => { scanProgress.style.display = "none"; }, 3000);
+  } finally {
+    rescanAppsBtn.disabled = false;
+  }
+});
+
+// -- Búsqueda de apps escaneadas --
+if (scanSearchInput) {
+  scanSearchInput.addEventListener("input", (e) => {
+    scanSearchQuery = e.target.value.trim();
+    renderScannedApps();
+  });
+}
+
+// -- Agregar todas las apps visibles --
+if (addAllScannedBtn) {
+  addAllScannedBtn.addEventListener("click", () => {
+    const manualKeywords = config.apps.map(a => a.keyword.toLowerCase());
+    const manualPaths = config.apps.map(a => (a.executablePath || "").toLowerCase().replace(/\//g, "\\"));
+    let toAdd = scannedAppsData.filter(app => {
+      const name = (app.name || "").toLowerCase();
+      const exePath = (app.exePath || "").toLowerCase().replace(/\//g, "\\");
+      if (manualKeywords.some(kw => name.includes(kw) || kw.includes(name))) return false;
+      if (exePath && manualPaths.some(p => p && exePath.includes(p))) return false;
+      return true;
+    });
+    // Aplicar búsqueda
+    if (scanSearchQuery) {
+      const q = scanSearchQuery.toLowerCase();
+      toAdd = toAdd.filter(app => {
+        const name = (app.name || "").toLowerCase();
+        const exeName = (app.exeName || "").toLowerCase();
+        return name.includes(q) || exeName.includes(q);
+      });
+    }
+    if (toAdd.length === 0) return;
+    let addedCount = 0;
+    for (const app of toAdd) {
+      const keyword = app.name.toLowerCase().replace(/[^a-z0-9áéíóúñü]/g, "").slice(0, 30);
+      if (!config.apps.some(a => a.keyword === keyword)) {
+        config.apps.push({ keyword, executablePath: app.exePath || "" });
+        addedCount++;
+      }
+    }
+    if (addedCount > 0) {
+      renderApps();
+      renderScannedApps();
+      showToast(`${addedCount} app${addedCount !== 1 ? 's' : ''} agregada${addedCount !== 1 ? 's' : ''}`, "success");
+    }
+  });
+}
+
 function emptyStateMarkup(title, sub, iconName) {
   const icons = window.NoxisIcons || {};
   const inner = (icons[iconName] && icons.file ? icons.file(40) : "") || "";
@@ -701,8 +900,8 @@ function buildAppRow(app, { onEdit, onRemove }) {
 document.getElementById("addAppBtn").addEventListener("click", () => {
   pendingExePath = null;
   addAppKeywordInput.value = "";
-  addAppPathInput.value = "Selecciona un ejecutable...";
-  addAppPathInput.classList.add("placeholder");
+  addAppPathInput.value = "";
+  addAppPathInput.classList.remove("placeholder");
   openModal(addAppModal);
   addAppKeywordInput.focus();
 });
@@ -722,8 +921,11 @@ addAppConfirmBtn.addEventListener("click", () => {
     addAppKeywordInput.focus();
     return;
   }
-  if (!pendingExePath) {
-    addAppBrowseBtn.click();
+  // Accept either browse selection or typed path
+  const typedPath = addAppPathInput.value.trim();
+  const exePath = pendingExePath || typedPath;
+  if (!exePath) {
+    addAppPathInput.focus();
     return;
   }
   if (config.apps.some((a) => a.keyword === keyword)) {
@@ -731,7 +933,7 @@ addAppConfirmBtn.addEventListener("click", () => {
     setTimeout(() => addAppKeywordInput.classList.remove("error"), 1500);
     return;
   }
-  config.apps.push({ keyword, executablePath: pendingExePath });
+  config.apps.push({ keyword, executablePath: exePath });
   renderApps();
   closeModal(addAppModal);
 });
@@ -775,8 +977,11 @@ editAppConfirmBtn.addEventListener("click", () => {
     setTimeout(() => editAppKeywordInput.classList.remove("error"), 1500);
     return;
   }
+  // Accept either browse selection or typed path
+  const typedPath = editAppPathInput.value.trim();
+  const exePath = pendingExePath || typedPath;
   app.keyword = keyword;
-  app.executablePath = pendingExePath;
+  app.executablePath = exePath;
   renderApps();
   closeModal(editAppModal);
 });
@@ -1246,3 +1451,66 @@ learnClearBtn.addEventListener("click", () => {
 });
 
 loadConfig();
+
+// ---------------------------------------------------------------
+// Barra de título custom (frameless window)
+// ---------------------------------------------------------------
+
+const titlebarMinimize = document.getElementById("titlebarMinimize");
+const titlebarMaximize = document.getElementById("titlebarMaximize");
+const titlebarClose = document.getElementById("titlebarClose");
+
+function updateMaximizedState(isMaximized) {
+  if (isMaximized) {
+    document.body.classList.add("maximized");
+  } else {
+    document.body.classList.remove("maximized");
+  }
+  // Actualizar icono del botón maximize
+  if (titlebarMaximize) {
+    if (isMaximized) {
+      titlebarMaximize.innerHTML = `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="1" width="7" height="7" rx="1.5"/>
+        <rect x="1.5" y="3.5" width="7" height="7" rx="1.5" fill="var(--bg-sidebar)" stroke="currentColor"/>
+      </svg>`;
+      titlebarMaximize.setAttribute("aria-label", "Restaurar");
+    } else {
+      titlebarMaximize.innerHTML = `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="2" width="8" height="8" rx="1.5"/>
+      </svg>`;
+      titlebarMaximize.setAttribute("aria-label", "Maximizar");
+    }
+  }
+}
+
+// Verificar estado inicial
+if (window.configAPI.isMaximized) {
+  window.configAPI.isMaximized().then(updateMaximizedState);
+}
+
+if (titlebarMinimize) {
+  titlebarMinimize.addEventListener("click", () => {
+    window.configAPI.minimizeWindow();
+  });
+}
+
+if (titlebarMaximize) {
+  titlebarMaximize.addEventListener("click", async () => {
+    await window.configAPI.toggleMaximize();
+    const isMax = await window.configAPI.isMaximized();
+    updateMaximizedState(isMax);
+  });
+}
+
+if (titlebarClose) {
+  titlebarClose.addEventListener("click", () => {
+    window.configAPI.closeWindow();
+  });
+}
+
+// Escuchar eventos de maximizar/minimizar desde el navegador
+if (window.configAPI.onWindowMaximize) {
+  window.configAPI.onWindowMaximize((isMaximized) => {
+    updateMaximizedState(isMaximized);
+  });
+}
