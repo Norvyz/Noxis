@@ -113,8 +113,8 @@ function createConfigWindow() {
   }
 
   configWindow = new BrowserWindow({
-    width: 1100,
-    height: 720,
+    width: 1200,
+    height: 700,
     minWidth: 900,
     minHeight: 560,
     frame: false,
