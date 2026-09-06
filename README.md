@@ -18,7 +18,7 @@
 
 <br/>
 
-[**Features**](#features) · [**Diccionario de voz**](#diccionario-de-voz) · [**Voice Commands**](#voice-commands) · [**Screenshots**](#screenshots) · [**Support**](#support-the-project)
+[**Features**](#features) · [**Reconocimiento de voz**](#reconocimiento-de-voz) · [**Voice Commands**](#voice-commands) · [**Optimizador del PC**](#optimizador-del-pc) · [**Screenshots**](#screenshots) · [**Support**](#support-the-project)
 
 </div>
 
@@ -79,57 +79,23 @@
 
 <div align="center">
 
-<h1><a id="diccionario-de-voz"></a>Diccionario de Voz</h1>
+<h1><a id="reconocimiento-de-voz"></a>Reconocimiento de Voz</h1>
 
-<h3>Todo el reconocimiento de voz se basa en un diccionario centralizado: `src/services/dictionary.json`</h3>
+<h3>Noxis entiende tu voz a partir de un diccionario de palabras. Sin nube y con privacidad total.</h3>
 
-No usa ningún tipo de inteligencia artificial. El sistema funciona así:
+- Reconocimiento **100 % offline** con Vosk: el audio nunca sale de tu PC
+- Vocabulario centralizado en un diccionario que podés ampliar con tus propias palabras
+- Detección tolerante a errores del micrófono (fuzzy match + variantes del nombre)
+- Los cambios al diccionario se detectan automáticamente, sin reiniciar
+- Puede aprender vocabulario de tus propios archivos, filtrando palabras comunes
 
-1. **Gramática cerrada**: Vosk solo reconoce las palabras y frases que están en el diccionario
-2. **Matching en cascada**: Primero busca coincidencia exacta, luego fuzzy matching (tolerante a errores)
-3. **Auto-recarga**: Si editás `dictionary.json`, el cambio se detecta automáticamente (sin reiniciar)
+<h4>Limitaciones</h4>
 
-#### Estructura del diccionario
+- **Noxis no mantiene una conversación:** solo responde a las palabras y frases que están en su diccionario
+- **Si una palabra no está en el diccionario, no hay respuesta:** lo que entiende es lo que fue registrado
+- No es un bot de chat con IA: es un reconocedor de palabras, no un asistente conversacional
 
-| Sección | Descripción |
-|---|---|
-| `commands` | Comandos con sus variantes (abrir, cerrar, mover, volumen, etc.) |
-| `apps` | Nombres de apps con variantes de transcripción (discord, chrome, etc.) |
-| `locations` | Carpetas especiales (escritorio, documentos, descargas, etc.) |
-| `numbers` | Números en palabras y dígitos (0-100) |
-| `fillers` | Interjecciones y muletillas (hey, oye, por favor, etc.) |
-| `greetings` | Saludos (hola, buenas, que tal, etc.) |
-| `grammar.extra` | Palabras adicionales para mejorar el reconocimiento |
-| `learned` | Palabras aprendidas automáticamente de tus archivos |
-| `stopwords` | Palabras que se filtran en el aprendizaje de vocabulario |
-
-#### ¿Cómo agregar palabras nuevas?
-
-Editá `src/services/dictionary.json` directamente. Por ejemplo, para agregar una nueva variante de "abrir":
-
-```json
-"open": {
-  "canonical": "abrir",
-  "variants": ["abre", "abrir", "abri", "...", "tu_nueva_variante"]
-}
-```
-
-Los cambios se aplican automáticamente cuando Vosk regenera la gramática (al detectar el cambio en el archivo).
-
-#### Aprendizaje de vocabulario
-
-Noxis puede aprender palabras de tus archivos (.txt, .docx, .pdf, .xlsx). Las palabras aprendidas se guardan en `dictionary.learned` y se usan para mejorar el reconocimiento. Las stopwords del diccionario se aplican automáticamente para filtrar palabras muy comunes.
-
-#### Escaneo automático de apps
-
-Noxis detecta automáticamente las apps instaladas en tu PC usando:
-- Registro de Windows (desinstaladores)
-- Accesos directos del Menú Inicio
-- Microsoft Store (Get-StartApps)
-
-El escaneo ocurre en background al iniciar y se actualiza semanalmente. Las apps detectadas aparecen en Configuración → Apps con la opción de agregarlas a tu lista manual para personalizar su palabra clave.
-
-**Prioridad:** Si tienes una app configurada manualmente, Noxis usa esa configuración. Si no la encuentra manualmente, busca en el índice automático. Si no la encuentra ahí, te indica que la agregues.
+<!-- 📸 SCREENSHOT: pegá acá la imagen de la sección de diccionario/voz -->
 
 </div>
 
@@ -192,6 +158,29 @@ El escaneo ocurre en background al iniciar y se actualiza semanalmente. Las apps
 </table>
 
 <h4>La privacidad primero: cuando duerme, no muestra en pantalla lo que capta el micrófono; solo reacciona al escuchar su nombre para despertar.</h4>
+
+</div>
+
+---
+
+<div align="center">
+
+<h1><a id="optimizador-del-pc"></a>Optimizador del PC</h1>
+
+<h3>Una herramienta extra para escanear, limpiar y monitorear tu equipo. Opcional y a tu criterio.</h3>
+
+- Escaneo de CPU, RAM, GPU, disco, procesos, apps de inicio y red
+- Puntaje de salud con problemas detectados y sugerencias
+- Limpieza de temporales, cachés, DNS y papelera con un clic
+- Monitoreo en tiempo real de tu PC
+
+<h4>Importante</h4>
+
+- Noxis **no te obliga** a usarlo como optimizador: es una función extra, podés ignorarla por completo
+- Cada acción que ejecutes con esta herramienta es **bajo tu propia responsabilidad**
+- Sin usar el Optimizador, Noxis funciona igual: conversación, comandos y control de PC no dependen de él
+
+<!-- 📸 SCREENSHOT: pegá acá la imagen del Optimizador (Configuración → Optimizador) -->
 
 </div>
 
