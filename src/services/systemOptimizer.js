@@ -10,9 +10,9 @@ const systemBackup = require("./systemBackup");
 const processManager = require("./processManager");
 const systemMonitor = require("./systemMonitor");
 
-function runCommand(cmd) {
+function runCommand(cmd, timeoutMs) {
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 30000 }, (err, stdout, stderr) => {
+    exec(cmd, { timeout: timeoutMs || 15000 }, (err, stdout, stderr) => {
       resolve({ ok: !err, stdout, stderr });
     });
   });
@@ -21,16 +21,10 @@ function runCommand(cmd) {
 function getTempDirs() {
   const userTemp = path.join(os.homedir(), "AppData", "Local", "Temp");
   return [
-    { name: "Temp del sistema", path: "C:\\Windows\\Temp", safe: true },
     { name: "Temp del usuario", path: userTemp, safe: true },
     { name: "Caché de thumbnails", path: path.join(os.homedir(), "AppData", "Local", "Microsoft", "Windows", "Explorer"), safe: true },
-    { name: "Prefetch", path: "C:\\Windows\\Prefetch", safe: true },
-    { name: "Logs de Windows", path: "C:\\Windows\\Logs", safe: true },
-    { name: "Caché de Windows Update", path: "C:\\Windows\\SoftwareDistribution\\Download", safe: true },
-    { name: "Caché de errores", path: "C:\\ProgramData\\Microsoft\\Windows\\WER", safe: true },
     { name: "Caché de Edge", path: path.join(os.homedir(), "AppData", "Local", "Microsoft", "Edge", "User Data", "Default", "Cache"), safe: true },
     { name: "Caché de Chrome", path: path.join(os.homedir(), "AppData", "Local", "Google", "Chrome", "User Data", "Default", "Cache"), safe: true },
-    { name: "Caché de Firefox", path: path.join(os.homedir(), "AppData", "Local", "Mozilla", "Firefox", "Profiles"), safe: true },
   ];
 }
 
@@ -45,6 +39,8 @@ function getDirSize(dirPath) {
       } else {
         try { totalSize += fs.statSync(fullPath).size; } catch (e) { /* skip */ }
       }
+      // Prevent blocking on huge dirs
+      if (totalSize > 500 * 1024 * 1024) return totalSize; // cap at 500MB estimate
     }
   } catch (e) { /* skip */ }
   return totalSize;
@@ -58,13 +54,14 @@ function cleanDir(dirPath) {
       const fullPath = path.join(dirPath, file.name);
       try {
         if (file.isDirectory()) {
-          fs.rmSync(fullPath, { recursive: true, force: true });
+          fs.rmSync(fullPath, { recursive: true, force: true, maxRetries: 1 });
           cleaned++;
         } else {
           fs.unlinkSync(fullPath);
           cleaned++;
         }
       } catch (e) { /* skip locked */ }
+      if (cleaned >= 200) break; // safety limit per dir
     }
   } catch (e) { /* skip */ }
   return cleaned;
@@ -84,6 +81,8 @@ async function optimizeSystem(onProgress) {
     const dir = dirs[i];
     if (onProgress) onProgress(`Limpiando ${dir.name}...`, Math.round(((i + 1) / dirs.length) * 80));
     try { if (fs.existsSync(dir.path)) results.tempCleaned += cleanDir(dir.path); } catch (e) { results.errors.push(`${dir.name}: ${e.message}`); }
+    // Yield to event loop between directories to prevent UI freeze
+    await new Promise(r => setImmediate(r));
   }
 
   for (const dir of dirs) { try { results.tempSizeAfter += getDirSize(dir.path); } catch (e) { /* skip */ } }
@@ -92,14 +91,14 @@ async function optimizeSystem(onProgress) {
   try { await runCommand("ipconfig /flushdns"); results.dnsFlushed = true; } catch (e) { results.errors.push("DNS: " + e.message); }
 
   if (onProgress) onProgress("Limpiando caché de thumbnails...", 90);
-  try { await runCommand('del /q /f /s "%LocalAppData%\\Microsoft\\Windows\\Explorer\\thumbcache_*.db"'); results.thumbnailCacheCleared = true; } catch (e) { results.errors.push("Thumbnails: " + e.message); }
+  try { await runCommand('del /q /f /s "%LocalAppData%\\Microsoft\\Windows\\Explorer\\thumbcache_*.db"', 10000); results.thumbnailCacheCleared = true; } catch (e) { results.errors.push("Thumbnails: " + e.message); }
 
   if (onProgress) onProgress("Vaciando papelera...", 95);
   try {
-    await runCommand("rd /s /q C:\\$Recycle.Bin");
+    await runCommand("rd /s /q C:\\$Recycle.Bin", 10000);
     results.recycleBinEmptied = true;
   } catch (e) {
-    try { await runCommand("Clear-RecycleBin -Force -ErrorAction SilentlyContinue"); results.recycleBinEmptied = true; } catch (e2) { results.errors.push("Papelera: " + e2.message); }
+    try { await runCommand("Clear-RecycleBin -Force -ErrorAction SilentlyContinue", 10000); results.recycleBinEmptied = true; } catch (e2) { results.errors.push("Papelera: " + e2.message); }
   }
 
   if (onProgress) onProgress("Completado", 100);

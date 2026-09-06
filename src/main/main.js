@@ -651,12 +651,18 @@ const systemOptimizer = require("../services/systemOptimizer");
 
 ipcMain.handle("optimize:run", async (event) => {
   try {
-    const result = await systemOptimizer.optimizeSystem((msg, pct) => {
-      const win = windows.getConfigWindow();
-      if (win && !win.isDestroyed()) {
-        win.webContents.send("optimize:progress", { msg, pct });
-      }
-    });
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Optimización timeout")), 60000)
+    );
+    const result = await Promise.race([
+      systemOptimizer.optimizeSystem((msg, pct) => {
+        const win = windows.getConfigWindow();
+        if (win && !win.isDestroyed()) {
+          win.webContents.send("optimize:progress", { msg, pct });
+        }
+      }),
+      timeoutPromise
+    ]);
     return { ok: true, ...result };
   } catch (err) {
     return { ok: false, error: err.message };
