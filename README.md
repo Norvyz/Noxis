@@ -18,60 +18,7 @@
 
 <br/>
 
-[**Features**](#features) · [**Reconocimiento de voz**](#reconocimiento-de-voz) · [**Voice Commands**](#voice-commands) · [**Optimizador del PC**](#optimizador-del-pc) · [**Screenshots**](#screenshots) · [**Support**](#support-the-project)
-
-</div>
-
----
-
-<div align="center">
-
-<h1><a id="features"></a>Features</h1>
-
-<table>
-  <tr>
-    <td width="50%" valign="top">
-
-#### Conversación
-- Háblale de forma natural, responde al instante
-- Reconocimiento de voz **100 % offline** con Vosk (sin nube, con privacidad total)
-- Reconocimiento tolerante a errores del micrófono (fuzzy match + variantes del nombre)
-- Despiértala con su nombre y desactívala cuando no la necesites
-- Conversación también por texto en un chat integrado
-
-</td>
-    <td width="50%" valign="top">
-
-#### Control de tu PC
-- Abre tus apps con solo decirlo: *"Noxis abre Discord"*
-- Crea grupos ("packs") para lanzar varias apps a la vez con pausa configurable
-- Acepta comandos hablados o escritos
-- Lanza ejecutables de forma nativa
-
-</td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-
-#### Personalización
-- Cambia la apariencia de tu mascota (skins)
-- Nombre personalizable (wake word a tu gusto)
-- Tema claro y oscuro
-- Modelo de voz Estándar (40 MB) con descarga integrada
-
-</td>
-    <td width="50%" valign="top">
-
-#### Siempre a tu lado
-- Mascota flotante arrastrable, sin bordes y transparente
-- Inicia con tu sistema operativo
-- Vive en la bandeja del sistema sin estorbar
-- Multiplataforma (Windows, macOS y Linux)
-- Interacciones naturales: clic, doble clic, clic derecho
-
-</td>
-  </tr>
-</table>
+[**Reconocimiento de voz**](#reconocimiento-de-voz) · [**Voice Commands**](#voice-commands) · [**Optimizador del PC**](#optimizador-del-pc) · [**Screenshots**](#screenshots) · [**Support**](#support-the-project)
 
 </div>
 
@@ -176,9 +123,9 @@
 
 <h4>Importante</h4>
 
-- Noxis **no te obliga** a usarlo como optimizador: es una función extra, podés ignorarla por completo
-- Cada acción que ejecutes con esta herramienta es **bajo tu propia responsabilidad**
-- Sin usar el Optimizador, Noxis funciona igual: conversación, comandos y control de PC no dependen de él
+Noxis **no te obliga** a usarlo como optimizador: es una función extra, podés ignorarla por completo
+Cada acción que ejecutes con esta herramienta es **bajo tu propia responsabilidad**
+Sin usar el Optimizador, Noxis funciona igual: conversación, comandos y control de PC no dependen de él
 
 <!-- 📸 SCREENSHOT: pegá acá la imagen del Optimizador (Configuración → Optimizador) -->
 
