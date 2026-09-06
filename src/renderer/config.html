@@ -72,6 +72,10 @@
           <span class="navIcon" data-icon-nav="packs"></span>
           <span class="navLabel">Grupos</span>
         </button>
+        <button class="tabBtn" data-tab="optimizer">
+          <span class="navIcon" data-icon-nav="optimize"></span>
+          <span class="navLabel">Optimizador</span>
+        </button>
         <button class="tabBtn" data-tab="about">
           <span class="navIcon" data-icon-nav="info"></span>
           <span class="navLabel">Sobre Noxis</span>
@@ -383,6 +387,41 @@
 
         <div class="card">
           <div class="cardHeader">
+            <h3>Optimización del PC</h3>
+            <p class="cardSub">Limpia archivos temporales, caché del sistema, Windows Update, DNS, papelera y más. Libera espacio en disco y mejora el rendimiento.</p>
+          </div>
+
+          <div id="optimizeStatus" style="display: none; margin-bottom: 14px;">
+            <span class="switchSub" id="optimizeStatusText"></span>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 14px;">
+            <button id="optimizePcBtn" class="primaryBtn" type="button">
+              <span class="btnIcon" data-icon="trash"></span> Optimizar PC
+            </button>
+            <button id="optimizeInfoBtn" class="secondaryBtn" type="button">
+              <span class="btnIcon" data-icon="info"></span> Info del sistema
+            </button>
+          </div>
+
+          <div id="optimizeProgress" style="display: none; margin-top: 14px;">
+            <span class="switchSub" id="optimizeProgressText">Limpiando...</span>
+            <div style="background: var(--panel-2); border-radius: 6px; height: 8px; margin-top: 8px; overflow: hidden;">
+              <div id="optimizeProgressBar" style="background: var(--accent); height: 100%; width: 0%; transition: width 0.3s;"></div>
+            </div>
+          </div>
+
+          <div id="optimizeResult" style="display: none; margin-top: 14px;">
+            <span class="switchSub" id="optimizeResultText"></span>
+          </div>
+
+          <div id="systemInfoResult" style="display: none; margin-top: 14px;">
+            <span class="switchSub" id="systemInfoText"></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cardHeader">
             <h3>Aprendizaje de archivos</h3>
             <p class="cardSub">Noxis puede leer archivos de texto (.txt, .docx, .pdf, .xlsx) de una carpeta para ampliar su vocabulario de reconocimiento de voz. Sin IA: solo extrae y cuenta palabras frecuentes.</p>
           </div>
@@ -433,6 +472,39 @@
               <span>Palabras aprendidas (<b id="learnWordCount">0</b>)</span>
               <div id="learnWordsList" style="max-height: 200px; overflow-y: auto; background: var(--panel-2); border: 1px solid var(--border); border-radius: 11px; padding: 10px; display: flex; flex-wrap: wrap; gap: 6px;"></div>
             </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Google Gemini (mejora de precisión)</h3>
+            <p class="cardSub">Conectá tu API key de Google Gemini para que Noxis entienda mejor tus comandos. El modelo de voz local (Vosk) sigue funcionando — Gemini solo procesa el texto para dar resultados más precisos.</p>
+          </div>
+
+          <div class="geminiStatus" id="geminiStatus">
+            <div class="geminiStatusDot" id="geminiStatusDot"></div>
+            <span id="geminiStatusText">No conectado</span>
+          </div>
+
+          <label class="field">
+            <span>API Key de Google</span>
+            <div class="pathRow">
+              <input id="geminiApiKeyInput" type="password" placeholder="AIzaSy..." autocomplete="off" />
+              <button id="geminiToggleVisibility" class="secondaryBtn" type="button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <span class="fieldHint">Obtené tu key gratis en <a href="#" id="geminiDashboardLink" class="inlineLink">aistudio.google.com</a>. La key se guarda localmente.</span>
+          </label>
+
+          <div style="display: flex; gap: 10px; margin-top: 14px;">
+            <button id="geminiTestBtn" class="secondaryBtn" type="button">Probar conexión</button>
+            <button id="geminiSaveBtn" class="primaryBtn" type="button">Guardar key</button>
+            <button id="geminiRemoveBtn" class="dangerBtn" type="button" style="display: none;">Eliminar key</button>
+          </div>
+
+          <div id="geminiTestResult" style="display: none; margin-top: 12px;">
+            <span class="switchSub" id="geminiTestResultText"></span>
           </div>
         </div>
       </section>
@@ -577,6 +649,122 @@
               </button>
             </div>
             <ul id="packAppsList" class="itemList cardList"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB OPTIMIZER -->
+      <section id="tab-optimizer" class="tab">
+        <header class="pageHeader">
+          <div class="pageHeaderText">
+            <h2>Optimizador del PC</h2>
+            <p class="pageSub">Escaneo, análisis, optimización y monitoreo en tiempo real.</p>
+          </div>
+        </header>
+
+        <!-- Score Card -->
+        <div class="card optimizerScoreCard" id="optimizerScoreCard">
+          <div class="optimizerScoreHeader">
+            <div class="optimizerScoreCircle" id="optimizerScoreCircle">
+              <svg viewBox="0 0 120 120" class="scoreRing">
+                <circle cx="60" cy="60" r="52" class="scoreRingBg"/>
+                <circle cx="60" cy="60" r="52" class="scoreRingFill" id="scoreRingFill"/>
+              </svg>
+              <span class="scoreValue" id="scoreValue">--</span>
+            </div>
+            <div class="optimizerScoreInfo">
+              <h3 id="scoreLabel">Sin analizar</h3>
+              <p class="cardSub" id="scoreSubLabel">Ejecutá un escaneo para ver el estado de tu PC</p>
+            </div>
+          </div>
+          <div class="optimizerScoreBreakdown" id="scoreBreakdown" style="display:none;">
+            <div class="breakdownItem"><span class="breakdownLabel">CPU</span><div class="breakdownBar"><div class="breakdownFill" id="breakdownCpu"></div></div><span class="breakdownScore" id="breakdownCpuScore">--</span></div>
+            <div class="breakdownItem"><span class="breakdownLabel">RAM</span><div class="breakdownBar"><div class="breakdownFill" id="breakdownRam"></div></div><span class="breakdownScore" id="breakdownRamScore">--</span></div>
+            <div class="breakdownItem"><span class="breakdownLabel">GPU</span><div class="breakdownBar"><div class="breakdownFill" id="breakdownGpu"></div></div><span class="breakdownScore" id="breakdownGpuScore">--</span></div>
+            <div class="breakdownItem"><span class="breakdownLabel">Disco</span><div class="breakdownBar"><div class="breakdownFill" id="breakdownDisk"></div></div><span class="breakdownScore" id="breakdownDiskScore">--</span></div>
+            <div class="breakdownItem"><span class="breakdownLabel">Red</span><div class="breakdownBar"><div class="breakdownFill" id="breakdownNet"></div></div><span class="breakdownScore" id="breakdownNetScore">--</span></div>
+            <div class="breakdownItem"><span class="breakdownLabel">Inicio</span><div class="breakdownBar"><div class="breakdownFill" id="breakdownStartup"></div></div><span class="breakdownScore" id="breakdownStartupScore">--</span></div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="optimizerActions">
+          <button id="optimizerScanBtn" class="primaryBtn" type="button"><span class="btnIcon" data-icon="refresh"></span> Escanear PC</button>
+          <button id="optimizerOptimizeBtn" class="primaryBtn" type="button" disabled><span class="btnIcon" data-icon="zap"></span> Optimizar todo</button>
+          <button id="optimizerBackupBtn" class="secondaryBtn" type="button"><span class="btnIcon" data-icon="shield"></span> Crear respaldo</button>
+        </div>
+
+        <!-- Scan Progress -->
+        <div id="scanProgress" class="optimizerProgress" style="display:none;">
+          <div class="progressInfo">
+            <span id="scanProgressText">Escaneando...</span>
+            <span id="scanProgressPct">0%</span>
+          </div>
+          <div class="progressTrack"><div class="progressFill" id="scanProgressFill"></div></div>
+        </div>
+
+        <!-- Issues & Suggestions -->
+        <div id="optimizerIssuesSection" style="display:none;">
+          <div class="card">
+            <div class="cardHeader">
+              <h3>Problemas detectados</h3>
+              <p class="cardSub" id="issuesCountLabel">0 críticos, 0 advertencias</p>
+            </div>
+            <div id="issuesList" class="issuesList"></div>
+          </div>
+          <div class="card">
+            <div class="cardHeader">
+              <h3>Sugerencias</h3>
+            </div>
+            <div id="suggestionsList" class="suggestionsList"></div>
+          </div>
+        </div>
+
+        <!-- Real-time Monitor -->
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Monitor en tiempo real</h3>
+            <button id="monitorToggleBtn" class="secondaryBtn" type="button"><span class="btnIcon" data-icon="refresh"></span> Iniciar</button>
+          </div>
+          <div id="monitorSection" class="monitorSection" style="display:none;">
+            <div class="monitorGrid">
+              <div class="monitorGauge"><canvas id="cpuGauge" width="100" height="100"></canvas><span class="gaugeLabel">CPU</span><span class="gaugeValue" id="cpuGaugeVal">--</span></div>
+              <div class="monitorGauge"><canvas id="ramGauge" width="100" height="100"></canvas><span class="gaugeLabel">RAM</span><span class="gaugeValue" id="ramGaugeVal">--</span></div>
+              <div class="monitorGauge"><canvas id="diskGauge" width="100" height="100"></canvas><span class="gaugeLabel">Disco</span><span class="gaugeValue" id="diskGaugeVal">--</span></div>
+              <div class="monitorGauge"><canvas id="netGauge" width="100" height="100"></canvas><span class="gaugeLabel">Red</span><span class="gaugeValue" id="netGaugeVal">--</span></div>
+            </div>
+            <div class="monitorStats">
+              <span>RAM: <b id="monitorRamUsed">--</b> / <b id="monitorRamTotal">--</b></span>
+              <span>Uptime: <b id="monitorUptime">--</b></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Processes Tab -->
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Procesos</h3>
+            <div class="processControls">
+              <select id="processSortSelect" class="smallSelect">
+                <option value="cpu">CPU</option>
+                <option value="ram">RAM</option>
+                <option value="name">Nombre</option>
+              </select>
+              <button id="refreshProcessesBtn" class="secondaryBtn" type="button"><span class="btnIcon" data-icon="refresh"></span></button>
+            </div>
+          </div>
+          <div id="processList" class="processList">
+            <p class="emptyState">Hacé clic en "Escanear PC" para ver procesos.</p>
+          </div>
+        </div>
+
+        <!-- Backup List -->
+        <div class="card">
+          <div class="cardHeader">
+            <h3>Respaldos</h3>
+          </div>
+          <div id="backupList" class="backupList">
+            <p class="emptyState">No hay respaldos aún.</p>
           </div>
         </div>
       </section>

@@ -29,6 +29,7 @@ const systemCommandHandler = require("../services/systemCommandHandler");
 const companionService = require("../services/companionService");
 const fileLearningService = require("../services/fileLearningService");
 const voskService = require("../services/voskService");
+const geminiService = require("../services/geminiService");
 const systemService = require("../services/systemService");
 const appScanner = require("./appScanner");
 
@@ -621,4 +622,176 @@ ipcMain.handle("config-window:toggle-maximize", () => {
   if (!win || win.isDestroyed()) return;
   if (win.isMaximized()) win.unmaximize();
   else win.maximize();
+});
+
+// ---------------------------------------------------------------
+// IPC: Google Gemini (mejora de precisión)
+// ---------------------------------------------------------------
+ipcMain.handle("gemini:has-key", () => {
+  return geminiService.hasKey();
+});
+
+ipcMain.handle("gemini:test-key", async (event, apiKey) => {
+  return await geminiService.testKey(apiKey);
+});
+
+ipcMain.handle("gemini:enhance", async (event, text) => {
+  try {
+    const result = await geminiService.enhanceCommand(text);
+    return result;
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+// ---------------------------------------------------------------
+// IPC: Optimización de PC
+// ---------------------------------------------------------------
+const systemOptimizer = require("../services/systemOptimizer");
+
+ipcMain.handle("optimize:run", async (event) => {
+  try {
+    const result = await systemOptimizer.optimizeSystem((msg, pct) => {
+      const win = windows.getConfigWindow();
+      if (win && !win.isDestroyed()) {
+        win.webContents.send("optimize:progress", { msg, pct });
+      }
+    });
+    return { ok: true, ...result };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("optimize:info", async () => {
+  try {
+    const info = await systemOptimizer.getSystemInfo();
+    return { ok: true, ...info };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+// ---------------------------------------------------------------
+// IPC: Dashboard del Optimizador
+// ---------------------------------------------------------------
+ipcMain.handle("optimizer:fullScan", async (event) => {
+  try {
+    const scan = await systemOptimizer.fullScan((msg, pct) => {
+      const win = windows.getConfigWindow();
+      if (win && !win.isDestroyed()) win.webContents.send("optimizer:scanProgress", { msg, pct });
+    });
+    return { ok: true, scan };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("optimizer:analyze", async (event, scan) => {
+  try {
+    return { ok: true, analysis: systemOptimizer.analyzeSystem(scan) };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("optimizer:backup", async (event, description, entries) => {
+  try {
+    return { ok: true, backup: systemOptimizer.createBackupSnapshot(description, entries || []) };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("optimizer:restore", async (event, backupId) => {
+  try {
+    return { ok: true, result: systemOptimizer.restoreSnapshot(backupId) };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("optimizer:listBackups", async () => {
+  try {
+    return { ok: true, backups: systemOptimizer.listSnapshots() };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("optimizer:deleteBackup", async (event, backupId) => {
+  try {
+    return { ok: true, result: systemOptimizer.deleteSnapshot(backupId) };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("optimizer:processes", async (event, sortBy, limit) => {
+  try {
+    return { ok: true, processes: await systemOptimizer.listAllProcesses(sortBy || "cpu", limit || 30) };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("optimizer:killProcess", async (event, pid, force) => {
+  try {
+    return { ok: true, result: await systemOptimizer.killProcessById(pid, force) };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("optimizer:heavyProcesses", async () => {
+  try {
+    return { ok: true, heavy: await systemOptimizer.getHeavyProcesses() };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("optimizer:startup", async () => {
+  try {
+    return { ok: true, items: await systemOptimizer.getStartupItems() };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("optimizer:services", async () => {
+  try {
+    return { ok: true, services: await systemOptimizer.getRunningServices() };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("optimizer:startMonitor", async (event, intervalMs) => {
+  try {
+    systemOptimizer.startRealtimeMonitor(intervalMs || 2000, (snapshot) => {
+      const win = windows.getConfigWindow();
+      if (win && !win.isDestroyed()) win.webContents.send("optimizer:monitorData", snapshot);
+    });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("optimizer:stopMonitor", async () => {
+  try {
+    systemOptimizer.stopRealtimeMonitor();
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("optimizer:monitorSnapshot", async () => {
+  try {
+    return { ok: true, snapshot: await systemOptimizer.getMonitorSnapshot() };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });

@@ -53,5 +53,32 @@ contextBridge.exposeInMainWorld("configAPI", {
   toggleMaximize: () => ipcRenderer.invoke("config-window:toggle-maximize"),
   onWindowMaximize: (callback) => {
     ipcRenderer.on("config-window:maximize-changed", (event, isMaximized) => callback(isMaximized));
+  },
+  // Optimización de PC (legacy)
+  optimizePc: () => ipcRenderer.invoke("optimize:run"),
+  getSystemInfo: () => ipcRenderer.invoke("optimize:info"),
+  onOptimizeProgress: (callback) => {
+    ipcRenderer.on("optimize:progress", (event, data) => callback(data));
+  },
+  // Dashboard del Optimizador (nueva arquitectura)
+  optimizerFullScan: () => ipcRenderer.invoke("optimizer:fullScan"),
+  onScanProgress: (callback) => {
+    ipcRenderer.on("optimizer:scanProgress", (event, data) => callback(data));
+  },
+  optimizerAnalyze: (scan) => ipcRenderer.invoke("optimizer:analyze", scan),
+  optimizerBackup: (description, entries) => ipcRenderer.invoke("optimizer:backup", description, entries),
+  optimizerRestore: (backupId) => ipcRenderer.invoke("optimizer:restore", backupId),
+  optimizerListBackups: () => ipcRenderer.invoke("optimizer:listBackups"),
+  optimizerDeleteBackup: (backupId) => ipcRenderer.invoke("optimizer:deleteBackup", backupId),
+  optimizerProcesses: (sortBy, limit) => ipcRenderer.invoke("optimizer:processes", sortBy, limit),
+  optimizerKillProcess: (pid, force) => ipcRenderer.invoke("optimizer:killProcess", pid, force),
+  optimizerHeavyProcesses: () => ipcRenderer.invoke("optimizer:heavyProcesses"),
+  optimizerStartup: () => ipcRenderer.invoke("optimizer:startup"),
+  optimizerServices: () => ipcRenderer.invoke("optimizer:services"),
+  optimizerStartMonitor: (intervalMs) => ipcRenderer.invoke("optimizer:startMonitor", intervalMs),
+  optimizerStopMonitor: () => ipcRenderer.invoke("optimizer:stopMonitor"),
+  optimizerMonitorSnapshot: () => ipcRenderer.invoke("optimizer:monitorSnapshot"),
+  onMonitorData: (callback) => {
+    ipcRenderer.on("optimizer:monitorData", (event, snapshot) => callback(snapshot));
   }
 });

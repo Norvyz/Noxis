@@ -661,7 +661,26 @@ async function processFinalText(text) {
   showVoiceStatus("Procesando...");
 
   try {
-    const response = await window.noxisAPI.sendMessage(text);
+    // Si Gemini está configurado, usarlo para mejorar la precisión del comando
+    let enhancedText = text;
+    try {
+      const hasGemini = await window.noxisAPI.geminiHasKey();
+      if (hasGemini) {
+        console.log("[Noxis] Usando Gemini para mejorar comando...");
+        const enhanced = await window.noxisAPI.geminiEnhance(text);
+        if (enhanced.ok && enhanced.response) {
+          console.log("[Noxis] Gemini respondió:", JSON.stringify(enhanced));
+          // Si Gemini detectó un intent claro, usar su interpretación
+          if (enhanced.confidence >= 0.7 && enhanced.intent !== "unknown") {
+            enhancedText = enhanced.response;
+          }
+        }
+      }
+    } catch (e) {
+      console.log("[Noxis] Gemini no disponible, usando texto original");
+    }
+
+    const response = await window.noxisAPI.sendMessage(enhancedText);
     console.log("[Noxis] Respuesta:", response);
     if (response && response.trim() !== "") {
       showMessage(response);

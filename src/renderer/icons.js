@@ -85,6 +85,12 @@
     },
     file(size = 40) {
       return svg(size, `<path d="M14 3v5h5"/><path d="M13 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>`);
+    },
+    optimize(size = 18) {
+      return svg(size, `<path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/>`);
+    },
+    zap(size = 18) {
+      return svg(size, `<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>`);
     }
   };
 

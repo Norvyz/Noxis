@@ -288,6 +288,18 @@ document.querySelectorAll(".creditIcon").forEach((el) => {
   if (window.NoxisIcons[name]) el.innerHTML = window.NoxisIcons[name](16);
 });
 
+function applyIcons(root) {
+  const scope = root || document;
+  scope.querySelectorAll(".btnIcon").forEach((el) => {
+    const name = el.dataset.icon;
+    if (window.NoxisIcons[name]) el.innerHTML = window.NoxisIcons[name](14);
+  });
+  scope.querySelectorAll(".navIcon").forEach((el) => {
+    const name = el.dataset.iconNav;
+    if (window.NoxisIcons[name]) el.innerHTML = window.NoxisIcons[name](18);
+  });
+}
+
 // ---------------------------------------------------------------
 // Tabs
 // ---------------------------------------------------------------
@@ -416,6 +428,9 @@ async function loadConfig() {
   learnMinFreqValue.textContent = config.learnMinFrequency || 3;
   learnSubfoldersCheck.checked = !!config.learnIncludeSubfolders;
   renderLearnedWords();
+
+  // Gemini
+  updateGeminiUI();
 }
 
 // ---------------------------------------------------------------
@@ -1449,6 +1464,560 @@ learnClearBtn.addEventListener("click", () => {
     }
   );
 });
+
+// ---------------------------------------------------------------
+// Google Gemini API Key (mejora de precisión)
+// ---------------------------------------------------------------
+const geminiApiKeyInput = document.getElementById("geminiApiKeyInput");
+const geminiToggleVisibility = document.getElementById("geminiToggleVisibility");
+const geminiTestBtn = document.getElementById("geminiTestBtn");
+const geminiSaveBtn = document.getElementById("geminiSaveBtn");
+const geminiRemoveBtn = document.getElementById("geminiRemoveBtn");
+const geminiStatus = document.getElementById("geminiStatus");
+const geminiStatusDot = document.getElementById("geminiStatusDot");
+const geminiStatusText = document.getElementById("geminiStatusText");
+const geminiTestResult = document.getElementById("geminiTestResult");
+const geminiTestResultText = document.getElementById("geminiTestResultText");
+const geminiDashboardLink = document.getElementById("geminiDashboardLink");
+
+function updateGeminiUI() {
+  const hasKey = config && config.geminiApiKey;
+  if (hasKey) {
+    geminiApiKeyInput.value = config.geminiApiKey;
+    geminiApiKeyInput.placeholder = "AIzaSy••••••••••••••••";
+    geminiRemoveBtn.style.display = "";
+    geminiStatusDot.className = "geminiStatusDot connected";
+    geminiStatusText.textContent = "Conectado";
+    geminiStatusText.style.color = "var(--ok)";
+  } else {
+    geminiApiKeyInput.value = "";
+    geminiApiKeyInput.placeholder = "AIzaSy...";
+    geminiRemoveBtn.style.display = "none";
+    geminiStatusDot.className = "geminiStatusDot";
+    geminiStatusText.textContent = "No conectado";
+    geminiStatusText.style.color = "";
+  }
+  geminiTestResult.style.display = "none";
+}
+
+let geminiKeyVisible = false;
+if (geminiToggleVisibility) {
+  geminiToggleVisibility.addEventListener("click", () => {
+    geminiKeyVisible = !geminiKeyVisible;
+    geminiApiKeyInput.type = geminiKeyVisible ? "text" : "password";
+  });
+}
+
+if (geminiSaveBtn) {
+  geminiSaveBtn.addEventListener("click", async () => {
+    const key = geminiApiKeyInput.value.trim();
+    if (!key) { geminiApiKeyInput.focus(); return; }
+    config.geminiApiKey = key;
+    const ok = await window.configAPI.saveConfig(config);
+    if (ok) { updateGeminiUI(); showToast("API key guardada", "success"); }
+    else { showToast("Error al guardar", "error"); }
+  });
+}
+
+if (geminiTestBtn) {
+  geminiTestBtn.addEventListener("click", async () => {
+    const key = geminiApiKeyInput.value.trim() || (config && config.geminiApiKey);
+    if (!key) { showToast("Ingresá una API key primero", "error"); return; }
+    geminiTestBtn.disabled = true;
+    geminiTestBtn.textContent = "Probando...";
+    geminiTestResult.style.display = "";
+    geminiTestResultText.textContent = "Conectando con Google Gemini...";
+    geminiTestResultText.style.color = "var(--text-secondary)";
+    try {
+      const result = await window.configAPI.testGeminiKey(key);
+      if (result.ok) {
+        geminiTestResultText.textContent = "Conexión exitosa. Gemini disponible.";
+        geminiTestResultText.style.color = "var(--ok)";
+      } else {
+        geminiTestResultText.textContent = "Error: " + (result.error || "Key inválida");
+        geminiTestResultText.style.color = "var(--danger)";
+      }
+    } catch (err) {
+      geminiTestResultText.textContent = "Error: " + err.message;
+      geminiTestResultText.style.color = "var(--danger)";
+    }
+    geminiTestBtn.disabled = false;
+    geminiTestBtn.textContent = "Probar conexión";
+  });
+}
+
+if (geminiRemoveBtn) {
+  geminiRemoveBtn.addEventListener("click", () => {
+    askInlineConfirm("¿Eliminar la API key de Gemini?",
+      "Se desactivará la mejora de precisión. Vosk sigue funcionando normalmente.",
+      async () => {
+        config.geminiApiKey = null;
+        geminiApiKeyInput.value = "";
+        const ok = await window.configAPI.saveConfig(config);
+        if (ok) { updateGeminiUI(); showToast("API key eliminada", "success"); }
+      }
+    );
+  });
+}
+
+if (geminiDashboardLink) {
+  geminiDashboardLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    window.configAPI.openExternal("https://aistudio.google.com/apikey");
+  });
+}
+
+// ---------------------------------------------------------------
+// Optimización de PC
+// ---------------------------------------------------------------
+const optimizePcBtn = document.getElementById("optimizePcBtn");
+const optimizeInfoBtn = document.getElementById("optimizeInfoBtn");
+const optimizeStatus = document.getElementById("optimizeStatus");
+const optimizeStatusText = document.getElementById("optimizeStatusText");
+const optimizeProgress = document.getElementById("optimizeProgress");
+const optimizeProgressText = document.getElementById("optimizeProgressText");
+const optimizeProgressBar = document.getElementById("optimizeProgressBar");
+const optimizeResult = document.getElementById("optimizeResult");
+const optimizeResultText = document.getElementById("optimizeResultText");
+const systemInfoResult = document.getElementById("systemInfoResult");
+const systemInfoText = document.getElementById("systemInfoText");
+
+// Escuchar progreso de optimización
+window.configAPI.onOptimizeProgress((data) => {
+  optimizeProgress.style.display = "";
+  optimizeProgressText.textContent = data.msg;
+  if (typeof data.pct === "number") {
+    optimizeProgressBar.style.width = data.pct + "%";
+  }
+});
+
+if (optimizePcBtn) {
+  optimizePcBtn.addEventListener("click", async () => {
+    askInlineConfirm("¿Optimizar el PC?",
+      "Se limpiarán archivos temporales, caché, Windows Update, DNS y papelera. Esto puede tardar un momento.",
+      async () => {
+        optimizePcBtn.disabled = true;
+        optimizePcBtn.textContent = "Optimizando...";
+        optimizeStatus.style.display = "";
+        optimizeStatusText.textContent = "Optimizando el PC...";
+        optimizeStatusText.style.color = "var(--text-secondary)";
+        optimizeProgress.style.display = "";
+        optimizeProgressBar.style.width = "0%";
+        optimizeResult.style.display = "none";
+
+        try {
+          const result = await window.configAPI.optimizePc();
+          if (result.ok) {
+            let msg = `Limpieza completada\n`;
+            msg += `Archivos limpiados: ${result.tempCleaned}\n`;
+            msg += `Espacio liberado: ~${result.freedMB}MB\n`;
+            if (result.dnsFlushed) msg += `Caché DNS limpiado\n`;
+            if (result.thumbnailCacheCleared) msg += `Thumbnails limpiados\n`;
+            if (result.recycleBinEmptied) msg += `Papelera vaciada\n`;
+            optimizeResult.style.display = "";
+            optimizeResultText.textContent = msg;
+            optimizeResultText.style.color = "var(--ok)";
+            optimizeStatusText.textContent = "PC optimizado correctamente";
+            optimizeStatusText.style.color = "var(--ok)";
+          } else {
+            optimizeResult.style.display = "";
+            optimizeResultText.textContent = "Error: " + (result.error || "No se pudo completar");
+            optimizeResultText.style.color = "var(--danger)";
+            optimizeStatusText.textContent = "Error en la optimización";
+            optimizeStatusText.style.color = "var(--danger)";
+          }
+        } catch (err) {
+          optimizeResult.style.display = "";
+          optimizeResultText.textContent = "Error: " + err.message;
+          optimizeResultText.style.color = "var(--danger)";
+        }
+
+        optimizePcBtn.disabled = false;
+        optimizePcBtn.textContent = "Optimizar PC";
+        setTimeout(() => {
+          optimizeProgress.style.display = "none";
+        }, 2000);
+      }
+    );
+  });
+}
+
+if (optimizeInfoBtn) {
+  optimizeInfoBtn.addEventListener("click", async () => {
+    optimizeInfoBtn.disabled = true;
+    optimizeInfoBtn.textContent = "Cargando...";
+    systemInfoResult.style.display = "none";
+
+    try {
+      const info = await window.configAPI.getSystemInfo();
+      if (info.ok) {
+        let msg = `Sistema: ${info.hostname}\n`;
+        msg += `RAM: ${info.memory.usedGB}GB / ${info.memory.totalGB}GB (${info.memory.percent}% usado)\n`;
+        msg += `CPU: ${info.cpu.model} (${info.cpu.cores} núcleos)\n`;
+        msg += `Uptime: ${info.uptime} horas\n`;
+        if (info.disk) {
+          msg += `Disco C: ${info.disk.freeGB}GB libres de ${info.disk.totalGB}GB (${info.disk.usedPercent}% usado)`;
+        }
+        systemInfoResult.style.display = "";
+        systemInfoText.textContent = msg;
+        systemInfoText.style.color = "var(--text-secondary)";
+      } else {
+        systemInfoResult.style.display = "";
+        systemInfoText.textContent = "Error: " + (info.error || "No se pudo obtener info");
+        systemInfoText.style.color = "var(--danger)";
+      }
+    } catch (err) {
+      systemInfoResult.style.display = "";
+      systemInfoText.textContent = "Error: " + err.message;
+      systemInfoText.style.color = "var(--danger)";
+    }
+
+    optimizeInfoBtn.disabled = false;
+    optimizeInfoBtn.textContent = "Info del sistema";
+  });
+}
+
+// ---------------------------------------------------------------
+// OPTIMIZER DASHBOARD
+// ---------------------------------------------------------------
+let lastScanData = null;
+let monitorActive = false;
+
+const optimizerScanBtn = document.getElementById("optimizerScanBtn");
+const optimizerOptimizeBtn = document.getElementById("optimizerOptimizeBtn");
+const optimizerBackupBtn = document.getElementById("optimizerBackupBtn");
+const optScanProgress = document.getElementById("scanProgress");
+const optScanProgressText = document.getElementById("scanProgressText");
+const optScanProgressPct = document.getElementById("scanProgressPct");
+const optScanProgressFill = document.getElementById("scanProgressFill");
+const scoreValue = document.getElementById("scoreValue");
+const scoreLabel = document.getElementById("scoreLabel");
+const scoreSubLabel = document.getElementById("scoreSubLabel");
+const scoreRingFill = document.getElementById("scoreRingFill");
+const scoreBreakdown = document.getElementById("scoreBreakdown");
+const issuesSection = document.getElementById("optimizerIssuesSection");
+const issuesCountLabel = document.getElementById("issuesCountLabel");
+const issuesList = document.getElementById("issuesList");
+const suggestionsList = document.getElementById("suggestionsList");
+const monitorToggleBtn = document.getElementById("monitorToggleBtn");
+const monitorSection = document.getElementById("monitorSection");
+const processSortSelect = document.getElementById("processSortSelect");
+const refreshProcessesBtn = document.getElementById("refreshProcessesBtn");
+const processList = document.getElementById("processList");
+const backupList = document.getElementById("backupList");
+
+// Scan progress listener
+if (window.configAPI.onScanProgress) {
+  window.configAPI.onScanProgress((data) => {
+    if (optScanProgress) optScanProgress.style.display = "";
+    if (optScanProgressText) optScanProgressText.textContent = data.msg;
+    if (typeof data.pct === "number") {
+      if (optScanProgressPct) optScanProgressPct.textContent = data.pct + "%";
+      if (optScanProgressFill) optScanProgressFill.style.width = data.pct + "%";
+    }
+  });
+}
+
+// Monitor data listener
+if (window.configAPI.onMonitorData) {
+  window.configAPI.onMonitorData((snapshot) => {
+    drawGauge("cpuGauge", "cpuGaugeVal", snapshot.cpu);
+    drawGauge("ramGauge", "ramGaugeVal", snapshot.ram ? snapshot.ram.percent : 0);
+    drawGauge("diskGauge", "diskGaugeVal", snapshot.disk || 0);
+    drawGauge("netGauge", "netGaugeVal", snapshot.network && snapshot.network.latency ? Math.min(100, snapshot.network.latency) : 0);
+    const ramUsed = document.getElementById("monitorRamUsed");
+    const ramTotal = document.getElementById("monitorRamTotal");
+    const uptimeEl = document.getElementById("monitorUptime");
+    if (ramUsed && snapshot.ram) ramUsed.textContent = snapshot.ram.usedGB + " GB";
+    if (ramTotal && snapshot.ram) ramTotal.textContent = snapshot.ram.totalGB + " GB";
+    if (uptimeEl && snapshot.uptime) uptimeEl.textContent = Math.round(snapshot.uptime / 3600) + "h";
+  });
+}
+
+function drawGauge(canvasId, valueId, percent) {
+  const canvas = document.getElementById(canvasId);
+  const valEl = document.getElementById(valueId);
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const size = canvas.width;
+  const center = size / 2;
+  const radius = center - 8;
+  ctx.clearRect(0, 0, size, size);
+  ctx.beginPath();
+  ctx.arc(center, center, radius, 0, Math.PI * 2);
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--border-subtle").trim() || "#e5e7eb";
+  ctx.lineWidth = 8;
+  ctx.stroke();
+  const angle = (percent / 100) * Math.PI * 2;
+  ctx.beginPath();
+  ctx.arc(center, center, radius, 0, angle);
+  const color = percent > 80 ? "#E05B5B" : percent > 60 ? "#D9822B" : "#1EA97C";
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 8;
+  ctx.lineCap = "round";
+  ctx.stroke();
+  if (valEl) valEl.textContent = Math.round(percent) + "%";
+}
+
+function updateScoreUI(scores) {
+  if (!scores) return;
+  const overall = scores.overall || 0;
+  if (scoreValue) scoreValue.textContent = overall;
+  if (scoreLabel) scoreLabel.textContent = scores.label || "N/A";
+  const circumference = 326.73;
+  const offset = circumference - (overall / 100) * circumference;
+  if (scoreRingFill) {
+    scoreRingFill.style.strokeDashoffset = offset;
+    const color = overall > 80 ? "var(--ok)" : overall > 60 ? "var(--warn)" : "var(--danger)";
+    scoreRingFill.style.stroke = color;
+  }
+  if (scoreBreakdown) scoreBreakdown.style.display = "";
+  const items = [
+    { key: "cpu", fillId: "breakdownCpu", scoreId: "breakdownCpuScore" },
+    { key: "ram", fillId: "breakdownRam", scoreId: "breakdownRamScore" },
+    { key: "gpu", fillId: "breakdownGpu", scoreId: "breakdownGpuScore" },
+    { key: "disk", fillId: "breakdownDisk", scoreId: "breakdownDiskScore" },
+    { key: "network", fillId: "breakdownNet", scoreId: "breakdownNetScore" },
+    { key: "startup", fillId: "breakdownStartup", scoreId: "breakdownStartupScore" }
+  ];
+  for (const item of items) {
+    const bd = scores.breakdown ? scores.breakdown[item.key] : null;
+    const sc = bd ? bd.score : 0;
+    const fillEl = document.getElementById(item.fillId);
+    const scoreEl = document.getElementById(item.scoreId);
+    if (fillEl) fillEl.style.width = sc + "%";
+    if (scoreEl) scoreEl.textContent = sc;
+  }
+}
+
+function renderIssues(issues, suggestions) {
+  if (issuesSection) issuesSection.style.display = "";
+  if (issuesCountLabel) {
+    const critical = (issues || []).filter(i => i.severity === "critical").length;
+    const warning = (issues || []).filter(i => i.severity === "warning").length;
+    issuesCountLabel.textContent = `${critical} críticos, ${warning} advertencias`;
+  }
+  if (issuesList) {
+    issuesList.innerHTML = "";
+    for (const issue of (issues || [])) {
+      const div = document.createElement("div");
+      div.className = "issueItem " + issue.severity;
+      div.innerHTML = `<div class="issueContent"><div class="issueMessage">${escapeHtml(issue.message)}</div><div class="issueImpact">${escapeHtml(issue.impact || "")}</div></div>`;
+      issuesList.appendChild(div);
+    }
+    if (!issues || issues.length === 0) {
+      issuesList.innerHTML = '<p class="emptyState">No se detectaron problemas</p>';
+    }
+  }
+  if (suggestionsList) {
+    suggestionsList.innerHTML = "";
+    for (const s of (suggestions || [])) {
+      const div = document.createElement("div");
+      div.className = "suggestionItem";
+      div.textContent = s;
+      suggestionsList.appendChild(div);
+    }
+    if (!suggestions || suggestions.length === 0) {
+      suggestionsList.innerHTML = '<p class="emptyState">Sin sugerencias</p>';
+    }
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Scan button
+if (optimizerScanBtn) {
+  optimizerScanBtn.addEventListener("click", async () => {
+    optimizerScanBtn.disabled = true;
+    optimizerScanBtn.innerHTML = '<span class="btnIcon" data-icon="refresh"></span> Escaneando...';
+    if (optScanProgress) optScanProgress.style.display = "";
+    if (optScanProgressFill) optScanProgressFill.style.width = "0%";
+    if (optimizerOptimizeBtn) optimizerOptimizeBtn.disabled = true;
+
+    try {
+      const scanResult = await window.configAPI.optimizerFullScan();
+      if (scanResult.ok) {
+        lastScanData = scanResult.scan;
+        const analysisResult = await window.configAPI.optimizerAnalyze(lastScanData);
+        if (analysisResult.ok) {
+          updateScoreUI(analysisResult.analysis.scores);
+          renderIssues(analysisResult.analysis.issues, analysisResult.analysis.suggestions);
+          if (optimizerOptimizeBtn) optimizerOptimizeBtn.disabled = false;
+        }
+        loadProcesses();
+        loadBackups();
+      }
+    } catch (err) {
+      console.error("Scan error:", err);
+    }
+
+    optimizerScanBtn.disabled = false;
+    optimizerScanBtn.innerHTML = '<span class="btnIcon" data-icon="refresh"></span> Escanear PC';
+    if (optScanProgress) setTimeout(() => { optScanProgress.style.display = "none"; }, 1500);
+  });
+}
+
+// Optimize button
+if (optimizerOptimizeBtn) {
+  optimizerOptimizeBtn.addEventListener("click", async () => {
+    askInlineConfirm("Optimizar el PC", "Se aplicarán todas las optimizaciones recomendadas. ¿Continuar?", async () => {
+      optimizerOptimizeBtn.disabled = true;
+      optimizerOptimizeBtn.innerHTML = '<span class="btnIcon" data-icon="zap"></span> Optimizando...';
+      try {
+        const result = await window.configAPI.optimizePc();
+        if (result.ok) {
+          showToast("Optimización completada: ~" + result.freedMB + "MB liberados", "success");
+          if (lastScanData) {
+            const rescanResult = await window.configAPI.optimizerFullScan();
+            if (rescanResult.ok) {
+              lastScanData = rescanResult.scan;
+              const analysisResult = await window.configAPI.optimizerAnalyze(lastScanData);
+              if (analysisResult.ok) updateScoreUI(analysisResult.analysis.scores);
+            }
+          }
+        } else {
+          showToast("Error: " + (result.error || "No se pudo optimizar"), "error");
+        }
+      } catch (err) {
+        showToast("Error: " + err.message, "error");
+      }
+      optimizerOptimizeBtn.disabled = false;
+      optimizerOptimizeBtn.innerHTML = '<span class="btnIcon" data-icon="zap"></span> Optimizar todo';
+    });
+  });
+}
+
+// Backup button
+if (optimizerBackupBtn) {
+  optimizerBackupBtn.addEventListener("click", async () => {
+    const desc = "Respaldo " + new Date().toLocaleString("es-AR");
+    try {
+      const result = await window.configAPI.optimizerBackup(desc, []);
+      if (result.ok) {
+        showToast("Respaldo creado", "success");
+        loadBackups();
+      }
+    } catch (err) {
+      showToast("Error creando respaldo: " + err.message, "error");
+    }
+  });
+}
+
+// Monitor toggle
+if (monitorToggleBtn) {
+  monitorToggleBtn.addEventListener("click", async () => {
+    if (monitorActive) {
+      await window.configAPI.optimizerStopMonitor();
+      monitorActive = false;
+      monitorToggleBtn.innerHTML = '<span class="btnIcon" data-icon="refresh"></span> Iniciar';
+      if (monitorSection) monitorSection.style.display = "none";
+    } else {
+      await window.configAPI.optimizerStartMonitor(2000);
+      monitorActive = true;
+      monitorToggleBtn.innerHTML = '<span class="btnIcon" data-icon="refresh"></span> Detener';
+      if (monitorSection) monitorSection.style.display = "";
+    }
+  });
+}
+
+// Process sort
+if (processSortSelect) {
+  processSortSelect.addEventListener("change", () => loadProcesses());
+}
+
+if (refreshProcessesBtn) {
+  refreshProcessesBtn.addEventListener("click", () => loadProcesses());
+}
+
+async function loadProcesses() {
+  if (!processList) return;
+  const sortBy = processSortSelect ? processSortSelect.value : "cpu";
+  try {
+    const result = await window.configAPI.optimizerProcesses(sortBy, 20);
+    if (result.ok) {
+      processList.innerHTML = "";
+      const header = document.createElement("div");
+      header.className = "processHeader";
+      header.innerHTML = "<span>Nombre</span><span>CPU (s)</span><span>RAM (MB)</span><span>Acción</span>";
+      processList.appendChild(header);
+      for (const p of (result.processes || [])) {
+        const div = document.createElement("div");
+        div.className = "processItem";
+        div.innerHTML = `
+          <span class="processName" title="${escapeHtml(p.Name || "")}">${escapeHtml(p.Name || "?")}</span>
+          <span class="processCpu">${p.CPU_s || 0}</span>
+          <span class="processRam">${p.RAM_MB || 0}</span>
+          <button class="processKill" data-pid="${p.Id}" title="Terminar proceso">✕</button>`;
+        processList.appendChild(div);
+      }
+      processList.querySelectorAll(".processKill").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+          const pid = parseInt(e.currentTarget.dataset.pid);
+          if (pid) {
+            await window.configAPI.optimizerKillProcess(pid, false);
+            loadProcesses();
+          }
+        });
+      });
+      if (!result.processes || result.processes.length === 0) {
+        processList.innerHTML = '<p class="emptyState">Sin procesos para mostrar</p>';
+      }
+    }
+  } catch (err) {
+    processList.innerHTML = '<p class="emptyState">Error cargando procesos</p>';
+  }
+}
+
+async function loadBackups() {
+  if (!backupList) return;
+  try {
+    const result = await window.configAPI.optimizerListBackups();
+    if (result.ok && result.backups && result.backups.length > 0) {
+      backupList.innerHTML = "";
+      for (const b of result.backups) {
+        const div = document.createElement("div");
+        div.className = "backupItem";
+        const date = b.timestamp ? new Date(b.timestamp).toLocaleString("es-AR") : "N/A";
+        div.innerHTML = `
+          <div class="backupInfo">
+            <span class="backupDesc">${escapeHtml(b.description || b.id)}</span>
+            <span class="backupMeta">${date} · ${b.entryCount || 0} entradas · ${b.status || "N/A"}</span>
+          </div>
+          <div class="backupActions">
+            <button class="secondaryBtn restoreBtn" data-id="${b.id}">Restaurar</button>
+            <button class="secondaryBtn dangerBtn deleteBtn" data-id="${b.id}">Eliminar</button>
+          </div>`;
+        backupList.appendChild(div);
+      }
+      backupList.querySelectorAll(".restoreBtn").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+          const id = e.currentTarget.dataset.id;
+          if (id) {
+            await window.configAPI.optimizerRestore(id);
+            showToast("Respaldo restaurado", "success");
+          }
+        });
+      });
+      backupList.querySelectorAll(".deleteBtn").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+          const id = e.currentTarget.dataset.id;
+          if (id) {
+            await window.configAPI.optimizerDeleteBackup(id);
+            loadBackups();
+          }
+        });
+      });
+    } else {
+      backupList.innerHTML = '<p class="emptyState">No hay respaldos aún.</p>';
+    }
+  } catch (err) {
+    backupList.innerHTML = '<p class="emptyState">Error cargando respaldos</p>';
+  }
+}
 
 loadConfig();
 

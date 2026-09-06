@@ -254,6 +254,90 @@
         "reset"
       ]
     },
+    "optimize": {
+      "canonical": "optimizar",
+      "variants": [
+        "optimiza",
+        "optimizar",
+        "optimizalo",
+        "limpia",
+        "limpiar",
+        "limpialo",
+        "limpieza",
+        "clean",
+        "optimize"
+      ]
+    },
+    "screenshot": {
+      "canonical": "captura",
+      "variants": [
+        "captura",
+        "captura de pantalla",
+        "captura pantalla",
+        "screenshot",
+        "pantallazo",
+        "tomar pantalla",
+        "tomá pantalla"
+      ]
+    },
+    "explorer": {
+      "canonical": "explorador",
+      "variants": [
+        "explorador",
+        "explorador de archivos",
+        "archivos",
+        "carpetas",
+        "files",
+        "file explorer"
+      ]
+    },
+    "calculator": {
+      "canonical": "calculadora",
+      "variants": [
+        "calculadora",
+        "calculator",
+        "calcular"
+      ]
+    },
+    "terminal": {
+      "canonical": "terminal",
+      "variants": [
+        "terminal",
+        "cmd",
+        "powershell",
+        "consola"
+      ]
+    },
+    "pause": {
+      "canonical": "pausar",
+      "variants": [
+        "pausa",
+        "pausar",
+        "pausalo",
+        "para",
+        "detener",
+        "detenelo",
+        "pause",
+        "stop"
+      ]
+    },
+    "next": {
+      "canonical": "siguiente",
+      "variants": [
+        "siguiente",
+        "next",
+        "adelante"
+      ]
+    },
+    "previous": {
+      "canonical": "anterior",
+      "variants": [
+        "anterior",
+        "previous",
+        "atras",
+        "atrás"
+      ]
+    },
     "confirm": {
       "canonical": "confirmar",
       "variants": [

@@ -363,10 +363,28 @@ async function handleCommand(text, config, onMessage, mainWindow) {
         await systemService.systemRestart();
         return "PC reiniciando 🔄";
       }
+      if (pendingType === "optimize") {
+        onMessage("Optimizando el PC... Esto puede tardar un momento.");
+        const systemOptimizer = require("./systemOptimizer");
+        const result = await systemOptimizer.optimizeSystem((msg, pct) => {
+          onMessage(msg);
+        });
+        let msg = `✅ PC optimizado!\n`;
+        msg += `Archivos limpiados: ${result.tempCleaned}\n`;
+        msg += `Espacio liberado: ~${result.freedMB}MB\n`;
+        if (result.dnsFlushed) msg += `Caché DNS limpiado\n`;
+        if (result.thumbnailCacheCleared) msg += `Thumbnails limpiados\n`;
+        if (result.recycleBinEmptied) msg += `Papelera vaciada\n`;
+        if (result.errors.length > 0) {
+          msg += `\nAlgunos archivos no se pudieron borrar (en uso): ${result.errors.length}`;
+        }
+        return msg;
+      }
     }
 
     // Si hay pending pero no es confirm/cancel, informar
-    return `Tengo pendiente un ${pendingType === "shutdown" ? "apagado" : "reinicio"}. Di "confirmar" o "cancela".`;
+    const pendingLabels = { shutdown: "apagado", restart: "reinicio", optimize: "optimización" };
+    return `Tengo pendiente una ${pendingLabels[pendingType] || "operación"}. Di "confirmar" o "cancela".`;
   }
 
   // --- 1) Mover ventana ---
@@ -520,6 +538,109 @@ async function handleCommand(text, config, onMessage, mainWindow) {
   if (hasAnyToken(t, RESTART_VERBS) || /\breinici/.test(t)) {
     setPending("restart");
     return "¿Seguro que quieres reiniciar el PC? Di confirmar o cancela dentro de 10 segundos.";
+  }
+
+  // --- 13) Optimizar PC ---
+  if (/\boptimiz/.test(t) || /\blimpi/.test(t) || /\blimpia/.test(t) || /\blimpie/.test(t) || /\bborra/.test(t)) {
+    if (/\bpc\b|\bcomputadora\b|\bordenador\b|\bsistema\b|\bwindows\b/.test(t) || /\boptimiz/.test(t)) {
+      setPending("optimize");
+      return "Voy a limpiar archivos temporales, caché y basura del sistema. ¿Confirmo? Di confirmar o cancela.";
+    }
+  }
+
+  // --- 14) Info del sistema ---
+  if (/\binformacion\b|\binfomacion\b|\binfo\b|\bestado\b|\bcomo\s+esta\b|\bcómo\s+está\b/.test(t) && /\bpc\b|\bcomputadora\b|\bordenador\b|\bsistema\b|\bmaquina\b|\bmáquina\b/.test(t)) {
+    const systemOptimizer = require("./systemOptimizer");
+    const info = await systemOptimizer.getSystemInfo();
+    let msg = `📊 Info del sistema:\n`;
+    msg += `RAM: ${info.memory.usedGB}GB / ${info.memory.totalGB}GB (${info.memory.percent}% usado)\n`;
+    msg += `CPU: ${info.cpu.model} (${info.cpu.cores} núcleos)\n`;
+    if (info.disk) {
+      msg += `Disco C: ${info.disk.freeGB}GB libres de ${info.disk.totalGB}GB (${info.disk.usedPercent}% usado)`;
+    }
+    return msg;
+  }
+
+  // --- 15) Abrir explorador ---
+  if (/\babre\b|\babrir/.test(t) && /\bexplorador\b|\barchivos\b|\bcarpetas\b|\bfiles\b/.test(t)) {
+    const { shell } = require("electron");
+    shell.openPath("explorer.exe");
+    return "Explorador de archivos abierto 📁";
+  }
+
+  // --- 16) Abrir configuración de Windows ---
+  if (/\babre\b|\babrir/.test(t) && /\bconfiguracion\b|\bconfiguración\b|\bajustes\b|\bsettings\b/.test(t) && /\bwindows\b|\bsistema\b/.test(t)) {
+    const { shell } = require("electron");
+    shell.openPath("ms-settings:");
+    return "Configuración de Windows abierta ⚙️";
+  }
+
+  // --- 17) Captura de pantalla ---
+  if (/\bcaptura\b|\bscreenshot\b|\bpantallazo\b|\btomar\s+pantalla\b/.test(t)) {
+    const { exec } = require("child_process");
+    const desktop = require("path").join(require("os").homedir(), "Desktop");
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").substring(0, 19);
+    const filename = `screenshot-${timestamp}.png`;
+    const filepath = require("path").join(desktop, filename);
+    exec(`powershell -command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Screen]::PrimaryScreen | ForEach-Object { \$_.Bounds } | ForEach-Object { \$bmp = New-Object System.Drawing.Bitmap(\$_.Width, \$_.Height); [System.Drawing.Graphics]::FromImage(\$bmp).CopyFromScreen(\$_.Location, [System.Drawing.Point]::Empty, \$_.Size); \$bmp.Save('${filepath}') }"`, (err) => {
+      if (err) console.error("[System] Screenshot error:", err.message);
+    });
+    return `Captura de pantalla guardada en el escritorio 📸`;
+  }
+
+  // --- 18) Abrir Calculadora ---
+  if (/\babre\b|\babrir/.test(t) && /\bcalculadora\b|\bcalculator\b/.test(t)) {
+    const { shell } = require("electron");
+    shell.openPath("calc.exe");
+    return "Calculadora abierta 🧮";
+  }
+
+  // --- 19) Abrir Terminal ---
+  if (/\babre\b|\babrir/.test(t) && /\bterminal\b|\bterminal\b|\bpowershell\b|\bcmd\b/.test(t)) {
+    const { shell } = require("electron");
+    shell.openPath("cmd.exe");
+    return "Terminal abierto 💻";
+  }
+
+  // --- 20) Pausar / Reanudar multimedia ---
+  if (/\bpausa\b|\bpausar\b|\bpara\b|\bdetener\b/.test(t) && /\bmusica\b|\bvideo\b|\bmedia\b|\bmultimedia\b/.test(t)) {
+    const { exec } = require("child_process");
+    exec("powershell -command \"$wsh = New-Object -ComObject WScript.Shell; $wsh.SendKeys([char]179)\"");
+    return "Multimedia pausado/reanudado ⏯️";
+  }
+
+  // --- 21) Siguiente tema / canción ---
+  if (/\bsiguiente\b|\bnext\b/.test(t) && /\btema\b|\bcancion\b|\bcanción\b|\bsong\b|\btrack\b/.test(t)) {
+    const { exec } = require("child_process");
+    exec("powershell -command \"$wsh = New-Object -ComObject WScript.Shell; $wsh.SendKeys([char]176)\"");
+    return "Siguiente tema ⏭️";
+  }
+
+  // --- 22) Tema / canción anterior ---
+  if (/\banterior\b|\bprev\b|\batras\b|\batrás\b/.test(t) && /\btema\b|\bcancion\b|\bcanción\b|\bsong\b|\btrack\b/.test(t)) {
+    const { exec } = require("child_process");
+    exec("powershell -command \"$wsh = New-Object -ComObject WScript.Shell; $wsh.SendKeys([char]177)\"");
+    return "Tema anterior ⏮️";
+  }
+
+  // --- 23) Bajar volumen (atallo sin palabra "volumen") ---
+  if (/\bbaja\b|\bbajar\b|\bmenos\b/.test(t) && !hasAnyToken(t, VOLUME_WORDS)) {
+    const { exec } = require("child_process");
+    exec("powershell -command \"$wsh = New-Object -ComObject WScript.Shell; $wsh.SendKeys([char]174)\"");
+    return "Volumen bajado 🔉";
+  }
+
+  // --- 24) Subir volumen (atallo sin palabra "volumen") ---
+  if (/\bsube\b|\bsubir\b|\bmas\b|\bmás\b/.test(t) && !hasAnyToken(t, VOLUME_WORDS)) {
+    const { exec } = require("child_process");
+    exec("powershell -command \"$wsh = New-Object -ComObject WScript.Shell; $wsh.SendKeys([char]175)\"");
+    return "Volumen subido 🔊";
+  }
+
+  // --- 25) Silenciar (atallo sin palabra "volumen") ---
+  if (/\bsilencia\b|\bsilenciar\b|\bmute\b|\bcalla\b/.test(t) && !hasAnyToken(t, VOLUME_WORDS)) {
+    await systemService.muteToggle();
+    return "Silencio activado/desactivado 🔇";
   }
 
   // No es un comando del sistema

@@ -50,7 +50,9 @@ function createDefaultConfig() {
     learnMinFrequency: 3,
     learnIncludeSubfolders: false,
     // Escaneo automático de apps
-    lastAppScanDate: null
+    lastAppScanDate: null,
+    // Google Gemini API key (opcional, mejora la precisión de comandos)
+    geminiApiKey: null
   };
 }
 

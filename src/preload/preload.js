@@ -43,5 +43,9 @@ contextBridge.exposeInMainWorld("noxisAPI", {
   },
   onPlaySound: (callback) => {
     ipcRenderer.on("play-sound", (event, filePath) => callback(filePath));
-  }
+  },
+  // Gemini (mejora de precisión)
+  geminiHasKey: () => ipcRenderer.invoke("gemini:has-key"),
+  testGeminiKey: (apiKey) => ipcRenderer.invoke("gemini:test-key", apiKey),
+  geminiEnhance: (text) => ipcRenderer.invoke("gemini:enhance", text)
 });

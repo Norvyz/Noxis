@@ -695,8 +695,7 @@ body.maximized .appShell {
 /* ---------- Botones ---------- */
 
 button.primaryBtn,
-button.secondaryBtn,
-button.dangerBtn {
+button.secondaryBtn {
   border-radius: var(--radius-sm);
   padding: var(--sp-2) var(--sp-4);
   font-size: var(--text-base);
@@ -715,8 +714,7 @@ button.dangerBtn {
 }
 
 button.primaryBtn:active,
-button.secondaryBtn:active,
-button.dangerBtn:active {
+button.secondaryBtn:active {
   transform: translateY(1px) scale(0.98);
 }
 
@@ -734,8 +732,7 @@ button.dangerBtn:active {
 }
 
 .primaryBtn:disabled,
-.secondaryBtn:disabled,
-.dangerBtn:disabled {
+.secondaryBtn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
   transform: none;
@@ -761,8 +758,7 @@ button.dangerBtn:active {
 .dangerBtn:hover {
   background: var(--danger);
   color: #fff;
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px var(--danger-soft, var(--danger));
+  transform: none;
 }
 
 /* ---------- Listas de apps ---------- */
@@ -1686,7 +1682,6 @@ button.dangerBtn:active {
 .tabBtn:focus-visible,
 .primaryBtn:focus-visible,
 .secondaryBtn:focus-visible,
-.dangerBtn:focus-visible,
 .iconBtn:focus-visible,
 .themeCard:focus-visible,
 .linkRow:focus-visible {
