@@ -38,9 +38,9 @@
 
 <h4>Limitaciones</h4>
 
-- **Noxis no mantiene una conversación:** solo responde a las palabras y frases que están en su diccionario
-- **Si una palabra no está en el diccionario, no hay respuesta:** lo que entiende es lo que fue registrado
-- No es un bot de chat con IA: es un reconocedor de palabras, no un asistente conversacional
+**Noxis no mantiene una conversación:** solo responde a las palabras y frases que están en su diccionario
+**Si una palabra no está en el diccionario, no hay respuesta:** lo que entiende es lo que fue registrado
+No es un bot de chat con IA: es un reconocedor de palabras, no un asistente conversacional
 
 <!-- 📸 SCREENSHOT: pegá acá la imagen de la sección de diccionario/voz -->
 
