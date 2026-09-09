@@ -19,12 +19,13 @@ const fs = require("fs");
 const path = require("path");
 const { spawn, execFile } = require("child_process");
 
-// Electron solo está disponible dentro de la app; si la lib se carga desde
-// Node plano (tests), se inyecta un stub para que no rompa el require.
+// Electron solo está disponible dentro de la app (y expone shell como
+// electron.shell); si la lib se carga desde Node plano (tests), se inyecta
+// un stub para que no rompa el require pero SIN abrir nada de verdad.
 let shell;
 try {
   const electron = require("electron");
-  shell = electron && typeof electron.openPath === "function" ? electron : undefined;
+  shell = electron && electron.shell && typeof electron.shell.openPath === "function" ? electron.shell : undefined;
 } catch (e) {
   shell = undefined;
 }
@@ -145,21 +146,22 @@ function openApp(executablePath) {
       // para cerrarlo por ruta de ejecutable aunque el proceso visible tenga
       // otro nombre. Sirve para CUALQUIER .lnk, incluso los que no resuelven
       // su TargetPath (p. ej. accesos directos a UWP/tienda).
+      // IMPORTANTE: la apertura NO espera a PowerShell: el .lnk se abre al
+      // instante y el tracking (para poder cerrarlo después) corre en paralelo.
       const knownTarget = resolveLnkTarget(clean);
-      snapshotProcesses().then((beforeMap) => {
-        knownTarget.then((real) => {
-          if (real && real.trim()) {
-            const realPath = real.trim();
-            if (!openedProcesses.has(target)) openedProcesses.set(target, new Set());
-            const record = openedProcesses.get(target);
-            // ruta exacta del ejecutable real
-            record.add("path:" + realPath.toLowerCase());
-            // carpeta de instalación → para matar hijos que lance (jre, helpers)
-            record.add("dir:" + path.dirname(realPath).toLowerCase());
-          }
-          shell.openPath(clean);
-          trackOpenedByOpenPath(target, real, beforeMap);
-        });
+      const beforeSnapshot = snapshotProcesses();
+      shell.openPath(clean).catch((err) => console.error("[launcherService] openPath:", err.message));
+      Promise.all([beforeSnapshot, knownTarget]).then(([beforeMap, real]) => {
+        if (real && real.trim()) {
+          const realPath = real.trim();
+          const record = openedProcesses.get(target) || new Set();
+          // ruta exacta del ejecutable real
+          record.add("path:" + realPath.toLowerCase());
+          // carpeta de instalación → para matar hijos que lance (jre, helpers)
+          record.add("dir:" + path.dirname(realPath).toLowerCase());
+          openedProcesses.set(target, record);
+        }
+        trackOpenedByOpenPath(target, real, beforeMap);
       });
       return true;
     }
