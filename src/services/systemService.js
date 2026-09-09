@@ -84,10 +84,10 @@ Start-Sleep -Milliseconds 60
 }
 
 // Ajusta el volumen del sistema aproximándose al % pedido. Lee el nivel REAL con
-// waveOutGetVolume y calcula el delta exacto (target - actual), pulsando la tecla de
-// volumen (VK) la cantidad de pasos justa. Esto hace que "de 16 a 75" suba 59 puntos
-// (no desde supuesto 0) y "a 15" baje desde el actual. La dirección del verbo solo
-// se usa como respaldo si no se puede leer el nivel.
+// el endpoint de audio por defecto (CoreAudio) y calcula el delta exacto
+// (target - actual), pulsando la tecla de volumen (VK) la cantidad de pasos justa.
+// Esto hace que "de 16 a 75" suba 59 puntos (no desde supuesto 0) y "a 15" baje
+// desde el actual. Si CoreAudio falla, respalda con winmm waveOutGetVolume.
 function setVolume(level, direction) {
   if (!isWin32()) return Promise.resolve(notSupported());
   const val = Math.max(0, Math.min(100, Math.round(level || 60)));
@@ -98,15 +98,70 @@ $ErrorActionPreference = 'SilentlyContinue'
 Add-Type -TypeDefinition @"
 using System;
 using System.Runtime.InteropServices;
+
+[ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
+public class NoxisMMDev { }
+[Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+public interface NoxisIEnumDev {
+  int EnumAudioEndpoints(int df, int m, out System.IntPtr c);
+  int GetDefaultAudioEndpoint(int df, int role, out NoxisIMMDev d);
+}
+[Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+public interface NoxisIMMDev {
+  int Activate(ref Guid iid, int ctx, IntPtr p, out NoxisIAEV a);
+  int OpenPropertyStore(int mode, out System.IntPtr ps);
+  int GetId(out string id);
+  int GetState(out int state);
+}
+[Guid("5CDF2C82-841E-4546-9722-0CF74078229A"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+public interface NoxisIAEV {
+  int RegisterControlChangeNotify(IntPtr p);
+  int UnregisterControlChangeNotify(IntPtr p);
+  int GetChannelCount(out int c);
+  int SetMasterVolumeLevel(float db, Guid ctx);
+  int SetMasterVolumeLevelScalar(float f, Guid ctx);
+  int GetMasterVolumeLevel(out float db);
+  int GetMasterVolumeLevelScalar(out float f);
+  int SetChannelVolumeLevel(uint ch, float db, Guid ctx);
+  int SetChannelVolumeLevelScalar(uint ch, float f, Guid ctx);
+  int GetChannelVolumeLevel(uint ch, out float db);
+  int GetChannelVolumeLevelScalar(uint ch, out float f);
+  int SetMute(bool b, Guid ctx);
+  int GetMute(out bool b);
+}
+
 public static class NoxisVol {
   [DllImport("winmm.dll")] public static extern uint waveOutGetVolume(IntPtr hwo, out uint pdwVolume);
   [DllImport("user32.dll")] public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, System.UIntPtr dwExtraInfo);
   const uint KEYUP = 2;
 
+  // Volumen real (%) del dispositivo de salida por defecto, leído via CoreAudio.
   public static int GetCurrent() {
-    uint v;
-    if (waveOutGetVolume(IntPtr.Zero, out v) != 0) return -1;
-    return (int)Math.Round((double)(v & 0xFFFF) * 100.0 / 65535.0);
+    int pct = -1;
+    try {
+      var e = (NoxisIEnumDev)(new NoxisMMDev());
+      NoxisIMMDev d;
+      if (e.GetDefaultAudioEndpoint(0, 1, out d) == 0) {
+        NoxisIAEV a;
+        Guid g = typeof(NoxisIAEV).GUID;
+        if (d.Activate(ref g, 1, IntPtr.Zero, out a) == 0) {
+          float f;
+          if (a.GetMasterVolumeLevelScalar(out f) == 0) {
+            pct = (int)Math.Round(f * 100.0);
+          }
+        }
+      }
+    } catch {}
+    if (pct < 0 || pct > 100) {
+      // Respaldo: mixer winmm (a veces fijo en 100 en equipos modernos)
+      try {
+        uint v;
+        if (waveOutGetVolume(IntPtr.Zero, out v) == 0) {
+          pct = (int)Math.Round((double)(v & 0xFFFF) * 100.0 / 65535.0);
+        }
+      } catch {}
+    }
+    return pct;
   }
 
   // direction de respaldo: 1=subir, -1=bajar, 0=auto
@@ -523,25 +578,76 @@ function readTextFile(target) {
 // Volumen: leer nivel actual
 // =========================================================
 
-// Lee el volumen del sistema global (winmm waveOutGetVolume). Este refleja el
-// nivel maestro real y funciona con dispositivos virtuales como SteelSeries.
+// Lee el volumen global del dispositivo de salida por defecto. Usa CoreAudio
+// (IAudioEndpointVolume) para el nivel real; respalda con winmm waveOutGetVolume
+// (que en equipos modernos suele quedar fijo en 100 y no refleja el nivel audible).
 function getVolume() {
   if (!isWin32()) return Promise.resolve(notSupported());
   const script = `
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'SilentlyContinue'
 Add-Type -TypeDefinition @"
 using System;
 using System.Runtime.InteropServices;
+
+[ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
+public class NoxisMMDev { }
+[Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+public interface NoxisIEnumDev {
+  int EnumAudioEndpoints(int df, int m, out System.IntPtr c);
+  int GetDefaultAudioEndpoint(int df, int role, out NoxisIMMDev d);
+}
+[Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+public interface NoxisIMMDev {
+  int Activate(ref Guid iid, int ctx, IntPtr p, out NoxisIAEV a);
+  int OpenPropertyStore(int mode, out System.IntPtr ps);
+  int GetId(out string id);
+  int GetState(out int state);
+}
+[Guid("5CDF2C82-841E-4546-9722-0CF74078229A"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+public interface NoxisIAEV {
+  int RegisterControlChangeNotify(IntPtr p);
+  int UnregisterControlChangeNotify(IntPtr p);
+  int GetChannelCount(out int c);
+  int SetMasterVolumeLevel(float db, Guid ctx);
+  int SetMasterVolumeLevelScalar(float f, Guid ctx);
+  int GetMasterVolumeLevel(out float db);
+  int GetMasterVolumeLevelScalar(out float f);
+  int SetChannelVolumeLevel(uint ch, float db, Guid ctx);
+  int SetChannelVolumeLevelScalar(uint ch, float f, Guid ctx);
+  int GetChannelVolumeLevel(uint ch, out float db);
+  int GetChannelVolumeLevelScalar(uint ch, out float f);
+  int SetMute(bool b, Guid ctx);
+  int GetMute(out bool b);
+}
 
 public static class NoxisGetVol {
   [DllImport("winmm.dll")] public static extern uint waveOutGetVolume(IntPtr hwo, out uint pdwVolume);
 
   public static int Get() {
-    uint v;
-    uint r = waveOutGetVolume(IntPtr.Zero, out v);
-    if (r != 0) return -1;
-    double pct = (double)(v & 0xFFFF) * 100.0 / 65535.0;
-    return (int)Math.Round(pct);
+    int pct = -1;
+    try {
+      var e = (NoxisIEnumDev)(new NoxisMMDev());
+      NoxisIMMDev d;
+      if (e.GetDefaultAudioEndpoint(0, 1, out d) == 0) {
+        NoxisIAEV a;
+        Guid g = typeof(NoxisIAEV).GUID;
+        if (d.Activate(ref g, 1, IntPtr.Zero, out a) == 0) {
+          float f;
+          if (a.GetMasterVolumeLevelScalar(out f) == 0) {
+            pct = (int)Math.Round(f * 100.0);
+          }
+        }
+      }
+    } catch {}
+    if (pct < 0 || pct > 100) {
+      try {
+        uint v;
+        if (waveOutGetVolume(IntPtr.Zero, out v) == 0) {
+          pct = (int)Math.Round((double)(v & 0xFFFF) * 100.0 / 65535.0);
+        }
+      } catch {}
+    }
+    return pct;
   }
 }
 "@

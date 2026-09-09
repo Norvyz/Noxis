@@ -18,10 +18,103 @@
 const fs = require("fs");
 const path = require("path");
 const { spawn, execFile } = require("child_process");
-const { shell } = require("electron");
+
+// Electron solo está disponible dentro de la app; si la lib se carga desde
+// Node plano (tests), se inyecta un stub para que no rompa el require.
+let shell;
+try {
+  const electron = require("electron");
+  shell = electron && typeof electron.openPath === "function" ? electron : undefined;
+} catch (e) {
+  shell = undefined;
+}
+if (!shell) {
+  shell = { openPath: () => Promise.resolve(""), openExternal: () => Promise.resolve("") };
+}
 
 // Extensiones que se resuelven como un único archivo ejecutable.
 const EXE_EXTS = [".exe", ".bat", ".cmd", ".ps1", ".lnk", ".com"];
+
+// Registro de procesos que Noxis lanzó (por ruta de config).
+// executablePath → Set de PIDs. Permite cerrar lo que abrimos por PID/TID
+// sin depender de que el nombre del proceso coincida con el del .lnk.
+const openedProcesses = new Map();
+
+function recordOpened(executablePath, pid) {
+  if (!executablePath || !pid) return;
+  const key = String(executablePath).trim();
+  if (!openedProcesses.has(key)) openedProcesses.set(key, new Set());
+  openedProcesses.get(key).add(pid);
+}
+
+// Snapshot de procesos en el sistema: Map<pid, executablePath en minúsculas>.
+// Se usa para detectar QUÉ realmente lanzó una app al abrirla, sin depender
+// del nombre del .lnk ni adivinar el .exe (funciona para cualquier app).
+function snapshotProcesses() {
+  return new Promise((resolve) => {
+    const ps = systemExe("WindowsPowerShell\\v1.0\\powershell.exe");
+    const script =
+      "Get-CimInstance Win32_Process | " +
+      "Where-Object { $_.ExecutablePath } | " +
+      "Select-Object ProcessId, ExecutablePath, ParentProcessId | ConvertTo-Json";
+    execFile(
+      ps,
+      ["-NoProfile", "-NonInteractive", "-Command", script],
+      { windowsHide: true, timeout: 20000 },
+      (err, stdout) => {
+        if (err) {
+          resolve(new Map());
+          return;
+        }
+        try {
+          const raw = String(stdout || "").trim();
+          if (!raw) {
+            resolve(new Map());
+            return;
+          }
+          const data = JSON.parse(raw);
+          const list = Array.isArray(data) ? data : [data];
+          const map = new Map();
+          for (const p of list) {
+            if (!p || !p.ProcessId || !p.ExecutablePath) continue;
+            map.set(Number(p.ProcessId), String(p.ExecutablePath).toLowerCase());
+          }
+          resolve(map);
+        } catch (e) {
+          resolve(new Map());
+        }
+      }
+    );
+  });
+}
+
+// Procesos cuyo nombre exe no es parte de Noxis/herramientas; evita registrar
+// basura del propio Electron/PowerShell/taskkill en el diff antes/después.
+const NOXIS_PROCESS_FILTER = /^(electron|noxis[.\s-]*|node|powershell|pwsh|conhost|cmd|taskkill|werfault)\.exe$/i;
+
+// Detecta los procesos que aparecieron al abrir "executablePath" y los registra
+// para poder cerrarlos después. Espera hasta 4s para ver hijos que tardan.
+// beforeMap = snapshot de procesos tomado ANTES de abrir.
+function trackOpenedByOpenPath(executablePath, knownTarget, beforeMap) {
+  const key = String(executablePath || "").trim();
+  const known = knownTarget ? String(knownTarget).trim().toLowerCase() : "";
+  (async () => {
+    await new Promise((r) => setTimeout(r, 2000));
+    const afterMap = await snapshotProcesses();
+    const tracked = openedProcesses.get(key) || new Set();
+    for (const [pid, exePath] of afterMap) {
+      if (beforeMap.has(pid)) continue; // no es nuevo
+      if (NOXIS_PROCESS_FILTER.test(path.basename(exePath))) continue;
+      // Coincide con el target conocido del .lnk, o simplemente es un proceso
+      // nuevo que arrancó justo después de abrir la app.
+      if (known && !exePath.includes(known)) continue;
+      tracked.add(pid);
+      tracked.add("path:" + exePath);
+    }
+    if (tracked.size > 0) openedProcesses.set(key, tracked);
+    console.log("[launcherService] trackOpenedByOpenPath:", key, "→", [...tracked]);
+  })();
+}
 
 /**
  * Abre un ejecutable o ruta con su aplicación asociada.
@@ -48,15 +141,39 @@ function openApp(executablePath) {
 
     // Acceso directo o carpeta/archivo no-ejecutable → lo maneja el SO
     if (ext === ".lnk" || !EXE_EXTS.includes(ext)) {
-      shell.openPath(clean);
+      // Detectamos qué procesos aparecen al abrir, y guardamos el target real
+      // para cerrarlo por ruta de ejecutable aunque el proceso visible tenga
+      // otro nombre. Sirve para CUALQUIER .lnk, incluso los que no resuelven
+      // su TargetPath (p. ej. accesos directos a UWP/tienda).
+      const knownTarget = resolveLnkTarget(clean);
+      snapshotProcesses().then((beforeMap) => {
+        knownTarget.then((real) => {
+          if (real && real.trim()) {
+            const realPath = real.trim();
+            if (!openedProcesses.has(target)) openedProcesses.set(target, new Set());
+            const record = openedProcesses.get(target);
+            // ruta exacta del ejecutable real
+            record.add("path:" + realPath.toLowerCase());
+            // carpeta de instalación → para matar hijos que lance (jre, helpers)
+            record.add("dir:" + path.dirname(realPath).toLowerCase());
+          }
+          shell.openPath(clean);
+          trackOpenedByOpenPath(target, real, beforeMap);
+        });
+      });
       return true;
     }
 
+    // .exe directo: spawn sin shell → child.pid es el PID real del proceso
+    // (permite cerrarlo por PID con el árbol completo). Para scripts
+    // (.bat/.cmd/.ps1) sí usamos shell.
+    const needsShell = [".bat", ".cmd", ".ps1", ".com"].includes(ext);
     const child = spawn(clean, [], {
       detached: true,
       stdio: "ignore",
-      shell: true
+      shell: needsShell
     });
+    recordOpened(clean, child.pid);
     child.unref();
     return true;
   } catch (err) {
@@ -148,6 +265,111 @@ function taskkillExe(taskkillPath, exeName) {
   });
 }
 
+// Mata el árbol completo de un PID con taskkill /PID <pid> /F /T.
+function taskkillPid(taskkillPath, pid) {
+  return new Promise((resolve) => {
+    execFile(
+      taskkillPath,
+      ["/PID", String(pid), "/F", "/T"],
+      { windowsHide: true },
+      (err) => {
+        if (err) resolve(false);
+        else resolve(true);
+      }
+    );
+  });
+}
+
+// Encuentra los PID de procesos cuyo ejecutable en disco coincide con la ruta
+// real del target del .lnk o con la ruta del ejecutable. Se usa Win32_Process
+// (no el nombre del proceso) para cerrar lo que abrió el launcher aunque el
+// nombre del .exe visible sea distinto (Discord.lnk → Discord.exe, etc.).
+function findProcessesByExecutablePath(executablePath) {
+  return new Promise((resolve) => {
+    const ps = systemExe("WindowsPowerShell\\v1.0\\powershell.exe");
+    const script =
+      "Get-CimInstance Win32_Process | " +
+      "Where-Object { $_.ExecutablePath } | " +
+      "Select-Object ProcessId, ExecutablePath | ConvertTo-Json";
+    execFile(
+      ps,
+      ["-NoProfile", "-NonInteractive", "-Command", script],
+      { windowsHide: true, timeout: 20000 },
+      (err, stdout) => {
+        if (err) {
+          resolve([]);
+          return;
+        }
+        try {
+          const raw = String(stdout || "").trim();
+          if (!raw) {
+            resolve([]);
+            return;
+          }
+          const data = JSON.parse(raw);
+          const list = Array.isArray(data) ? data : [data];
+          const target = String(executablePath || "").replace(/^"|"$/g, "").trim().toLowerCase();
+          const matches = list
+            .filter((p) => p && p.ProcessId && p.ExecutablePath)
+            .filter((p) => {
+              const exe = String(p.ExecutablePath).toLowerCase();
+              return exe === target;
+            })
+            .map((p) => Number(p.ProcessId));
+          resolve(matches);
+        } catch (e) {
+          resolve([]);
+        }
+      }
+    );
+  });
+}
+
+// Encuentra los PID de procesos cuyo ejecutable esté DENTRO de la carpeta de
+// instalación de la app (raíz del target del .lnk). Cubre launchers que lanzan
+// hijos en subcarpetas (p. ej. Minecraft: LL.exe → jre\bin\javaw.exe) y apps
+// con procesos auxiliares (updaters, helpers). Genérico: no conoce apps.
+function findProcessesInFolder(folderPath) {
+  return new Promise((resolve) => {
+    const ps = systemExe("WindowsPowerShell\\v1.0\\powershell.exe");
+    const script =
+      "Get-CimInstance Win32_Process | " +
+      "Where-Object { $_.ExecutablePath } | " +
+      "Select-Object ProcessId, ExecutablePath | ConvertTo-Json";
+    execFile(
+      ps,
+      ["-NoProfile", "-NonInteractive", "-Command", script],
+      { windowsHide: true, timeout: 20000 },
+      (err, stdout) => {
+        if (err) {
+          resolve([]);
+          return;
+        }
+        try {
+          const raw = String(stdout || "").trim();
+          if (!raw) {
+            resolve([]);
+            return;
+          }
+          const data = JSON.parse(raw);
+          const list = Array.isArray(data) ? data : [data];
+          const folder = String(folderPath || "").replace(/^"|"$/g, "").trim().toLowerCase().replace(/[/\\]+$/, "");
+          const matches = list
+            .filter((p) => p && p.ProcessId && p.ExecutablePath)
+            .filter((p) => {
+              const exe = String(p.ExecutablePath).toLowerCase();
+              return exe.startsWith(folder + "\\");
+            })
+            .map((p) => Number(p.ProcessId));
+          resolve(matches);
+        } catch (e) {
+          resolve([]);
+        }
+      }
+    );
+  });
+}
+
 /**
  * Cierra un programa por su ruta ejecutable (taskkill /IM /T).
  * - Si es un .exe directo lo mata.
@@ -167,7 +389,54 @@ async function closeApp(executablePath) {
     return false;
   }
 
-  // Lista de nombres de proceso a intentar matar (sin duplicados).
+  const taskkillPath = resolveTaskkill();
+  if (taskkillPath !== "taskkill" && !fs.existsSync(taskkillPath)) {
+    console.error("[launcherService] taskkill no encontrado en:", taskkillPath);
+    return false;
+  }
+
+  let closedSomething = false;
+
+  // 1) Procesos que Noxis registró al abrir esta misma ruta:
+  //    - PIDs exactos → matar el árbol entero.
+  //    - rutas de ejecutable (de .lnk) → buscar por ExecutablePath.
+  const tracked = openedProcesses.get(target) || new Set();
+  const trackedPids = [...tracked].map((e) => String(e)).filter((e) => /^\d+$/.test(e));
+  const trackedPaths = [...tracked].map((e) => String(e)).filter((e) => e.startsWith("path:")).map((e) => e.slice("path:".length));
+
+  if (tracked.size > 0) {
+    for (const pid of trackedPids) {
+      const ok = await taskkillPid(taskkillPath, pid);
+      console.log("[launcherService] taskkill /PID", pid, ok ? "OK" : "no encontrado/fallo");
+      if (ok) closedSomething = true;
+    }
+    openedProcesses.delete(target);
+  }
+
+  // 2) Rutas de ejecutable registradas al abrir el .lnk (target real).
+  for (const exePath of trackedPaths) {
+    const matches = await findProcessesByExecutablePath(exePath);
+    for (const pid of matches) {
+      const ok = await taskkillPid(taskkillPath, pid);
+      console.log("[launcherService] taskkill /PID", pid, "(por ruta " + exePath + ")", ok ? "OK" : "no encontrado/fallo");
+      if (ok) closedSomething = true;
+    }
+  }
+
+  // 2b) Carpeta de instalación registrada al abrir el .lnk: mata TODOS los
+  //     procesos cuyo ejecutable vive dentro de esa carpeta (launchers que
+  //     lanzan el juego en subcarpetas: Minecraft LL.exe → jre\bin\javaw.exe).
+  const trackedDirs = [...tracked].map((e) => String(e)).filter((e) => e.startsWith("dir:")).map((e) => e.slice("dir:".length));
+  for (const dirPath of trackedDirs) {
+    const matches = await findProcessesInFolder(dirPath);
+    for (const pid of matches) {
+      const ok = await taskkillPid(taskkillPath, pid);
+      console.log("[launcherService] taskkill /PID", pid, "(carpeta " + dirPath + ")", ok ? "OK" : "no encontrado/fallo");
+      if (ok) closedSomething = true;
+    }
+  }
+
+  // 3) Candidatos clásicos por nombre de .exe (basename .lnk y target real).
   const candidates = [];
   if (target.toLowerCase().endsWith(".lnk")) {
     // 1) el exe del nombre del acceso directo → el proceso que ve el usuario
@@ -179,25 +448,21 @@ async function closeApp(executablePath) {
     candidates.push(toExeName(target));
   }
 
-  const taskkillPath = resolveTaskkill();
-  if (taskkillPath !== "taskkill" && !fs.existsSync(taskkillPath)) {
-    console.error("[launcherService] taskkill no encontrado en:", taskkillPath);
-    return false;
-  }
-
   for (const exeName of candidates) {
     if (!exeName) continue;
     try {
       const ok = await taskkillExe(taskkillPath, exeName);
       console.log("[launcherService] taskkill", exeName, ok ? "OK" : "no encontrado/fallo");
-      if (ok) return true;
+      if (ok) closedSomething = true;
     } catch (err) {
       console.error("[launcherService] taskkill error para", exeName, ":", err.message);
     }
   }
 
-  console.error("[launcherService] no se pudo cerrar:", target, "→", JSON.stringify(candidates));
-  return false;
+  if (!closedSomething) {
+    console.error("[launcherService] no se pudo cerrar:", target, "→", JSON.stringify(candidates));
+  }
+  return closedSomething;
 }
 
 module.exports = { openApp, closeApp, delay };

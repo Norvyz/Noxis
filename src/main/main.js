@@ -224,46 +224,53 @@ ipcMain.handle("get-response", async (event, rawText) => {
       console.log("[MAIN] Comando identificado:", identified.command, "| operando:", identified.operand, "| confianza:", identified.confidence);
 
       // Abrir/cerrar app: cruzar operando con diccionario de apps
+      // Prioridad: si el texto coincide con un GRUPO (pack), lo maneja
+      // packService más abajo; aquí solo apps individuales.
       if ((identified.command === "open" || identified.command === "close") && identified.operand) {
-        const appMatch = voiceMatcher.identifyApp(identified.operand);
-        if (appMatch) {
-          // 1) Buscar en config manual (prioridad)
-          const exePath = (config.apps || []).find(
-            (a) => a.keyword && voiceMatcher.normalize(a.keyword) === voiceMatcher.normalize(appMatch.canonical)
-          );
-          if (identified.command === "open") {
-            if (exePath && exePath.executablePath) {
-              const { exec } = require("child_process");
-              exec(`"${exePath.executablePath}"`, (err) => {
-                if (err) console.error("[MAIN] Error abriendo app:", err.message);
-              });
-              return `Abriendo ${appMatch.canonical} 🚀`;
-            }
-            // 2) Fallback: buscar en índice automático de apps instaladas
-            const autoMatch = appScanner.findInIndex(appMatch.canonical);
-            if (autoMatch) {
-              if (autoMatch.exePath) {
+        const packMatch = packService.matchPack(voiceMatcher.normalize(text), config);
+        if (packMatch) {
+          console.log("[MAIN] Operando coincide con un grupo → lo maneja packService:", packMatch.name);
+        } else {
+          const appMatch = voiceMatcher.identifyApp(identified.operand);
+          if (appMatch) {
+            // 1) Buscar en config manual (prioridad)
+            const exePath = (config.apps || []).find(
+              (a) => a.keyword && voiceMatcher.normalize(a.keyword) === voiceMatcher.normalize(appMatch.canonical)
+            );
+            if (identified.command === "open") {
+              if (exePath && exePath.executablePath) {
                 const { exec } = require("child_process");
-                exec(`"${autoMatch.exePath}"`, (err) => {
-                  if (err) console.error("[MAIN] Error abriendo app (auto):", err.message);
+                exec(`"${exePath.executablePath}"`, (err) => {
+                  if (err) console.error("[MAIN] Error abriendo app:", err.message);
                 });
-                return `Abriendo ${autoMatch.name} 🚀`;
+                return `Abriendo ${appMatch.canonical} 🚀`;
               }
-              if (autoMatch.appId) {
-                const { exec } = require("child_process");
-                exec(`Start-Process "shell:AppsFolder\\${autoMatch.appId}"`, (err) => {
-                  if (err) console.error("[MAIN] Error abriendo app UWP:", err.message);
-                });
-                return `Abriendo ${autoMatch.name} 🚀`;
+              // 2) Fallback: buscar en índice automático de apps instaladas
+              const autoMatch = appScanner.findInIndex(appMatch.canonical);
+              if (autoMatch) {
+                if (autoMatch.exePath) {
+                  const { exec } = require("child_process");
+                  exec(`"${autoMatch.exePath}"`, (err) => {
+                    if (err) console.error("[MAIN] Error abriendo app (auto):", err.message);
+                  });
+                  return `Abriendo ${autoMatch.name} 🚀`;
+                }
+                if (autoMatch.appId) {
+                  const { exec } = require("child_process");
+                  exec(`Start-Process "shell:AppsFolder\\${autoMatch.appId}"`, (err) => {
+                    if (err) console.error("[MAIN] Error abriendo app UWP:", err.message);
+                  });
+                  return `Abriendo ${autoMatch.name} 🚀`;
+                }
               }
+              return `No encontré "${appMatch.canonical}". Agregala en Configuración → Apps para poder abrirla.`;
             }
-            return `No encontré "${appMatch.canonical}". Agregala en Configuración → Apps para poder abrirla.`;
-          }
-          if (identified.command === "close") {
-            const result = await systemService.closeApp(appMatch.exeName);
-            if (result.ok) return `Cerré ${appMatch.canonical} ✅`;
-            if (result.reason === "not-found") return `No encontré ${appMatch.canonical} abierto 😕`;
-            return `No pude cerrar ${appMatch.canonical} 😕`;
+            if (identified.command === "close") {
+              const result = await systemService.closeApp(appMatch.exeName);
+              if (result.ok) return `Cerré ${appMatch.canonical} ✅`;
+              if (result.reason === "not-found") return `No encontré ${appMatch.canonical} abierto 😕`;
+              return `No pude cerrar ${appMatch.canonical} 😕`;
+            }
           }
         }
       }
@@ -695,7 +702,7 @@ ipcMain.handle("optimizer:fullScan", async (event) => {
 
 ipcMain.handle("optimizer:analyze", async (event, scan) => {
   try {
-    return { ok: true, analysis: systemOptimizer.analyzeSystem(scan) };
+    return { ok: true, analysis: await systemOptimizer.analyzeSystem(scan) };
   } catch (err) {
     return { ok: false, error: err.message };
   }
@@ -703,7 +710,7 @@ ipcMain.handle("optimizer:analyze", async (event, scan) => {
 
 ipcMain.handle("optimizer:backup", async (event, description, entries) => {
   try {
-    return { ok: true, backup: systemOptimizer.createBackupSnapshot(description, entries || []) };
+    return { ok: true, backup: await systemOptimizer.createBackupSnapshot(description, entries || []) };
   } catch (err) {
     return { ok: false, error: err.message };
   }
@@ -711,7 +718,7 @@ ipcMain.handle("optimizer:backup", async (event, description, entries) => {
 
 ipcMain.handle("optimizer:restore", async (event, backupId) => {
   try {
-    return { ok: true, result: systemOptimizer.restoreSnapshot(backupId) };
+    return { ok: true, result: await systemOptimizer.restoreSnapshot(backupId) };
   } catch (err) {
     return { ok: false, error: err.message };
   }

@@ -1,6 +1,6 @@
 {
   "name": "Noxis",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Noxis - mascota de escritorio inteligente y open-source (version Electron)",
   "main": "src/main/main.js",
   "author": {
@@ -10,7 +10,8 @@
   "license": "GPL-3.0",
   "scripts": {
     "start": "electron .",
-    "dist:win": "electron-builder --win nsis"
+    "dist:win": "electron-builder --win nsis",
+    "dist:linux": "electron-builder --linux"
   },
   "devDependencies": {
     "electron": "^31.0.0",
@@ -54,6 +55,26 @@
       "runAfterFinish": true,
       "artifactName": "Noxis-Setup-${version}.${ext}",
       "license": "build/installer_license.txt"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/logo/LogoCircular.png",
+      "category": "Utility",
+      "executableName": "noxis",
+      "artifactName": "Noxis-${version}.${ext}"
     },
     "files": [
       "src/**/*",

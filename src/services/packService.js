@@ -170,4 +170,4 @@ async function handleCommand(input, config, onMessage) {
   return "No conozco esa aplicacion aun 🦎";
 }
 
-module.exports = { handleCommand };
+module.exports = { handleCommand, matchPack, matchApp };
