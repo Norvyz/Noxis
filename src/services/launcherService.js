@@ -397,69 +397,77 @@ async function closeApp(executablePath) {
     return false;
   }
 
-  let closedSomething = false;
-
-  // 1) Procesos que Noxis registró al abrir esta misma ruta:
-  //    - PIDs exactos → matar el árbol entero.
-  //    - rutas de ejecutable (de .lnk) → buscar por ExecutablePath.
+  // Registro de lo que Noxis vio al abrir esta ruta (PIDs, rutas, carpetas).
   const tracked = openedProcesses.get(target) || new Set();
   const trackedPids = [...tracked].map((e) => String(e)).filter((e) => /^\d+$/.test(e));
   const trackedPaths = [...tracked].map((e) => String(e)).filter((e) => e.startsWith("path:")).map((e) => e.slice("path:".length));
-
-  if (tracked.size > 0) {
-    for (const pid of trackedPids) {
-      const ok = await taskkillPid(taskkillPath, pid);
-      console.log("[launcherService] taskkill /PID", pid, ok ? "OK" : "no encontrado/fallo");
-      if (ok) closedSomething = true;
-    }
-    openedProcesses.delete(target);
-  }
-
-  // 2) Rutas de ejecutable registradas al abrir el .lnk (target real).
-  for (const exePath of trackedPaths) {
-    const matches = await findProcessesByExecutablePath(exePath);
-    for (const pid of matches) {
-      const ok = await taskkillPid(taskkillPath, pid);
-      console.log("[launcherService] taskkill /PID", pid, "(por ruta " + exePath + ")", ok ? "OK" : "no encontrado/fallo");
-      if (ok) closedSomething = true;
-    }
-  }
-
-  // 2b) Carpeta de instalación registrada al abrir el .lnk: mata TODOS los
-  //     procesos cuyo ejecutable vive dentro de esa carpeta (launchers que
-  //     lanzan el juego en subcarpetas: Minecraft LL.exe → jre\bin\javaw.exe).
   const trackedDirs = [...tracked].map((e) => String(e)).filter((e) => e.startsWith("dir:")).map((e) => e.slice("dir:".length));
-  for (const dirPath of trackedDirs) {
-    const matches = await findProcessesInFolder(dirPath);
-    for (const pid of matches) {
-      const ok = await taskkillPid(taskkillPath, pid);
-      console.log("[launcherService] taskkill /PID", pid, "(carpeta " + dirPath + ")", ok ? "OK" : "no encontrado/fallo");
-      if (ok) closedSomething = true;
-    }
-  }
 
-  // 3) Candidatos clásicos por nombre de .exe (basename .lnk y target real).
+  let closedSomething = false;
+
+  // 1) ESTRATEGIA PRINCIPAL: un solo taskkill /IM <exe> /F /T por nombre.
+  //    Mata TODAS las instancias del nombre + sus árboles en UNA llamada
+  //    (evita matar PID por PID, la mayoria stale, y los reintentos que
+  //    hacian que la app "reapareciera" o se cerraran varias veces).
   const candidates = [];
+  for (const exePath of trackedPaths) {
+    const name = toExeName(exePath);
+    if (name && !candidates.includes(name)) candidates.push(name);
+  }
   if (target.toLowerCase().endsWith(".lnk")) {
-    // 1) el exe del nombre del acceso directo → el proceso que ve el usuario
-    candidates.push(toExeName(path.basename(target, ".lnk")));
-    // 2) el exe al que apunta el .lnk (puede ser Update.exe / launcher)
+    // basename(.lnk) + ".exe" → el proceso que ve el usuario (Discord.lnk → Discord.exe)
+    const base = toExeName(path.basename(target, ".lnk"));
+    if (base && !candidates.includes(base)) candidates.push(base);
+    // target real del .lnk (puede ser Update.exe / LL.exe)
     const real = await resolveLnkTarget(target);
-    if (real) candidates.push(toExeName(real));
+    if (real) {
+      const realName = toExeName(real);
+      if (realName && !candidates.includes(realName)) candidates.push(realName);
+    }
   } else {
-    candidates.push(toExeName(target));
+    const own = toExeName(target);
+    if (own && !candidates.includes(own)) candidates.push(own);
   }
 
   for (const exeName of candidates) {
-    if (!exeName) continue;
     try {
       const ok = await taskkillExe(taskkillPath, exeName);
       console.log("[launcherService] taskkill", exeName, ok ? "OK" : "no encontrado/fallo");
-      if (ok) closedSomething = true;
+      if (ok) {
+        closedSomething = true;
+        break; // ya quedó toda la app con ese nombre; no reintentar
+      }
     } catch (err) {
       console.error("[launcherService] taskkill error para", exeName, ":", err.message);
     }
   }
+
+  // 2) HIJOS en la carpeta de instalación (launchers: LL.exe → jre\bin\javaw.exe).
+  //    Solo corre si el /IM anterior no bastó (procesos con OTRO nombre).
+  if (!closedSomething) {
+    for (const dirPath of trackedDirs) {
+      const matches = await findProcessesInFolder(dirPath);
+      for (const pid of matches) {
+        const ok = await taskkillPid(taskkillPath, pid);
+        console.log("[launcherService] taskkill /PID", pid, "(carpeta " + dirPath + ")", ok ? "OK" : "no encontrado/fallo");
+        if (ok) closedSomething = true;
+      }
+    }
+  }
+
+  // 3) PIDs que Noxis registró al abrir, SOLO como último respaldo.
+  if (!closedSomething) {
+    for (const pid of trackedPids) {
+      const ok = await taskkillPid(taskkillPath, pid);
+      console.log("[launcherService] taskkill /PID", pid, ok ? "OK" : "no encontrado/fallo");
+      if (ok) {
+        closedSomething = true;
+        break;
+      }
+    }
+  }
+
+  if (closedSomething) openedProcesses.delete(target);
 
   if (!closedSomething) {
     console.error("[launcherService] no se pudo cerrar:", target, "→", JSON.stringify(candidates));
